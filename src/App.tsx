@@ -1,11 +1,11 @@
 import ViewTable from "./components/ViewTable";
 import TableMaterial from "./components/TableMaterial";
+import ObjetivosConPreciosTable from "./components/TableObjetivosConPrecio";
 
 function App() {
   return (
     <div>
-      <ViewTable />
-      <TableMaterial />
+      <ObjetivosConPreciosTable />
     </div>
   );
 }
