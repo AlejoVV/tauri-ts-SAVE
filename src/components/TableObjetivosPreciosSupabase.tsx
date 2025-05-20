@@ -60,7 +60,7 @@ function ExpandableText({
 
 export default function ObjetivosConPreciosTable() {
   const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
+    Record<string, string | undefined>
   >({});
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -90,13 +90,13 @@ export default function ObjetivosConPreciosTable() {
   // Mutation para actualizar un objetivo
   const updateObjetivoMutation = useMutation({
     mutationFn: updateObjetivoConPrecios,
-    onSuccess: (data) => {
-      // Actualizar la caché de React Query
+    onSuccess: (_, variables) => {
+      // La función updateObjetivoConPrecios devuelve void, por lo que usamos variables para obtener el ID
       queryClient.setQueryData(
         ["objetivos"],
         (old: ObjetivoConPrecios[] | undefined) =>
           old?.map((item) =>
-            item.objetivo_id === data.objetivo_id ? data : item
+            item.objetivo_id === variables.objetivo_id ? variables : item
           ) || []
       );
 
@@ -113,6 +113,10 @@ export default function ObjetivosConPreciosTable() {
         message: "Error al guardar los cambios",
         severity: "error",
       });
+    },
+    onSettled: () => {
+      // Cerrar el modo de edición después de que la mutation se completa (éxito o error)
+      table.setEditingRow(null);
     },
   });
 
@@ -240,8 +244,15 @@ export default function ObjetivosConPreciosTable() {
     // Limpiar errores de validación
     setValidationErrors({});
 
-    // Crear nuevo objetivo usando la mutation
-    createObjetivoMutation.mutate(newObjetivo);
+    try {
+      // Crear nuevo objetivo usando la mutation
+      await createObjetivoMutation.mutateAsync(newObjetivo);
+
+      // Cerrar la fila de creación
+      table.setCreatingRow(null);
+    } catch (error) {
+      console.error("Error creating row:", error);
+    }
   };
 
   const columns = useMemo<MRT_ColumnDef<ObjetivoConPrecios>[]>(
