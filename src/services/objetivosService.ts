@@ -6,6 +6,8 @@ export interface ObjetivoConPrecios {
   objetivo_id: number
   objetivo_nombre: string
   objetivo_descripcion: string | null
+  objetivo_procedimiento: string | null
+  objetivo_dias_entrega_resultados: number | null
   objetivo_general: string | null
   objetivo_tipo_prueba: string | null
   precio_quimico: number | null
@@ -16,7 +18,7 @@ export const getObjetivosConPrecios = async (): Promise<ObjetivoConPrecios[]> =>
   // Primero, obtenemos todos los objetivos
   const { data: objetivos, error: objetivosError } = await supabase
     .from("objetivos")
-    .select("*")
+    .select("objetivo_id, objetivo_nombre, objetivo_descripcion, objetivo_procedimiento,objetivo_dias_entrega_resultados, objetivo_general, objetivo_tipo_prueba")
     .order("objetivo_id", { ascending: true })
 
   if (objetivosError) {
@@ -62,6 +64,8 @@ export const getObjetivosConPrecios = async (): Promise<ObjetivoConPrecios[]> =>
     objetivo_id: objetivo.objetivo_id,
     objetivo_nombre: objetivo.objetivo_nombre,
     objetivo_descripcion: objetivo.objetivo_descripcion,
+    objetivo_procedimiento: objetivo.objetivo_procedimiento,
+    objetivo_dias_entrega_resultados: objetivo.objetivo_dias_entrega_resultados,
     objetivo_general: objetivo.objetivo_general,
     objetivo_tipo_prueba: objetivo.objetivo_tipo_prueba,
     precio_quimico: preciosPorObjetivo[objetivo.objetivo_id]?.quimico || null,

@@ -9,6 +9,8 @@ import type { ObjetivoConPrecios } from "../services/objetivosService";
 export default function ObjetivosConPreciosTable() {
   const { objetivos, loading, error } = useObjetivosConPrecios();
 
+  console.log("Datos de objetivos:", objetivos);
+
   const columns = useMemo<MRT_ColumnDef<ObjetivoConPrecios>[]>(
     () => [
       {
@@ -19,7 +21,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "objetivo_descripcion",
         header: "Descripción",
-        size: 250,
+        size: 100,
         Cell: ({ cell }) => (
           <div className="max-w-md whitespace-normal">
             {cell.getValue<string>() || "-"}
@@ -27,9 +29,27 @@ export default function ObjetivosConPreciosTable() {
         ),
       },
       {
+        accessorKey: "objetivo_procedimiento",
+        header: "Procedimiento",
+        size: 250,
+        Cell: ({ row }) => {
+          const procedimiento = row.original.objetivo_procedimiento;
+          return (
+            <div className="max-w-md whitespace-normal break-words">
+              {procedimiento || "-"}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "objetivo_dias_entrega_resultados",
+        header: "Días Entrega",
+        size: 25,
+      },
+      {
         accessorKey: "objetivo_general",
         header: "Objetivo General",
-        size: 150,
+        size: 70,
         Cell: ({ cell }) => (
           <div className="max-w-md whitespace-normal">
             {cell.getValue<string>() || "-"}
@@ -39,12 +59,12 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "objetivo_tipo_prueba",
         header: "Tipo Prueba",
-        size: 100,
+        size: 50,
       },
       {
         accessorKey: "precio_quimico",
         header: "Precio Químico",
-        size: 150,
+        size: 40,
         Cell: ({ cell }) => {
           const value = cell.getValue<number | null>();
           return value !== null ? `$${value.toLocaleString()}` : "-";
@@ -53,7 +73,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "precio_biologico",
         header: "Precio Biológico",
-        size: 150,
+        size: 40,
         Cell: ({ cell }) => {
           const value = cell.getValue<number | null>();
           return value !== null ? `$${value.toLocaleString()}` : "-";
@@ -83,6 +103,10 @@ export default function ObjetivosConPreciosTable() {
 
   return (
     <MaterialReactTable
+      createDisplayMode="row"
+      enableColumnActions
+      editDisplayMode="row"
+      enableEditing
       columns={columns}
       data={objetivos}
       enableColumnFilters
