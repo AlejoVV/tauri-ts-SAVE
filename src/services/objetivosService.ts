@@ -74,3 +74,157 @@ export const getObjetivosConPrecios = async (): Promise<ObjetivoConPrecios[]> =>
 
   return objetivosConPrecios
 }
+
+// Nueva función para actualizar un objetivo
+export const updateObjetivo = async (
+  objetivoId: number, 
+  data: {
+    objetivo_nombre?: string
+    objetivo_descripcion?: string | null
+    objetivo_general?: string | null
+    objetivo_procedimiento?: string | null
+    objetivo_tipo_prueba?: string | null
+    objetivo_dias_entrega_resultados?: number | null
+  }
+): Promise<void> => {
+  const { error } = await supabase
+    .from("objetivos")
+    .update(data)
+    .eq("objetivo_id", objetivoId)
+  
+  if (error) {
+    console.error("Error al actualizar objetivo:", error)
+    throw error
+  }
+}
+// Nueva función para actualizar un precio
+export const updatePrecio = async (
+  objetivoId: number,
+  tipoProducto: string,
+  precio: number | null
+): Promise<void> => {
+  // Primero verificamos si ya existe un precio para este objetivo y tipo
+  const { data: existingPrices, error: fetchError } = await supabase
+    .from("precios_objetivo_tipo")
+    .select("precio_id")
+    .eq("precio_objetivo_id", objetivoId)
+    .eq("precio_tipo_producto", tipoProducto)
+  
+  if (fetchError) {
+    console.error("Error al verificar precio existente:", fetchError)
+    throw fetchError
+  }
+  
+  if (existingPrices && existingPrices.length > 0) {
+    // Si existe, actualizamos
+    const { error } = await supabase
+      .from("precios_objetivo_tipo")
+      .update({ precio })
+      .eq("precio_id", existingPrices[0].precio_id)
+    
+    if (error) {
+      console.error("Error al actualizar precio:", error)
+      throw error
+    }
+  } else if (precio !== null) {
+    // Si no existe y el precio no es nulo, lo creamos
+    const { error } = await supabase
+      .from("precios_objetivo_tipo")
+      .insert({
+        precio_objetivo_id: objetivoId,
+        precio_tipo_producto: tipoProducto,
+        precio
+      })
+    
+    if (error) {
+      console.error("Error al crear precio:", error)
+      throw error
+    }
+  }
+  // Si no existe y el precio es nulo, no hacemos nada
+}
+
+// Función para actualizar un objetivo con sus precios
+export const updateObjetivoConPrecios = async (
+  objetivo: ObjetivoConPrecios
+): Promise<void> => {
+  try {
+    // Actualizamos el objetivo
+    const { objetivo_id, precio_quimico, precio_biologico, ...objetivoData } = objetivo
+    
+    await updateObjetivo(objetivo_id, objetivoData)
+    
+    // Actualizamos los precios
+    if (precio_quimico !== undefined) {
+      await updatePrecio(objetivo_id, "Químico", precio_quimico)
+    }
+    
+    if (precio_biologico !== undefined) {
+      await updatePrecio(objetivo_id, "Biológico", precio_biologico)
+    }
+  } catch (error) {
+    console.error("Error al actualizar objetivo con precios:", error)
+    throw error
+  }
+}
+
+// Función para crear un objetivo con sus precios
+export const createObjetivoConPrecios = async (
+  objetivo: Omit<ObjetivoConPrecios, 'objetivo_id'>
+): Promise<ObjetivoConPrecios> => {
+  try {
+    // Extraer los precios del objeto
+    const { precio_quimico, precio_biologico, ...objetivoData } = objetivo
+    
+    // Crear el objetivo
+    const { data: newObjetivo, error: objetivoError } = await supabase
+      .from("objetivos")
+      .insert(objetivoData)
+      .select()
+      .single()
+    
+    if (objetivoError) throw objetivoError
+    
+    if (!newObjetivo) {
+      throw new Error("No se pudo crear el objetivo")
+    }
+    
+    const objetivo_id = newObjetivo.objetivo_id
+    
+    // Crear precio químico si existe
+    if (precio_quimico !== null && precio_quimico !== undefined) {
+      const { error: quimicoError } = await supabase
+        .from("precios_objetivo_tipo")
+        .insert({
+          precio_objetivo_id: objetivo_id,
+          precio_tipo_producto: "Químico",
+          precio: precio_quimico
+        })
+      
+      if (quimicoError) throw quimicoError
+    }
+    
+    // Crear precio biológico si existe
+    if (precio_biologico !== null && precio_biologico !== undefined) {
+      const { error: biologicoError } = await supabase
+        .from("precios_objetivo_tipo")
+        .insert({
+          precio_objetivo_id: objetivo_id,
+          precio_tipo_producto: "Biológico",
+          precio: precio_biologico
+        })
+      
+      if (biologicoError) throw biologicoError
+    }
+    
+    // Devolver el nuevo objetivo con sus precios
+    return {
+      ...newObjetivo,
+      precio_quimico,
+      precio_biologico
+    }
+  } catch (error) {
+    console.error("Error al crear objetivo con precios:", error)
+    throw error
+  }
+}
