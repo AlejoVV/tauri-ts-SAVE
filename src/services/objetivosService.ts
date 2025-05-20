@@ -10,8 +10,8 @@ export interface ObjetivoConPrecios {
   objetivo_dias_entrega_resultados: number | null
   objetivo_general: string | null
   objetivo_tipo_prueba: string | null
-  precio_quimico: number | null
-  precio_biologico: number | null
+  precio_quimico: number | null | undefined
+  precio_biologico: number | null | undefined
 }
 
 export const getObjetivosConPrecios = async (): Promise<ObjetivoConPrecios[]> => {
@@ -119,7 +119,7 @@ export const updatePrecio = async (
     // Si existe, actualizamos
     const { error } = await supabase
       .from("precios_objetivo_tipo")
-      .update({ precio })
+      .update({ precio: precio === null ? undefined : precio })
       .eq("precio_id", existingPrices[0].precio_id)
     
     if (error) {
@@ -133,7 +133,7 @@ export const updatePrecio = async (
       .insert({
         precio_objetivo_id: objetivoId,
         precio_tipo_producto: tipoProducto,
-        precio
+        precio: precio
       })
     
     if (error) {
@@ -218,11 +218,13 @@ export const createObjetivoConPrecios = async (
     }
     
     // Devolver el nuevo objetivo con sus precios
-    return {
+    const objetivoCompleto: ObjetivoConPrecios = {
       ...newObjetivo,
-      precio_quimico,
-      precio_biologico
+      precio_quimico: precio_quimico === undefined ? null : precio_quimico,
+      precio_biologico: precio_biologico === undefined ? null : precio_biologico
     }
+    
+    return objetivoCompleto
   } catch (error) {
     console.error("Error al crear objetivo con precios:", error)
     throw error
