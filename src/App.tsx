@@ -7,7 +7,7 @@ function App() {
       <ViewTable />
       <TableMaterial />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
