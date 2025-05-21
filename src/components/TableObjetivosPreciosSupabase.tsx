@@ -472,6 +472,7 @@ export default function ObjetivosConPreciosTable() {
         </Tooltip>
       </Box>
     ),
+    muiTableContainerProps: { sx: { maxHeight: "90vh" } },
     renderTopToolbarCustomActions: ({ table }) => (
       <Box sx={{ display: "flex", gap: "1rem" }}>
         <Button

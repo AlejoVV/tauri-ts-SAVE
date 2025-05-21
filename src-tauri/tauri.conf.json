@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-ts-save",
-        "width": 800,
-        "height": 600
+        "title": "Herramienta de consulta y edición",
+        "width": 1620,
+        "height": 815
       }
     ],
     "security": {
