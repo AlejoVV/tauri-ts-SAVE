@@ -28,36 +28,6 @@ import {
   type ObjetivoConPrecios,
 } from "../services/objetivosService";
 
-// Componente para texto expandible
-function ExpandableText({
-  text,
-  maxLength = 100,
-}: {
-  text: string | null;
-  maxLength?: number;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  if (!text) return <span>-</span>;
-
-  if (text.length <= maxLength) return <span>{text}</span>;
-
-  return (
-    <div>
-      <div className="whitespace-pre-wrap">
-        {isExpanded ? text : `${text.substring(0, maxLength)}...`}
-      </div>
-      <Button
-        size="small"
-        onClick={() => setIsExpanded(!isExpanded)}
-        sx={{ mt: 1, textTransform: "none" }}
-      >
-        {isExpanded ? "Ver menos" : "Ver más"}
-      </Button>
-    </div>
-  );
-}
-
 export default function ObjetivosConPreciosTable() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string | undefined>
@@ -279,12 +249,11 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_descripcion",
         header: "Descripción",
         size: 200,
-        Cell: ({ cell }) => (
-          <ExpandableText
-            text={cell.getValue<string | null>()}
-            maxLength={100}
-          />
-        ),
+        enableGlobalFilter: true,
+        Cell: ({ cell }) => {
+          const value = cell.getValue<string | null>();
+          return value ? value : "-";
+        },
         muiEditTextFieldProps: {
           multiline: true,
           rows: 3,
@@ -294,12 +263,11 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_general",
         header: "Objetivo General",
         size: 200,
-        Cell: ({ cell }) => (
-          <ExpandableText
-            text={cell.getValue<string | null>()}
-            maxLength={100}
-          />
-        ),
+        enableGlobalFilter: true,
+        Cell: ({ cell }) => {
+          const value = cell.getValue<string | null>();
+          return value ? value : "-";
+        },
         muiEditTextFieldProps: {
           multiline: true,
           rows: 3,
@@ -309,12 +277,11 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_procedimiento",
         header: "Procedimiento",
         size: 200,
-        Cell: ({ cell }) => (
-          <ExpandableText
-            text={cell.getValue<string | null>()}
-            maxLength={100}
-          />
-        ),
+        enableGlobalFilter: true,
+        Cell: ({ cell }) => {
+          const value = cell.getValue<string | null>();
+          return value ? value : "-";
+        },
         muiEditTextFieldProps: {
           multiline: true,
           rows: 3,
