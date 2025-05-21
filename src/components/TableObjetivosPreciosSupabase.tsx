@@ -249,10 +249,10 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_descripcion",
         header: "Descripción",
         size: 200,
+        filterFn: "contains",
         enableGlobalFilter: true,
-        Cell: ({ cell }) => {
-          const value = cell.getValue<string | null>();
-          return value ? value : "-";
+        Cell: ({ renderedCellValue }) => {
+          return renderedCellValue ? renderedCellValue : "-";
         },
         muiEditTextFieldProps: {
           multiline: true,
@@ -263,10 +263,8 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_general",
         header: "Objetivo General",
         size: 200,
-        enableGlobalFilter: true,
-        Cell: ({ cell }) => {
-          const value = cell.getValue<string | null>();
-          return value ? value : "-";
+        Cell: ({ renderedCellValue }) => {
+          return renderedCellValue ? renderedCellValue : "-";
         },
         muiEditTextFieldProps: {
           multiline: true,
@@ -277,10 +275,9 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_procedimiento",
         header: "Procedimiento",
         size: 200,
-        enableGlobalFilter: true,
-        Cell: ({ cell }) => {
-          const value = cell.getValue<string | null>();
-          return value ? value : "-";
+        filterFn: "includesString",
+        Cell: ({ renderedCellValue }) => {
+          return renderedCellValue ? renderedCellValue : "-";
         },
         muiEditTextFieldProps: {
           multiline: true,
@@ -331,9 +328,10 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "precio_quimico",
         header: "Precio Químico",
         size: 130,
-        Cell: ({ cell }) => {
-          const value = cell.getValue<number | null>();
-          return value !== null ? `$${value.toLocaleString()}` : "-";
+        Cell: ({ renderedCellValue }) => {
+          return renderedCellValue !== null
+            ? `$${Number(renderedCellValue).toLocaleString()}`
+            : "-";
         },
         muiEditTextFieldProps: {
           type: "number",
@@ -356,9 +354,10 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "precio_biologico",
         header: "Precio Biológico",
         size: 130,
-        Cell: ({ cell }) => {
-          const value = cell.getValue<number | null>();
-          return value !== null ? `$${value.toLocaleString()}` : "-";
+        Cell: ({ renderedCellValue }) => {
+          return renderedCellValue !== null
+            ? `$${Number(renderedCellValue).toLocaleString()}`
+            : "-";
         },
         muiEditTextFieldProps: {
           type: "number",
