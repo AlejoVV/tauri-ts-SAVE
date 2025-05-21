@@ -394,6 +394,7 @@ export default function ObjetivosConPreciosTable() {
     columns,
     data: objetivos,
     enableColumnFilters: true,
+    enableBottomToolbar: false,
     enableColumnFilterModes: true,
     enablePagination: false,
     enableStickyHeader: true,
