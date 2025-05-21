@@ -287,6 +287,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "objetivo_tipo_prueba",
         header: "Tipo Prueba",
+        enableColumnFilterModes: false,
         size: 130,
         filterVariant: "select",
         filterSelectOptions: [
@@ -309,6 +310,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "objetivo_dias_entrega_resultados",
         header: "Días Entrega",
+        enableColumnFilterModes: false,
         size: 130,
         muiEditTextFieldProps: {
           type: "number",
@@ -327,6 +329,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "precio_quimico",
         header: "Precio Químico",
+        enableColumnFilterModes: false,
         size: 130,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue !== null
@@ -353,6 +356,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "precio_biologico",
         header: "Precio Biológico",
+        enableColumnFilterModes: false,
         size: 130,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue !== null
@@ -385,8 +389,9 @@ export default function ObjetivosConPreciosTable() {
     columns,
     data: objetivos,
     enableColumnFilters: true,
-    enableGlobalFilter: true,
+    enableColumnFilterModes: true,
     enablePagination: true,
+    enableGlobalFilterModes: true,
     getColumnCanGlobalFilter: () => {
       return true;
     },
@@ -403,6 +408,7 @@ export default function ObjetivosConPreciosTable() {
     onEditingRowCancel: () => setValidationErrors({}),
     onCreatingRowCancel: () => setValidationErrors({}),
     initialState: {
+      showGlobalFilter: true,
       pagination: {
         pageSize: 10,
         pageIndex: 0,
