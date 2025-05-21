@@ -232,6 +232,8 @@ export default function ObjetivosConPreciosTable() {
         header: "Objetivo",
         size: 180,
         muiEditTextFieldProps: {
+          multiline: true,
+          rows: 3,
           required: true,
           error: !!validationErrors.objetivo_nombre,
           helperText: validationErrors.objetivo_nombre,
@@ -411,7 +413,7 @@ export default function ObjetivosConPreciosTable() {
     displayColumnDefOptions: {
       "mrt-row-actions": {
         header: "Acciones",
-        size: 100, // Aumentar tamaño para botones
+        size: 50, // Aumentar tamaño para botones
         muiTableHeadCellProps: {
           align: "center",
         },
