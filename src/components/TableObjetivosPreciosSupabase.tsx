@@ -230,7 +230,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "objetivo_nombre",
         header: "Objetivo",
-        size: 180,
+        size: 350,
         muiEditTextFieldProps: {
           multiline: true,
           rows: 3,
@@ -264,7 +264,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "objetivo_general",
         header: "Objetivo General",
-        size: 200,
+        size: 100,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue ? renderedCellValue : "-";
         },
@@ -276,7 +276,7 @@ export default function ObjetivosConPreciosTable() {
       {
         accessorKey: "objetivo_procedimiento",
         header: "Procedimiento",
-        size: 200,
+        size: 250,
         filterFn: "includesString",
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue ? renderedCellValue : "-";
@@ -290,7 +290,7 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_tipo_prueba",
         header: "Tipo Prueba",
         enableColumnFilterModes: false,
-        size: 130,
+        size: 50,
         filterVariant: "select",
         filterSelectOptions: [
           "Eficacia",
@@ -313,7 +313,10 @@ export default function ObjetivosConPreciosTable() {
         accessorKey: "objetivo_dias_entrega_resultados",
         header: "Días Entrega",
         enableColumnFilterModes: false,
-        size: 130,
+        size: 25,
+        muiTableBodyCellProps: {
+          align: "center",
+        },
         muiEditTextFieldProps: {
           type: "number",
           error: !!validationErrors.objetivo_dias_entrega_resultados,
@@ -330,9 +333,9 @@ export default function ObjetivosConPreciosTable() {
       },
       {
         accessorKey: "precio_quimico",
-        header: "Precio Químico",
+        header: "Químico",
         enableColumnFilterModes: false,
-        size: 130,
+        size: 75,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue !== null
             ? `$${Number(renderedCellValue).toLocaleString()}`
@@ -357,9 +360,9 @@ export default function ObjetivosConPreciosTable() {
       },
       {
         accessorKey: "precio_biologico",
-        header: "Precio Biológico",
+        header: "Biológico",
         enableColumnFilterModes: false,
-        size: 130,
+        size: 75,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue !== null
             ? `$${Number(renderedCellValue).toLocaleString()}`
@@ -413,12 +416,20 @@ export default function ObjetivosConPreciosTable() {
     displayColumnDefOptions: {
       "mrt-row-actions": {
         header: "Acciones",
-        size: 50, // Aumentar tamaño para botones
+        size: 80, // Aumentar tamaño para botones
         muiTableHeadCellProps: {
           align: "center",
         },
         muiTableBodyCellProps: {
           align: "center",
+        },
+      },
+    },
+    muiEditTextFieldProps: {
+      sx: {
+        "& .MuiInputBase-input": {
+          // Selecciona el input real dentro del TextField
+          fontSize: "0.875rem",
         },
       },
     },
