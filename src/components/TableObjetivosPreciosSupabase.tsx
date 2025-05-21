@@ -391,6 +391,7 @@ export default function ObjetivosConPreciosTable() {
     enableColumnFilters: true,
     enableColumnFilterModes: true,
     enablePagination: true,
+    enableKeyboardShortcuts: false,
     enableGlobalFilterModes: true,
     getColumnCanGlobalFilter: () => {
       return true;
@@ -407,6 +408,18 @@ export default function ObjetivosConPreciosTable() {
     },
     onEditingRowCancel: () => setValidationErrors({}),
     onCreatingRowCancel: () => setValidationErrors({}),
+    displayColumnDefOptions: {
+      "mrt-row-actions": {
+        header: "Acciones",
+        size: 100, // Aumentar tamaño para botones
+        muiTableHeadCellProps: {
+          align: "center",
+        },
+        muiTableBodyCellProps: {
+          align: "center",
+        },
+      },
+    },
     initialState: {
       showGlobalFilter: true,
       pagination: {
@@ -434,7 +447,7 @@ export default function ObjetivosConPreciosTable() {
       },
     },
     renderRowActions: ({ row }) => (
-      <Box sx={{ display: "flex", gap: "0.5rem" }}>
+      <Box sx={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
         <Tooltip title="Editar">
           <IconButton onClick={() => table.setEditingRow(row)}>
             <EditIcon fontSize="small" />
@@ -495,13 +508,22 @@ export default function ObjetivosConPreciosTable() {
   return (
     <>
       <MaterialReactTable table={table} />
-
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={2000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         message={snackbar.message}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        ContentProps={{
+          sx: {
+            backgroundColor: "rgba(50, 50, 50, 0.8)", // Fondo oscuro con 20% transparencia
+            backdropFilter: "blur(4px)", // Efecto blur
+            color: "white", // Texto blanco
+            fontWeight: "medium", // Texto un poco más grueso
+            borderRadius: "4px", // Esquinas redondeadas
+            boxShadow: "0 3px 10px rgba(0,0,0,0.2)", // Sombra sutil
+          },
+        }}
       />
     </>
   );
