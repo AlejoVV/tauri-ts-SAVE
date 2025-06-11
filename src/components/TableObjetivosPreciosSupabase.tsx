@@ -547,7 +547,7 @@ export default function ObjetivosConPreciosTable() {
   }
 
   return (
-    <>
+    <div className="flex-1 overflow-auto">
       <MaterialReactTable table={table} />
       <Snackbar
         open={snackbar.open}
@@ -566,6 +566,6 @@ export default function ObjetivosConPreciosTable() {
           },
         }}
       />
-    </>
+    </div>
   );
 }
