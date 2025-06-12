@@ -47,6 +47,7 @@ export default function TableOrdenesMaestra() {
     isLoading,
     isError,
     error,
+    isRefetching,
     refetch,
   } = useQuery({
     queryKey: ["vistaMaestraTotal"],
@@ -585,31 +586,30 @@ export default function TableOrdenesMaestra() {
         overflow: "auto",
       },
     },
+    muiSkeletonProps: {
+      animation: "wave",
+      height: 35,
+      sx: {
+        borderRadius: "4px",
+      },
+    },
     renderTopToolbarCustomActions: ({ table }) => (
       <Box sx={{ display: "flex", gap: "1rem" }}>
         <Button
           variant="outlined"
           startIcon={<RefreshIcon />}
           onClick={() => refetch()}
-          disabled={isLoading || updateFieldsMutation.isPending}
+          disabled={isLoading || isRefetching || updateFieldsMutation.isPending}
         >
           Actualizar Datos
         </Button>
       </Box>
     ),
     state: {
-      isLoading: isLoading,
-      showProgressBars: updateFieldsMutation.isPending,
+      showSkeletons: isLoading, // Mostrar skeletons siempre que esté cargando
+      showProgressBars: isRefetching || updateFieldsMutation.isPending,
     },
   });
-
-  if (isLoading && vistaMaestra.length === 0) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   if (isError) {
     return (

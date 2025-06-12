@@ -51,6 +51,7 @@ export default function ObjetivosConPreciosTable() {
     isLoading,
     isError,
     error,
+    isRefetching,
     refetch,
   } = useQuery({
     queryKey: ["objetivos"],
@@ -491,6 +492,13 @@ export default function ObjetivosConPreciosTable() {
         overflow: "auto",
       },
     },
+    muiSkeletonProps: {
+      animation: "wave",
+      height: 35,
+      sx: {
+        borderRadius: "4px",
+      },
+    },
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
         <Tooltip title="Editar">
@@ -518,26 +526,22 @@ export default function ObjetivosConPreciosTable() {
           variant="outlined"
           startIcon={<RefreshIcon />}
           onClick={() => refetch()}
-          disabled={isLoading || updateObjetivoMutation.isPending}
+          disabled={
+            isLoading || isRefetching || updateObjetivoMutation.isPending
+          }
         >
           Actualizar Datos
         </Button>
       </Box>
     ),
     state: {
-      isLoading: isLoading,
+      showSkeletons: isLoading, // Mostrar skeletons siempre que esté cargando
       showProgressBars:
-        updateObjetivoMutation.isPending || createObjetivoMutation.isPending,
+        isRefetching ||
+        updateObjetivoMutation.isPending ||
+        createObjetivoMutation.isPending,
     },
   });
-
-  if (isLoading && objetivos.length === 0) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   if (isError) {
     return (
