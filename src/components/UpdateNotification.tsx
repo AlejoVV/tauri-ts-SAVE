@@ -17,7 +17,13 @@ import { useUpdater } from "../hooks/useUpdater";
 import { UpdaterDialog } from "./UpdaterDialog";
 
 export const UpdateNotification: React.FC = () => {
-  const { updateAvailable, isChecking, checkForUpdates } = useUpdater();
+  const {
+    updateAvailable,
+    isChecking,
+    checkForUpdates,
+    showLatestVersionMessage,
+    setShowLatestVersionMessage,
+  } = useUpdater();
   const [showDialog, setShowDialog] = useState(false);
   const [notificationDismissed, setNotificationDismissed] = useState(false);
 
@@ -84,6 +90,28 @@ export const UpdateNotification: React.FC = () => {
         >
           <Typography variant="body2">
             Nueva actualización disponible
+          </Typography>
+        </Alert>
+      </Snackbar>
+
+      {/* Notificación de versión más reciente */}
+      <Snackbar
+        open={showLatestVersionMessage}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        autoHideDuration={4000}
+        onClose={() => setShowLatestVersionMessage(false)}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setShowLatestVersionMessage(false)}
+          sx={{
+            width: "100%",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="body2">
+            ✅ Tienes la versión más reciente
           </Typography>
         </Alert>
       </Snackbar>

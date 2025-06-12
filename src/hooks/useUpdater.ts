@@ -5,14 +5,22 @@ export const useUpdater = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [showLatestVersionMessage, setShowLatestVersionMessage] = useState(false);
 
   const checkForUpdates = useCallback(async (silent = false) => {
     if (!silent) setIsChecking(true);
     
     try {
       const update = await check();
-      setUpdateAvailable(update?.available || false);
+      const hasUpdate = update?.available || false;
+      setUpdateAvailable(hasUpdate);
       setLastChecked(new Date());
+      
+      // Si no es silent y no hay actualización, mostrar mensaje
+      if (!silent && !hasUpdate) {
+        setShowLatestVersionMessage(true);
+      }
+      
       return update;
     } catch (error) {
       console.error('Error checking for updates:', error);
@@ -41,5 +49,7 @@ export const useUpdater = () => {
     isChecking,
     lastChecked,
     checkForUpdates,
+    showLatestVersionMessage,
+    setShowLatestVersionMessage,
   };
 }; 
