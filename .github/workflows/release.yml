@@ -61,11 +61,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }} # Misma nota sobre la contraseña
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }} # Solo necesario si tu clave privada tiene contraseña
         with:
           # Usar el input si es workflow_dispatch, de lo contrario usar el ref del tag
           tagName: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref_name }}
-          releaseName: 'Herramienta SAVE ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref_name }}'
+          releaseName: "Herramienta SAVE ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref_name }}"
           releaseBody: 'Consulta los assets para descargar e instalar esta versión.'
           releaseDraft: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.create_draft || true }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mark_as_prerelease || false }}
