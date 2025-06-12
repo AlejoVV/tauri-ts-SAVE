@@ -87,19 +87,19 @@ export const updateVistaMaestraFields = async (
       prueba_estado_facturacion?: string | null
     } = {}
 
-    if ('observaciones' in pruebaUpdates) {
+    // Mapear todos los campos que vengan en la actualización
+    if (pruebaUpdates.observaciones !== undefined) {
       mappedPruebaUpdates.prueba_obs = pruebaUpdates.observaciones
     }
-    if ('notas_varias' in pruebaUpdates) {
+    if (pruebaUpdates.notas_varias !== undefined) {
       mappedPruebaUpdates.prueba_notas_varias = pruebaUpdates.notas_varias
     }
-    if ('prueba_estado_lab' in pruebaUpdates) {
+    if (pruebaUpdates.prueba_estado_lab !== undefined) {
       mappedPruebaUpdates.prueba_estado_lab = pruebaUpdates.prueba_estado_lab
     }
-    if ('estado_fact' in pruebaUpdates) {
+    if (pruebaUpdates.estado_fact !== undefined) {
       mappedPruebaUpdates.prueba_estado_facturacion = pruebaUpdates.estado_fact
     }
-
 
     // Actualizar la tabla pruebas_ordenes_trabajo si hay cambios
     if (Object.keys(mappedPruebaUpdates).length > 0) {
@@ -114,4 +114,10 @@ export const updateVistaMaestraFields = async (
     console.error("Error al actualizar campos de vista maestra:", error)
     throw error
   }
-} 
+}
+
+
+
+
+
+ 
