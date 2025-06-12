@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { check } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/api/process";
+import { relaunch } from "@tauri-apps/plugin-process";
 import {
   Dialog,
   DialogTitle,

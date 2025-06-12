@@ -12,7 +12,6 @@ import {
   Tooltip,
   Snackbar,
   Alert,
-  CircularProgress,
 } from "@mui/material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import EditIcon from "@mui/icons-material/Edit";
@@ -593,7 +592,7 @@ export default function TableOrdenesMaestra() {
         borderRadius: "4px",
       },
     },
-    renderTopToolbarCustomActions: ({ table }) => (
+    renderTopToolbarCustomActions: () => (
       <Box sx={{ display: "flex", gap: "1rem" }}>
         <Button
           variant="outlined"
