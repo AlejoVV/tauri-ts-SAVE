@@ -462,10 +462,6 @@ export default function ObjetivosConPreciosTable() {
     },
     initialState: {
       showGlobalFilter: true,
-      pagination: {
-        pageSize: 10,
-        pageIndex: 0,
-      },
       sorting: [
         {
           id: "objetivo_nombre",
@@ -479,11 +475,20 @@ export default function ObjetivosConPreciosTable() {
       sx: {
         borderRadius: "0.5rem",
         border: "1px solid #e0e0e0",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
       },
     },
     muiTableProps: {
       sx: {
         tableLayout: "fixed",
+      },
+    },
+    muiTableContainerProps: {
+      sx: {
+        flexGrow: 1,
+        overflow: "auto",
       },
     },
     renderRowActions: ({ row }) => (
@@ -495,7 +500,6 @@ export default function ObjetivosConPreciosTable() {
         </Tooltip>
       </Box>
     ),
-    muiTableContainerProps: { sx: { maxHeight: "90vh" } },
     renderTopToolbarCustomActions: ({ table }) => (
       <Box sx={{ display: "flex", gap: "1rem" }}>
         <Button
@@ -547,7 +551,7 @@ export default function ObjetivosConPreciosTable() {
   }
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-hidden">
       <MaterialReactTable table={table} />
       <Snackbar
         open={snackbar.open}
