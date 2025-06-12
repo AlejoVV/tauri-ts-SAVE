@@ -1,7 +1,7 @@
 {
   "name": "tauri-ts-save",
   "private": true,
-  "version": "0.2.3-testjson",
+  "version": "0.2.4-testjson",
   "type": "module",
   "scripts": {
     "dev": "vite",
