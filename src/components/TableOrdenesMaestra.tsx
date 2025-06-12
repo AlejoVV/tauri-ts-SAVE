@@ -151,7 +151,7 @@ export default function TableOrdenesMaestra() {
       {
         accessorKey: "producto_nombre",
         header: "Producto",
-        size: 200,
+        size: 100,
         enableEditing: false,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue ? renderedCellValue : "-";
@@ -160,7 +160,7 @@ export default function TableOrdenesMaestra() {
       {
         accessorKey: "dosis_producto",
         header: "Dosis",
-        size: 100,
+        size: 50,
         enableEditing: false,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue ? renderedCellValue : "-";
@@ -169,7 +169,7 @@ export default function TableOrdenesMaestra() {
       {
         accessorKey: "producto_unid",
         header: "Unidades",
-        size: 80,
+        size: 50,
         enableEditing: false,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue ? renderedCellValue : "-";
@@ -178,7 +178,7 @@ export default function TableOrdenesMaestra() {
       {
         accessorKey: "especie_nombre",
         header: "Especie",
-        size: 150,
+        size: 120,
         enableEditing: false,
         Cell: ({ renderedCellValue }) => {
           return renderedCellValue ? renderedCellValue : "-";
@@ -560,6 +560,9 @@ export default function TableOrdenesMaestra() {
       sx: {
         borderRadius: "0.5rem",
         border: "1px solid #e0e0e0",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
       },
     },
     muiTableProps: {
@@ -576,7 +579,12 @@ export default function TableOrdenesMaestra() {
         </Tooltip>
       </Box>
     ),
-    muiTableContainerProps: { sx: { maxHeight: "90vh" } },
+    muiTableContainerProps: {
+      sx: {
+        flexGrow: 1,
+        overflow: "auto",
+      },
+    },
     renderTopToolbarCustomActions: ({ table }) => (
       <Box sx={{ display: "flex", gap: "1rem" }}>
         <Button
@@ -615,7 +623,7 @@ export default function TableOrdenesMaestra() {
   }
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-hidden">
       <MaterialReactTable table={table} />
       <Snackbar
         open={snackbar.open}
