@@ -7,16 +7,25 @@ import { useState } from "react";
 
 const itemsMenu = [
   {
+    id: "objetivos",
     label: "Objetivos",
     icon: <InventoryIcon fontSize="large" color="inherit" />,
   },
   {
+    id: "maestra",
     label: "Maestra",
     icon: <ListAltIcon fontSize="large" color="inherit" />,
   },
 ];
-function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+
+interface SidebarProps {
+  activeView: string;
+  onViewChange: (viewId: string) => void;
+}
+
+function Sidebar({ activeView, onViewChange }: SidebarProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <nav
       className={`shadow-md h-screen bg-blue-500 duration-500 ${
@@ -47,7 +56,14 @@ function Sidebar() {
             disableTouchListener={isOpen}
             disableFocusListener={isOpen}
           >
-            <li className="font-semibold text-white text-xl hover:bg-white hover:text-blue-500 px-2 py-1 rounded-md duration-200 cursor-pointer flex flex-row items-center gap-2">
+            <li
+              className={`font-semibold text-xl px-2 py-1 rounded-md duration-200 cursor-pointer flex flex-row items-center gap-2 ${
+                activeView === item.id
+                  ? "bg-white text-blue-500"
+                  : "text-white hover:bg-white hover:text-blue-500"
+              }`}
+              onClick={() => onViewChange(item.id)}
+            >
               <div className="text-2xl">{item.icon}</div>
               {isOpen && (
                 <p
