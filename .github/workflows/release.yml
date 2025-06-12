@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'El tag para la release (ej. v1.0.1). Este será el nombre de la release.'
+        description: 'El tag para la release (ej. v1.0.1)'
         required: true
         type: string
       mark_as_prerelease:
@@ -21,7 +21,6 @@ on:
         type: boolean
         default: true
 
-
 jobs:
   create-release:
     permissions:
@@ -31,16 +30,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # with:
-        #   ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref }}
 
-
-      # ... (Pasos de Setup Node, Install Frontend, Setup Rust, Cache Rust sin cambios) ...
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*' 
-          cache: 'npm' 
+          node-version: 'lts/*'
+          cache: 'npm'
 
       - name: Install frontend dependencies
         run: npm ci
@@ -48,24 +43,29 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable 
-          components: rust-src 
+          toolchain: stable
+          components: rust-src
 
       - name: Cache Rust dependencies
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Set release environment variables
+        run: |
+          echo "RELEASE_TAG=${{ github.event.inputs.tag_name || github.ref_name }}" >> $GITHUB_ENV
+          echo "RELEASE_DRAFT=${{ github.event.inputs.create_draft != '' && github.event.inputs.create_draft || 'true' }}" >> $GITHUB_ENV
+          echo "RELEASE_PRERELEASE=${{ github.event.inputs.mark_as_prerelease != '' && github.event.inputs.mark_as_prerelease || 'false' }}" >> $GITHUB_ENV
+
       - name: Build Tauri application and create GitHub Release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }} # Solo necesario si tu clave privada tiene contraseña
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
-          # Usar el input si es workflow_dispatch, de lo contrario usar el ref del tag
-          tagName: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref_name }}
-          releaseName: "Herramienta SAVE ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name || github.ref_name }}"
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: Herramienta SAVE ${{ env.RELEASE_TAG }}
           releaseBody: 'Consulta los assets para descargar e instalar esta versión.'
-          releaseDraft: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.create_draft || true }}
-          prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mark_as_prerelease || false }}
+          releaseDraft: ${{ env.RELEASE_DRAFT }}
+          prerelease: ${{ env.RELEASE_PRERELEASE }}
