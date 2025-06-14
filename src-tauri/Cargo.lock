@@ -3991,7 +3991,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-ts-save"
-version = "0.2.4-testjson"
+version = "0.2.3"
 dependencies = [
  "serde",
  "serde_json",
