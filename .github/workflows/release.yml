@@ -51,12 +51,6 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Set release environment variables
-        run: |
-          echo "RELEASE_TAG=${{ github.event.inputs.tag_name || github.ref_name }}" >> $GITHUB_ENV
-          echo "RELEASE_DRAFT=${{ github.event.inputs.create_draft != '' && github.event.inputs.create_draft || 'true' }}" >> $GITHUB_ENV
-          echo "RELEASE_PRERELEASE=${{ github.event.inputs.mark_as_prerelease != '' && github.event.inputs.mark_as_prerelease || 'false' }}" >> $GITHUB_ENV
-
       - name: Build Tauri application and create GitHub Release
         uses: tauri-apps/tauri-action@v0
         env:
@@ -67,5 +61,5 @@ jobs:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Herramienta SAVE ${{ env.RELEASE_TAG }}
           releaseBody: 'Consulta los assets para descargar e instalar esta versión.'
-          releaseDraft: ${{ env.RELEASE_DRAFT }}
-          prerelease: ${{ env.RELEASE_PRERELEASE }}
+          releaseDraft: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.create_draft || false }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mark_as_prerelease || false }}
