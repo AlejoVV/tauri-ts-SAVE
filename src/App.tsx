@@ -4,7 +4,6 @@
 import TableOrdenesMaestra from "./components/TableOrdenesMaestra";
 import ObjetivosConPreciosTable from "./components/TableObjetivosPreciosSupabase";
 import Sidebar from "./components/Sidebar";
-import { UpdateNotification } from "./components/UpdateNotification";
 import { useState } from "react";
 
 function App() {
@@ -25,7 +24,6 @@ function App() {
     <div className="flex flex-row h-screen w-screen">
       <Sidebar activeView={activeView} onViewChange={setActiveView} />
       <div className="flex-1 overflow-hidden">{renderContent()}</div>
-      <UpdateNotification />
     </div>
   );
 }
