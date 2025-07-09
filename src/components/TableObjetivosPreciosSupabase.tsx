@@ -1,5 +1,5 @@
 // src/features/objetivos/components/ObjetivosConPreciosTable.tsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   MaterialReactTable,
   type MRT_ColumnDef,
@@ -113,77 +113,83 @@ export default function ObjetivosConPreciosTable() {
     },
   });
 
+  // Memoizar datos para evitar re-renders innecesarios
+  const memoizedData = useMemo(() => objetivos, [objetivos]);
+
   // Función para validar los datos
-  const validateObjetivo = (
-    objetivo: Partial<ObjetivoConPrecios>
-  ): Record<string, string> => {
-    const errors: Record<string, string> = {};
+  const validateObjetivo = useCallback(
+    (objetivo: Partial<ObjetivoConPrecios>): Record<string, string> => {
+      const errors: Record<string, string> = {};
 
-    if (!objetivo.objetivo_nombre) {
-      errors.objetivo_nombre = "El nombre es obligatorio";
-    }
+      if (!objetivo.objetivo_nombre) {
+        errors.objetivo_nombre = "El nombre es obligatorio";
+      }
 
-    if (
-      objetivo.objetivo_dias_entrega_resultados !== null &&
-      objetivo.objetivo_dias_entrega_resultados !== undefined &&
-      (objetivo.objetivo_dias_entrega_resultados <= 0 ||
-        isNaN(Number(objetivo.objetivo_dias_entrega_resultados)))
-    ) {
-      errors.objetivo_dias_entrega_resultados = "Debe ser un número positivo";
-    }
+      if (
+        objetivo.objetivo_dias_entrega_resultados !== null &&
+        objetivo.objetivo_dias_entrega_resultados !== undefined &&
+        (objetivo.objetivo_dias_entrega_resultados <= 0 ||
+          isNaN(Number(objetivo.objetivo_dias_entrega_resultados)))
+      ) {
+        errors.objetivo_dias_entrega_resultados = "Debe ser un número positivo";
+      }
 
-    if (
-      objetivo.precio_quimico !== null &&
-      objetivo.precio_quimico !== undefined &&
-      (objetivo.precio_quimico < 0 || isNaN(Number(objetivo.precio_quimico)))
-    ) {
-      errors.precio_quimico = "Debe ser un número positivo o cero";
-    }
+      if (
+        objetivo.precio_quimico !== null &&
+        objetivo.precio_quimico !== undefined &&
+        (objetivo.precio_quimico < 0 || isNaN(Number(objetivo.precio_quimico)))
+      ) {
+        errors.precio_quimico = "Debe ser un número positivo o cero";
+      }
 
-    if (
-      objetivo.precio_biologico !== null &&
-      objetivo.precio_biologico !== undefined &&
-      (objetivo.precio_biologico < 0 ||
-        isNaN(Number(objetivo.precio_biologico)))
-    ) {
-      errors.precio_biologico = "Debe ser un número positivo o cero";
-    }
+      if (
+        objetivo.precio_biologico !== null &&
+        objetivo.precio_biologico !== undefined &&
+        (objetivo.precio_biologico < 0 ||
+          isNaN(Number(objetivo.precio_biologico)))
+      ) {
+        errors.precio_biologico = "Debe ser un número positivo o cero";
+      }
 
-    return errors;
-  };
+      return errors;
+    },
+    []
+  );
 
   // Función para manejar el guardado de una fila editada
-  const handleSaveRow = async (
-    row: MRT_Row<ObjetivoConPrecios>,
-    values: Record<string, any>
-  ) => {
-    // Convertir valores a los tipos correctos
-    const updatedObjetivo: ObjetivoConPrecios = {
-      ...row.original,
-      ...values,
-      objetivo_dias_entrega_resultados:
-        values.objetivo_dias_entrega_resultados === ""
-          ? null
-          : Number(values.objetivo_dias_entrega_resultados),
-      precio_quimico:
-        values.precio_quimico === "" ? null : Number(values.precio_quimico),
-      precio_biologico:
-        values.precio_biologico === "" ? null : Number(values.precio_biologico),
-    };
+  const handleSaveRow = useCallback(
+    async (row: MRT_Row<ObjetivoConPrecios>, values: Record<string, any>) => {
+      // Convertir valores a los tipos correctos
+      const updatedObjetivo: ObjetivoConPrecios = {
+        ...row.original,
+        ...values,
+        objetivo_dias_entrega_resultados:
+          values.objetivo_dias_entrega_resultados === ""
+            ? null
+            : Number(values.objetivo_dias_entrega_resultados),
+        precio_quimico:
+          values.precio_quimico === "" ? null : Number(values.precio_quimico),
+        precio_biologico:
+          values.precio_biologico === ""
+            ? null
+            : Number(values.precio_biologico),
+      };
 
-    // Validar datos
-    const errors = validateObjetivo(updatedObjetivo);
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
+      // Validar datos
+      const errors = validateObjetivo(updatedObjetivo);
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        return;
+      }
 
-    // Limpiar errores de validación
-    setValidationErrors({});
+      // Limpiar errores de validación
+      setValidationErrors({});
 
-    // Guardar cambios usando la mutation
-    updateObjetivoMutation.mutate(updatedObjetivo);
-  };
+      // Guardar cambios usando la mutation
+      updateObjetivoMutation.mutate(updatedObjetivo);
+    },
+    [validateObjetivo, updateObjetivoMutation, setValidationErrors]
+  );
 
   // Función para manejar la creación de un nuevo objetivo
   const handleCreateRow = async (values: Record<string, any>) => {
@@ -414,7 +420,7 @@ export default function ObjetivosConPreciosTable() {
   // Configuración de la tabla con useMaterialReactTable
   const table = useMaterialReactTable({
     columns,
-    data: objetivos,
+    data: memoizedData,
     enableColumnFilters: true,
     enableFacetedValues: true,
     enableBottomToolbar: false,
@@ -430,6 +436,14 @@ export default function ObjetivosConPreciosTable() {
     },
     enableSorting: true,
     enableColumnResizing: true,
+    // Configuración optimizada de virtualización
+    rowVirtualizerOptions: {
+      overscan: 5, // Reducido para mejor rendimiento
+      estimateSize: () => 25, // Tamaño estimado de fila para virtualización
+    },
+    columnVirtualizerOptions: {
+      overscan: 2, // Número de columnas extra a renderizar
+    },
     enableEditing: true,
     editDisplayMode: "row", // Edición por filas
     createDisplayMode: "row", // Creación por filas (importante para crear en línea)
@@ -456,7 +470,7 @@ export default function ObjetivosConPreciosTable() {
       sx: {
         "& .MuiInputBase-input": {
           // Selecciona el input real dentro del TextField
-          fontSize: "0.875rem",
+          fontSize: "0.78rem",
         },
       },
     },
@@ -498,6 +512,60 @@ export default function ObjetivosConPreciosTable() {
         borderRadius: "4px",
       },
     },
+    muiTableBodyRowProps: ({ row, table }) => {
+      const density = table.getState().density;
+      const isEditing = table.getState().editingRow?.id === row.id;
+      const isCreating = table.getState().creatingRow;
+
+      // Configurar estilos según la densidad
+      let height, paddingTop, paddingBottom, fontSize;
+
+      if (isEditing || isCreating) {
+        height = "auto";
+        paddingTop = "2px";
+        paddingBottom = "2px";
+      } else {
+        switch (density) {
+          case "compact":
+            height = "20px";
+            paddingTop = "0px";
+            paddingBottom = "0px";
+            fontSize = "0.77rem";
+            break;
+          case "comfortable":
+            height = "auto"; // Altura automática para acomodar contenido
+            paddingTop = "6px";
+            paddingBottom = "6px";
+            fontSize = "0.795rem";
+            break;
+          default: // 'standard'
+            height = "auto"; // Altura automática para acomodar contenido
+            paddingTop = "12px";
+            paddingBottom = "12px";
+            fontSize = "0.88rem";
+            break;
+        }
+      }
+
+      return {
+        sx: {
+          height: height,
+          "& td": {
+            paddingTop: paddingTop,
+            paddingBottom: paddingBottom,
+            paddingLeft: "16px",
+            paddingRight: "16px",
+            fontSize: fontSize,
+            // Propiedades para manejar el texto correctamente
+            whiteSpace: density === "compact" ? "nowrap" : "normal",
+            overflow: density === "compact" ? "hidden" : "visible",
+            textOverflow: density === "compact" ? "ellipsis" : "visible",
+            wordWrap: density === "compact" ? "normal" : "break-word",
+            verticalAlign: "top",
+          },
+        },
+      };
+    },
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
         <Tooltip title="Editar">
@@ -507,6 +575,7 @@ export default function ObjetivosConPreciosTable() {
         </Tooltip>
       </Box>
     ),
+
     renderTopToolbarCustomActions: ({ table }) => (
       <Box sx={{ display: "flex", gap: "1rem" }}>
         <Button

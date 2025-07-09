@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   MaterialReactTable,
   type MRT_ColumnDef,
@@ -90,33 +90,36 @@ export default function TableOrdenesMaestra() {
     },
   });
 
+  // Memoizar datos para evitar re-renders innecesarios
+  const memoizedData = useMemo(() => vistaMaestra, [vistaMaestra]);
+
   // Función para manejar el guardado de una fila editada
-  const handleSaveRow = async (
-    row: MRT_Row<VistaMaestraTotalRow>,
-    values: Record<string, any>
-  ) => {
-    // Filtrar solo los campos editables
-    const editableUpdates = {
-      observaciones: values.observaciones,
-      notas_varias: values.notas_varias,
-      prueba_estado_lab: values.prueba_estado_lab,
-      estado_fact: values.estado_fact,
+  const handleSaveRow = useCallback(
+    async (row: MRT_Row<VistaMaestraTotalRow>, values: Record<string, any>) => {
+      // Filtrar solo los campos editables
+      const editableUpdates = {
+        observaciones: values.observaciones,
+        notas_varias: values.notas_varias,
+        prueba_estado_lab: values.prueba_estado_lab,
+        estado_fact: values.estado_fact,
 
-      estado_ot: values.estado_ot,
-    };
+        estado_ot: values.estado_ot,
+      };
 
-    // Limpiar errores de validación
-    setValidationErrors({});
+      // Limpiar errores de validación
+      setValidationErrors({});
 
-    // Guardar cambios usando la mutation
-    if (row.original.prueba_id) {
-      updateFieldsMutation.mutate({
-        pruebaId: row.original.prueba_id,
-        ordenId: row.original.prueba_orden_id,
-        updates: editableUpdates,
-      });
-    }
-  };
+      // Guardar cambios usando la mutation
+      if (row.original.prueba_id) {
+        updateFieldsMutation.mutate({
+          pruebaId: row.original.prueba_id,
+          ordenId: row.original.prueba_orden_id,
+          updates: editableUpdates,
+        });
+      }
+    },
+    [updateFieldsMutation]
+  );
 
   const columns = useMemo<MRT_ColumnDef<VistaMaestraTotalRow>[]>(
     () => [
@@ -497,7 +500,7 @@ export default function TableOrdenesMaestra() {
   // Configuración de la tabla con useMaterialReactTable
   const table = useMaterialReactTable({
     columns,
-    data: vistaMaestra,
+    data: memoizedData,
     enableColumnFilters: true,
     enableFacetedValues: true,
     enableBottomToolbar: false,
@@ -515,6 +518,14 @@ export default function TableOrdenesMaestra() {
     },
     enableSorting: true,
     enableColumnResizing: true,
+    // Configuración optimizada de virtualización
+    rowVirtualizerOptions: {
+      overscan: 5, // Reducido para mejor rendimiento
+      estimateSize: () => 25, // Tamaño estimado de fila para virtualización
+    },
+    columnVirtualizerOptions: {
+      overscan: 2, // Número de columnas extra a renderizar
+    },
     enableEditing: true,
     editDisplayMode: "row", // Edición por filas
     onEditingRowSave: ({ row, values }) => handleSaveRow(row, values),
@@ -570,6 +581,59 @@ export default function TableOrdenesMaestra() {
         tableLayout: "fixed",
       },
     },
+    muiTableBodyRowProps: ({ row, table }) => {
+      const density = table.getState().density;
+      const isEditing = table.getState().editingRow?.id === row.id;
+
+      // Configurar estilos según la densidad
+      let height, paddingTop, paddingBottom, fontSize;
+
+      if (isEditing) {
+        height = "auto";
+        paddingTop = "2px";
+        paddingBottom = "2px";
+      } else {
+        switch (density) {
+          case "compact":
+            height = "20px";
+            paddingTop = "0px";
+            paddingBottom = "0px";
+            fontSize = "0.77rem";
+            break;
+          case "comfortable":
+            height = "auto"; // Altura automática para acomodar contenido
+            paddingTop = "6px";
+            paddingBottom = "6px";
+            fontSize = "0.795rem";
+            break;
+          default: // 'standard'
+            height = "auto"; // Altura automática para acomodar contenido
+            paddingTop = "12px";
+            paddingBottom = "12px";
+            fontSize = "0.88rem";
+            break;
+        }
+      }
+
+      return {
+        sx: {
+          height: height,
+          "& td": {
+            paddingTop: paddingTop,
+            paddingBottom: paddingBottom,
+            paddingLeft: "16px",
+            paddingRight: "16px",
+            fontSize: fontSize,
+            // Propiedades para manejar el texto correctamente
+            whiteSpace: density === "compact" ? "nowrap" : "normal",
+            overflow: density === "compact" ? "hidden" : "visible",
+            textOverflow: density === "compact" ? "ellipsis" : "visible",
+            wordWrap: density === "compact" ? "normal" : "break-word",
+            verticalAlign: "top",
+          },
+        },
+      };
+    },
     renderRowActions: ({ row }) => (
       <Box sx={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
         <Tooltip title="Editar">
@@ -592,6 +656,7 @@ export default function TableOrdenesMaestra() {
         borderRadius: "4px",
       },
     },
+
     renderTopToolbarCustomActions: () => (
       <Box sx={{ display: "flex", gap: "1rem" }}>
         <Button
