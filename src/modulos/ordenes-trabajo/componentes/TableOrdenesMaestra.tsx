@@ -21,7 +21,7 @@ import {
   getVistaMaestraTotal,
   updateVistaMaestraFields,
   type VistaMaestraTotalRow,
-} from "../services/vistaMaestraService";
+} from "../servicios/vistaMaestraService";
 
 export default function TableOrdenesMaestra() {
   const [validationErrors, setValidationErrors] = useState<

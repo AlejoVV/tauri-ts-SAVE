@@ -1,9 +1,9 @@
 // import ViewTable from "./components/ViewTable";
 // import TableMaterial from "./components/TableMaterial";
 //import ObjetivosConPreciosTable from "./components/TableObjetivosConPrecio";
-import TableOrdenesMaestra from "./components/TableOrdenesMaestra";
-import ObjetivosConPreciosTable from "./components/TableObjetivosPreciosSupabase";
-import Sidebar from "./components/Sidebar";
+import TableOrdenesMaestra from "./modulos/ordenes-trabajo/componentes/TableOrdenesMaestra";
+import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
+import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
 function App() {

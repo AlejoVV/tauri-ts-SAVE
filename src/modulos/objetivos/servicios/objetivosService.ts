@@ -1,6 +1,6 @@
 // src/features/objetivos/services/objetivosService.ts
 
-import { supabase } from "../lib/supabaseClient"
+import { supabase } from "../../nucleo/lib/supabaseClient"
 
 export interface ObjetivoConPrecios {
   objetivo_id: number

@@ -25,7 +25,7 @@ import {
   updateObjetivoConPrecios,
   createObjetivoConPrecios,
   type ObjetivoConPrecios,
-} from "../services/objetivosService";
+} from "../servicios/objetivosService";
 
 export default function ObjetivosConPreciosTable() {
   const [validationErrors, setValidationErrors] = useState<

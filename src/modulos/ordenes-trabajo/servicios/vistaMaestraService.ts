@@ -1,5 +1,5 @@
-import { supabase } from "../lib/supabaseClient"
-import type { Tables } from "../lib/supabase"
+import { supabase } from "../../nucleo/lib/supabaseClient"
+import type { Tables } from "../../nucleo/lib/supabase"
 
 export type VistaMaestraTotalRow = Tables<"vistamaestratotal">
 

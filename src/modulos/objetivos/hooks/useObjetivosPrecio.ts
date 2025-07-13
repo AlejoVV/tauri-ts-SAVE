@@ -1,7 +1,7 @@
 // src/features/objetivos/hooks/useObjetivosConPrecios.ts
 
 import { useState, useEffect, useCallback } from "react"
-import { getObjetivosConPrecios, updateObjetivoConPrecios, createObjetivoConPrecios, type ObjetivoConPrecios } from "../services/objetivosService"
+import { getObjetivosConPrecios, updateObjetivoConPrecios, createObjetivoConPrecios, type ObjetivoConPrecios } from "../servicios/objetivosService"
 
 export function useObjetivosConPrecios() {
   const [objetivos, setObjetivos] = useState<ObjetivoConPrecios[]>([])
