@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -98,59 +118,6 @@ export type Database = {
         }
         Relationships: []
       }
-      eficacia_de_pruebas: {
-        Row: {
-          eficacia: number | null
-          fecha_calculo: string | null
-          id: number
-          montaje_id: number | null
-          prueba_id: number | null
-        }
-        Insert: {
-          eficacia?: number | null
-          fecha_calculo?: string | null
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-        }
-        Update: {
-          eficacia?: number | null
-          fecha_calculo?: string | null
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "eficacia_de_pruebas_montaje_id_fkey"
-            columns: ["montaje_id"]
-            isOneToOne: false
-            referencedRelation: "montajes_de_laboratorio"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "eficacia_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "pruebas_ordenes_trabajo"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "eficacia_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestra"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "eficacia_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestratotal"
-            referencedColumns: ["prueba_id"]
-          },
-        ]
-      }
       especie_vegetal: {
         Row: {
           especie_id: number
@@ -181,83 +148,6 @@ export type Database = {
           finca_id?: number
           finca_nombre?: string
           finca_ubicacion?: string | null
-        }
-        Relationships: []
-      }
-      lecturas_de_pruebas: {
-        Row: {
-          fecha_lectura: string | null
-          id: number
-          montaje_id: number | null
-          prueba_id: number | null
-          valor_lectura: number | null
-        }
-        Insert: {
-          fecha_lectura?: string | null
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-          valor_lectura?: number | null
-        }
-        Update: {
-          fecha_lectura?: string | null
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-          valor_lectura?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lecturas_de_pruebas_montaje_id_fkey"
-            columns: ["montaje_id"]
-            isOneToOne: false
-            referencedRelation: "montajes_de_laboratorio"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lecturas_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "pruebas_ordenes_trabajo"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "lecturas_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestra"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "lecturas_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestratotal"
-            referencedColumns: ["prueba_id"]
-          },
-        ]
-      }
-      montajes_de_laboratorio: {
-        Row: {
-          cantidad_lecturas: number | null
-          cantidad_repeticiones: number | null
-          fecha_creacion: string | null
-          id: number
-          nombre: string | null
-        }
-        Insert: {
-          cantidad_lecturas?: number | null
-          cantidad_repeticiones?: number | null
-          fecha_creacion?: string | null
-          id?: never
-          nombre?: string | null
-        }
-        Update: {
-          cantidad_lecturas?: number | null
-          cantidad_repeticiones?: number | null
-          fecha_creacion?: string | null
-          id?: never
-          nombre?: string | null
         }
         Relationships: []
       }
@@ -455,53 +345,6 @@ export type Database = {
           unidades?: string | null
         }
         Relationships: []
-      }
-      pruebas_en_montajes: {
-        Row: {
-          id: number
-          montaje_id: number | null
-          prueba_id: number | null
-        }
-        Insert: {
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-        }
-        Update: {
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pruebas_en_montajes_montaje_id_fkey"
-            columns: ["montaje_id"]
-            isOneToOne: false
-            referencedRelation: "montajes_de_laboratorio"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pruebas_en_montajes_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "pruebas_ordenes_trabajo"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "pruebas_en_montajes_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestra"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "pruebas_en_montajes_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestratotal"
-            referencedColumns: ["prueba_id"]
-          },
-        ]
       }
       pruebas_ordenes_trabajo: {
         Row: {
@@ -802,25 +645,21 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -838,16 +677,14 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -863,16 +700,14 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -888,16 +723,14 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -905,21 +738,22 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
