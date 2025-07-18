@@ -3,6 +3,7 @@
 //import ObjetivosConPreciosTable from "./components/TableObjetivosConPrecio";
 import TableOrdenesMaestra from "./modulos/ordenes-trabajo/componentes/TableOrdenesMaestra";
 import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
+import { EficaciaMain } from "./modulos/eficacia/componentes/eficacia-main";
 import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
@@ -15,6 +16,8 @@ function App() {
         return <ObjetivosConPreciosTable />;
       case "maestra":
         return <TableOrdenesMaestra />;
+      case "eficacia":
+        return <EficaciaMain />;
       default:
         return <ObjetivosConPreciosTable />;
     }
