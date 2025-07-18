@@ -13,17 +13,33 @@ export interface EditableFields {
 
 // Función para obtener todos los datos de la vista maestra total
 export const getVistaMaestraTotal = async (): Promise<VistaMaestraTotalRow[]> => {
-  const { data, error } = await supabase
-    .from("vistamaestratotal")
-    .select("*")
-    .order("prueba_id", { ascending: false })
+  let allData: VistaMaestraTotalRow[] = []
+  let from = 0
+  const pageSize = 1000
+  let hasMore = true
 
-  if (error) {
-    console.error("Error al obtener datos de vista maestra total:", error)
-    throw error
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from("vistamaestratotal")
+      .select("*")
+      .order("prueba_id", { ascending: false })
+      .range(from, from + pageSize - 1)
+
+    if (error) {
+      console.error("Error al obtener datos de vista maestra total:", error)
+      throw error
+    }
+
+    if (data && data.length > 0) {
+      allData = [...allData, ...data]
+      from += pageSize
+      hasMore = data.length === pageSize
+    } else {
+      hasMore = false
+    }
   }
 
-  return data || []
+  return allData
 }
 
 // Función para actualizar campos en la tabla pruebas_ordenes_trabajo
