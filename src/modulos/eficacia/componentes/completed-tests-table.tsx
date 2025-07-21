@@ -1,31 +1,35 @@
-"use client"
-
-import { useMemo, useState } from "react"
+import { useMemo, useState } from "react";
 import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
   type MRT_RowSelectionState,
-} from "material-react-table"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { FileText } from "lucide-react"
+} from "material-react-table";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { FileText } from "lucide-react";
 
 // Tipo de datos para las pruebas completadas
 type CompletedTest = {
-  id: string
-  numeroMontaje: string
-  nombreMontaje: string
-  ot: string
-  objetivo: string
-  fechaCreacion: string
-  numeroLecturas: number
-  lecturasCompletadas: number
-  eficaciaPromedio: number
-  estado: "Completado" | "En Proceso"
-  pruebas: string[]
-}
+  id: string;
+  numeroMontaje: string;
+  nombreMontaje: string;
+  ot: string;
+  objetivo: string;
+  fechaCreacion: string;
+  numeroLecturas: number;
+  lecturasCompletadas: number;
+  eficaciaPromedio: number;
+  estado: "Completado" | "En Proceso";
+  pruebas: string[];
+};
 
 // Datos de ejemplo
 const mockCompletedTests: CompletedTest[] = [
@@ -68,14 +72,16 @@ const mockCompletedTests: CompletedTest[] = [
     estado: "Completado",
     pruebas: ["1208", "1209"],
   },
-]
+];
 
 interface CompletedTestsTableProps {
-  onGenerateReport: (selectedTests: CompletedTest[]) => void
+  onGenerateReport: (selectedTests: CompletedTest[]) => void;
 }
 
-export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTableProps) {
-  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({})
+export function CompletedTestsTable({
+  onGenerateReport,
+}: CompletedTestsTableProps) {
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
   const columns = useMemo<MRT_ColumnDef<CompletedTest>[]>(
     () => [
@@ -104,7 +110,7 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
         header: "Pruebas",
         size: 150,
         Cell: ({ cell }) => {
-          const pruebas = cell.getValue<string[]>()
+          const pruebas = cell.getValue<string[]>();
           return (
             <div className="flex flex-wrap gap-1">
               {pruebas.map((prueba, index) => (
@@ -113,27 +119,34 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
                 </Badge>
               ))}
             </div>
-          )
+          );
         },
       },
       {
         accessorKey: "fechaCreacion",
         header: "Fecha Creación",
         size: 130,
-        Cell: ({ cell }) => new Date(cell.getValue<string>()).toLocaleDateString("es-ES"),
+        Cell: ({ cell }) =>
+          new Date(cell.getValue<string>()).toLocaleDateString("es-ES"),
       },
       {
         accessorKey: "lecturasCompletadas",
         header: "Lecturas",
         size: 100,
         Cell: ({ row }) => {
-          const completadas = row.original.lecturasCompletadas
-          const total = row.original.numeroLecturas
+          const completadas = row.original.lecturasCompletadas;
+          const total = row.original.numeroLecturas;
           return (
-            <span className={completadas === total ? "text-green-600 font-medium" : "text-yellow-600"}>
+            <span
+              className={
+                completadas === total
+                  ? "text-green-600 font-medium"
+                  : "text-yellow-600"
+              }
+            >
               {completadas}/{total}
             </span>
-          )
+          );
         },
       },
       {
@@ -141,11 +154,11 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
         header: "Eficacia Promedio",
         size: 130,
         Cell: ({ cell }) => {
-          const eficacia = cell.getValue<number>()
-          const estado = (cell.row.original as CompletedTest).estado
+          const eficacia = cell.getValue<number>();
+          const estado = (cell.row.original as CompletedTest).estado;
 
           if (estado === "En Proceso") {
-            return <span className="text-gray-500">-</span>
+            return <span className="text-gray-500">-</span>;
           }
 
           return (
@@ -154,13 +167,13 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
                 eficacia >= 80
                   ? "text-green-600 font-bold"
                   : eficacia >= 60
-                    ? "text-yellow-600 font-bold"
-                    : "text-red-600 font-bold"
+                  ? "text-yellow-600 font-bold"
+                  : "text-red-600 font-bold"
               }
             >
               {eficacia.toFixed(1)}%
             </span>
-          )
+          );
         },
       },
       {
@@ -168,13 +181,17 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
         header: "Estado",
         size: 120,
         Cell: ({ cell }) => {
-          const estado = cell.getValue<string>()
-          return <Badge variant={estado === "Completado" ? "default" : "secondary"}>{estado}</Badge>
+          const estado = cell.getValue<string>();
+          return (
+            <Badge variant={estado === "Completado" ? "default" : "secondary"}>
+              {estado}
+            </Badge>
+          );
         },
       },
     ],
-    [],
-  )
+    []
+  );
 
   const table = useMaterialReactTable({
     columns,
@@ -209,24 +226,33 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
       },
       density: "compact",
     },
-  })
+  });
 
-  const selectedTests = Object.keys(rowSelection).map((key) => mockCompletedTests[Number.parseInt(key)])
-  const completedSelectedTests = selectedTests.filter((test) => test.estado === "Completado")
+  const selectedTests = Object.keys(rowSelection).map(
+    (key) => mockCompletedTests[Number.parseInt(key)]
+  );
+  const completedSelectedTests = selectedTests.filter(
+    (test) => test.estado === "Completado"
+  );
 
   const handleGenerateReport = () => {
     if (completedSelectedTests.length === 0) {
-      alert("Seleccione al menos una prueba completada para generar el informe")
-      return
+      alert(
+        "Seleccione al menos una prueba completada para generar el informe"
+      );
+      return;
     }
-    onGenerateReport(completedSelectedTests)
-  }
+    onGenerateReport(completedSelectedTests);
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Pruebas Completadas</CardTitle>
-        <CardDescription>Seleccione las pruebas completadas para generar un informe en formato DOCX</CardDescription>
+        <CardDescription>
+          Seleccione las pruebas completadas para generar un informe en formato
+          DOCX
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg border">
@@ -237,10 +263,13 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
           <div className="space-y-2">
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
               <div>
-                <p className="text-sm font-medium">{selectedTests.length} montaje(s) seleccionado(s)</p>
+                <p className="text-sm font-medium">
+                  {selectedTests.length} montaje(s) seleccionado(s)
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {completedSelectedTests.length} completado(s) - {selectedTests.length - completedSelectedTests.length}{" "}
-                  en proceso
+                  {completedSelectedTests.length} completado(s) -{" "}
+                  {selectedTests.length - completedSelectedTests.length} en
+                  proceso
                 </p>
               </div>
               <Button
@@ -254,11 +283,13 @@ export function CompletedTestsTable({ onGenerateReport }: CompletedTestsTablePro
             </div>
 
             {completedSelectedTests.length < selectedTests.length && (
-              <p className="text-xs text-yellow-600">Solo se incluirán las pruebas completadas en el informe</p>
+              <p className="text-xs text-yellow-600">
+                Solo se incluirán las pruebas completadas en el informe
+              </p>
             )}
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

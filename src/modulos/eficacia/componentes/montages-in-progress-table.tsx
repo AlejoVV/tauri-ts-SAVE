@@ -1,89 +1,79 @@
-"use client"
-
-import { useMemo, useState } from "react"
-import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from "material-react-table"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Edit, Eye, Calculator } from "lucide-react"
-import { ResultsEntryModal } from "./results-entry-modal"
-import { EfficacyCalculationModal } from "./efficacy-calculation-modal"
-
-// Tipo de datos para montajes en progreso
-type MontageInProgress = {
-  id: string
-  numeroMontaje: string
-  nombreMontaje: string
-  ot: string
-  objetivo: string
-  fechaCreacion: string
-  numeroLecturas: number
-  lecturasCompletadas: number
-  numeroRepeticiones: number
-  numeroInicialIndividuos: number
-  pruebas: string[]
-  productos: string[]
-  estado: "En Proceso" | "Listo para Cálculo"
-  ultimaActualizacion: string
-}
-
-// Datos de ejemplo
-const mockMontagesInProgress: MontageInProgress[] = [
-  {
-    id: "1",
-    numeroMontaje: "M-001",
-    nombreMontaje: "Montaje Control Plagas Tomate",
-    ot: "OT-2024-001",
-    objetivo: "Control de plagas",
-    fechaCreacion: "2024-01-15",
-    numeroLecturas: 3,
-    lecturasCompletadas: 1,
-    numeroRepeticiones: 3,
-    numeroInicialIndividuos: 10,
-    pruebas: ["1204", "1205", "1207"],
-    productos: ["Fungicida A", "Insecticida B", "Herbicida D"],
-    estado: "En Proceso",
-    ultimaActualizacion: "2024-01-16",
-  },
-  {
-    id: "2",
-    numeroMontaje: "M-002",
-    nombreMontaje: "Montaje Fertilización Papa",
-    ot: "OT-2024-002",
-    objetivo: "Fertilización",
-    fechaCreacion: "2024-01-16",
-    numeroLecturas: 4,
-    lecturasCompletadas: 4,
-    numeroRepeticiones: 4,
-    numeroInicialIndividuos: 15,
-    pruebas: ["1206"],
-    productos: ["Fertilizante C"],
-    estado: "Listo para Cálculo",
-    ultimaActualizacion: "2024-01-18",
-  },
-  {
-    id: "3",
-    numeroMontaje: "M-003",
-    nombreMontaje: "Montaje Control Malezas Maíz",
-    ot: "OT-2024-003",
-    objetivo: "Control de malezas",
-    fechaCreacion: "2024-01-17",
-    numeroLecturas: 3,
-    lecturasCompletadas: 2,
-    numeroRepeticiones: 3,
-    numeroInicialIndividuos: 12,
-    pruebas: ["1208", "1209"],
-    productos: ["Herbicida E", "Herbicida F"],
-    estado: "En Proceso",
-    ultimaActualizacion: "2024-01-19",
-  },
-]
+import { useMemo, useState, useEffect } from "react";
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+} from "material-react-table";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Edit, Eye, Calculator, RefreshCw, Trash2 } from "lucide-react";
+import { ResultsEntryModal } from "./results-entry-modal";
+import { EfficacyCalculationModal } from "./efficacy-calculation-modal";
+import type { MontageInProgress } from "../tipos/index";
+import { getMontajes, deleteMontaje } from "../servicios/index";
 
 export function MontagesInProgressTable() {
-  const [selectedMontage, setSelectedMontage] = useState<MontageInProgress | null>(null)
-  const [showResultsModal, setShowResultsModal] = useState(false)
-  const [showCalculationModal, setShowCalculationModal] = useState(false)
+  const [selectedMontage, setSelectedMontage] =
+    useState<MontageInProgress | null>(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [showCalculationModal, setShowCalculationModal] = useState(false);
+  const [montages, setMontages] = useState<MontageInProgress[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Función para cargar montajes
+  const loadMontages = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await getMontajes();
+      setMontages(data as MontageInProgress[]);
+    } catch (err) {
+      console.error("Error al cargar montajes:", err);
+      setError("Error al cargar los montajes. Por favor, intente de nuevo.");
+      setMontages([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Función para eliminar montaje
+  const handleDeleteMontage = async (montage: MontageInProgress) => {
+    const confirmDelete = window.confirm(
+      `¿Está seguro de que desea eliminar el montaje "${montage.nombreMontaje}"?\n\nEsta acción eliminará:\n- El montaje y toda su configuración\n- Todas las lecturas registradas\n- Todos los cálculos de eficacia\n\nEsta acción NO se puede deshacer.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setIsLoading(true);
+      const result = await deleteMontaje(parseInt(montage.id));
+
+      if (result.success) {
+        alert("Montaje eliminado exitosamente");
+        await loadMontages(); // Recargar la lista
+      } else {
+        alert(`Error al eliminar el montaje: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Error al eliminar montaje:", error);
+      alert("Error inesperado al eliminar el montaje");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Cargar montajes al montar el componente
+  useEffect(() => {
+    loadMontages();
+  }, []);
 
   const columns = useMemo<MRT_ColumnDef<MontageInProgress>[]>(
     () => [
@@ -112,7 +102,7 @@ export function MontagesInProgressTable() {
         header: "Pruebas",
         size: 120,
         Cell: ({ cell }) => {
-          const pruebas = cell.getValue<string[]>()
+          const pruebas = cell.getValue<string[]>();
           return (
             <div className="flex flex-wrap gap-1">
               {pruebas.slice(0, 2).map((prueba, index) => (
@@ -126,59 +116,91 @@ export function MontagesInProgressTable() {
                 </Badge>
               )}
             </div>
-          )
+          );
         },
       },
       {
-        accessorKey: "lecturasCompletadas",
+        accessorKey: "productos",
+        header: "Productos",
+        size: 150,
+        Cell: ({ cell }) => {
+          const productos = cell.getValue<string[]>();
+          const uniqueProducts = [...new Set(productos)]; // Eliminar duplicados
+          return (
+            <div className="flex flex-wrap gap-1">
+              {uniqueProducts.slice(0, 2).map((producto, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {producto.length > 15
+                    ? `${producto.substring(0, 15)}...`
+                    : producto}
+                </Badge>
+              ))}
+              {uniqueProducts.length > 2 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{uniqueProducts.length - 2}
+                </Badge>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "progreso",
         header: "Progreso",
         size: 150,
         Cell: ({ row }) => {
-          const completadas = row.original.lecturasCompletadas
-          const total = row.original.numeroLecturas
-          const percentage = (completadas / total) * 100
+          const lecturasCompletadas = row.original.lecturasCompletadas;
+          const totalLecturas = row.original.numeroLecturas;
+          const porcentaje =
+            totalLecturas > 0 ? (lecturasCompletadas / totalLecturas) * 100 : 0;
 
           return (
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
                 <span>
-                  {completadas}/{total} lecturas
+                  {lecturasCompletadas}/{totalLecturas} lecturas
                 </span>
-                <span>{percentage.toFixed(0)}%</span>
+                <span>{Math.round(porcentaje)}%</span>
               </div>
-              <Progress value={percentage} className="h-2" />
+              <Progress value={porcentaje} className="h-2" />
             </div>
-          )
+          );
         },
       },
       {
         accessorKey: "fechaCreacion",
-        header: "Creado",
-        size: 100,
-        Cell: ({ cell }) => new Date(cell.getValue<string>()).toLocaleDateString("es-ES"),
-      },
-      {
-        accessorKey: "ultimaActualizacion",
-        header: "Última Act.",
-        size: 100,
-        Cell: ({ cell }) => new Date(cell.getValue<string>()).toLocaleDateString("es-ES"),
+        header: "Fecha Creación",
+        size: 120,
       },
       {
         accessorKey: "estado",
         header: "Estado",
-        size: 120,
+        size: 150,
         Cell: ({ cell }) => {
-          const estado = cell.getValue<string>()
-          return <Badge variant={estado === "Listo para Cálculo" ? "default" : "secondary"}>{estado}</Badge>
+          const estado = cell.getValue<string>();
+          return (
+            <Badge
+              variant={
+                estado === "Listo para Cálculo" ? "default" : "secondary"
+              }
+              className={
+                estado === "Listo para Cálculo"
+                  ? "bg-green-100 text-green-800"
+                  : ""
+              }
+            >
+              {estado}
+            </Badge>
+          );
         },
       },
     ],
-    [],
-  )
+    []
+  );
 
   const table = useMaterialReactTable({
     columns,
-    data: mockMontagesInProgress,
+    data: montages,
     enableRowActions: true,
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
@@ -187,8 +209,8 @@ export function MontagesInProgressTable() {
           size="sm"
           variant="outline"
           onClick={() => {
-            setSelectedMontage(row.original)
-            setShowResultsModal(true)
+            setSelectedMontage(row.original);
+            setShowResultsModal(true);
           }}
           className="h-8 w-8 p-0"
           title="Registrar resultados"
@@ -201,8 +223,8 @@ export function MontagesInProgressTable() {
             size="sm"
             variant="outline"
             onClick={() => {
-              setSelectedMontage(row.original)
-              setShowCalculationModal(true)
+              setSelectedMontage(row.original);
+              setShowCalculationModal(true);
             }}
             className="h-8 w-8 p-0"
             title="Calcular eficacia"
@@ -215,14 +237,24 @@ export function MontagesInProgressTable() {
           size="sm"
           variant="outline"
           onClick={() => {
-            setSelectedMontage(row.original)
+            setSelectedMontage(row.original);
             // Aquí se abriría un modal de vista detallada
-            console.log("Ver detalles:", row.original)
+            console.log("Ver detalles:", row.original);
           }}
           className="h-8 w-8 p-0"
           title="Ver detalles"
         >
           <Eye className="h-3 w-3" />
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleDeleteMontage(row.original)}
+          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+          title="Eliminar montaje"
+        >
+          <Trash2 className="h-3 w-3" />
         </Button>
       </div>
     ),
@@ -249,21 +281,69 @@ export function MontagesInProgressTable() {
       },
       density: "compact",
     },
-  })
+    state: {
+      isLoading,
+    },
+  });
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardDescription>
+            Gestione los montajes activos, registre resultados de lecturas y
+            calcule eficacia cuando estén completos
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={loadMontages} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reintentar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          {/* Removed CardTitle */}
-          <CardDescription>
-            Gestione los montajes activos, registre resultados de lecturas y calcule eficacia cuando estén completos
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <CardDescription>
+              Gestione los montajes activos, registre resultados de lecturas y
+              calcule eficacia cuando estén completos
+            </CardDescription>
+            <Button
+              onClick={loadMontages}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+              />
+              Actualizar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border">
-            <MaterialReactTable table={table} />
-          </div>
+          {montages.length === 0 && !isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No hay montajes disponibles.</p>
+              <p className="text-sm mt-2">
+                Cree un nuevo montaje en la pestaña "Nuevo Montaje" para
+                comenzar.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border">
+              <MaterialReactTable table={table} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -274,8 +354,9 @@ export function MontagesInProgressTable() {
           onOpenChange={setShowResultsModal}
           montage={selectedMontage}
           onResultsSaved={() => {
-            setShowResultsModal(false)
-            // Aquí se actualizaría la tabla
+            setShowResultsModal(false);
+            // Recargar montajes después de guardar resultados
+            loadMontages();
           }}
         />
       )}
@@ -287,11 +368,12 @@ export function MontagesInProgressTable() {
           onOpenChange={setShowCalculationModal}
           montage={selectedMontage}
           onCalculationComplete={() => {
-            setShowCalculationModal(false)
-            // Aquí se actualizaría la tabla
+            setShowCalculationModal(false);
+            // Recargar montajes después del cálculo
+            loadMontages();
           }}
         />
       )}
     </div>
-  )
+  );
 }
