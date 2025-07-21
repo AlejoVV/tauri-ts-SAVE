@@ -101,45 +101,16 @@ export function MontagesInProgressTable() {
         accessorKey: "pruebas",
         header: "Pruebas",
         size: 120,
+        filterFn: "contains",
         Cell: ({ cell }) => {
           const pruebas = cell.getValue<string[]>();
           return (
             <div className="flex flex-wrap gap-1">
-              {pruebas.slice(0, 2).map((prueba, index) => (
+              {pruebas.map((prueba, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
                   {prueba}
                 </Badge>
               ))}
-              {pruebas.length > 2 && (
-                <Badge variant="outline" className="text-xs">
-                  +{pruebas.length - 2}
-                </Badge>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "productos",
-        header: "Productos",
-        size: 150,
-        Cell: ({ cell }) => {
-          const productos = cell.getValue<string[]>();
-          const uniqueProducts = [...new Set(productos)]; // Eliminar duplicados
-          return (
-            <div className="flex flex-wrap gap-1">
-              {uniqueProducts.slice(0, 2).map((producto, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {producto.length > 15
-                    ? `${producto.substring(0, 15)}...`
-                    : producto}
-                </Badge>
-              ))}
-              {uniqueProducts.length > 2 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{uniqueProducts.length - 2}
-                </Badge>
-              )}
             </div>
           );
         },
@@ -148,6 +119,7 @@ export function MontagesInProgressTable() {
         accessorKey: "progreso",
         header: "Progreso",
         size: 150,
+        enableColumnFilter: false,
         Cell: ({ row }) => {
           const lecturasCompletadas = row.original.lecturasCompletadas;
           const totalLecturas = row.original.numeroLecturas;
@@ -163,6 +135,23 @@ export function MontagesInProgressTable() {
                 <span>{Math.round(porcentaje)}%</span>
               </div>
               <Progress value={porcentaje} className="h-2" />
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "ultimaLectura",
+        header: "Última Lectura",
+        size: 150,
+        Cell: ({ cell }) => {
+          const ultimaLectura = cell.getValue<string | null>();
+          return (
+            <div className="text-sm">
+              {ultimaLectura || (
+                <span className="text-muted-foreground italic">
+                  Sin lecturas
+                </span>
+              )}
             </div>
           );
         },

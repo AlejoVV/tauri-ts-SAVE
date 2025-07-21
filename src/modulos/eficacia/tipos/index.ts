@@ -58,6 +58,7 @@ export interface MontageInProgress {
   condicionesIniciales: CondicionesIniciales;
   pruebas: string[];
   productos: string[];
+  ultimaLectura: string | null; // Nueva campo para la fecha de la última lectura
   estado: "En Proceso" | "Listo para Cálculo";
   ultimaActualizacion: string;
 }

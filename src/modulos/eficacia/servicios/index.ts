@@ -223,6 +223,18 @@ export const getMontajes = async () => {
 
         const lecturasCompletadas = lecturasError ? 0 : Math.floor((lecturasCount?.length || 0) / (pruebasRelaciones?.length || 1));
 
+        // Obtener la fecha de la última lectura
+        const { data: ultimaLecturaData, error: ultimaLecturaError } = await supabase
+          .from("lecturas_de_pruebas")
+          .select("fecha_lectura")
+          .eq("montaje_id", montaje.id)
+          .order("fecha_lectura", { ascending: false })
+          .limit(1);
+
+        const ultimaLectura = ultimaLecturaError || !ultimaLecturaData || ultimaLecturaData.length === 0 
+          ? null 
+          : ultimaLecturaData[0].fecha_lectura;
+
         // Extraer información de las pruebas
         const pruebas = pruebasRelaciones?.map(rel => (rel.prueba_id || 0).toString()) || [];
         const productos = pruebasRelaciones?.map(rel => 
@@ -264,7 +276,8 @@ export const getMontajes = async () => {
           pruebas,
           productos,
           estado: estado as "En Proceso" | "Listo para Cálculo",
-          ultimaActualizacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha"
+          ultimaActualizacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
+          ultimaLectura: ultimaLectura ? new Date(ultimaLectura).toLocaleDateString() : "Sin fecha"
         };
       })
     );
