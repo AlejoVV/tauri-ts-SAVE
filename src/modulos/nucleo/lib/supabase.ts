@@ -241,23 +241,32 @@ export type Database = {
         Row: {
           cantidad_lecturas: number | null
           cantidad_repeticiones: number | null
+          condiciones_iniciales: Json | null
           fecha_creacion: string | null
           id: number
           nombre: string | null
+          nombres_lecturas: Json | null
+          numero_montaje: string | null
         }
         Insert: {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
+          condiciones_iniciales?: Json | null
           fecha_creacion?: string | null
           id?: never
           nombre?: string | null
+          nombres_lecturas?: Json | null
+          numero_montaje?: string | null
         }
         Update: {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
+          condiciones_iniciales?: Json | null
           fecha_creacion?: string | null
           id?: never
           nombre?: string | null
+          nombres_lecturas?: Json | null
+          numero_montaje?: string | null
         }
         Relationships: []
       }
