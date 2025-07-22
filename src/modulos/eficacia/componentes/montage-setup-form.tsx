@@ -18,6 +18,7 @@ import type {
   MontageData,
   CondicionesIniciales,
 } from "../tipos/index";
+import { getNumeroRepeticionesPorObjetivo } from "../servicios/index";
 
 interface MontageSetupFormProps {
   selectedTests: EfficacyTestData[];
@@ -108,15 +109,24 @@ export function MontageSetupForm({
     return { testigo: newTestigo, pruebas: newPruebas };
   };
 
-  // Actualizar condiciones iniciales cuando cambien las pruebas seleccionadas (no el número de repeticiones)
+  // Actualizar condiciones iniciales y número de repeticiones según el objetivo de la primera prueba seleccionada
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      condicionesIniciales: adjustCondicionesIniciales(
-        prev.condicionesIniciales,
-        prev.numeroRepeticiones
-      ),
-    }));
+    const setRepeticionesPorObjetivo = async () => {
+      if (selectedTests.length > 0) {
+        const objetivo = selectedTests[0].objetivo;
+        const repeticiones = await getNumeroRepeticionesPorObjetivo(objetivo);
+        setFormData((prev) => ({
+          ...prev,
+          numeroRepeticiones: repeticiones,
+          condicionesIniciales: adjustCondicionesIniciales(
+            prev.condicionesIniciales,
+            repeticiones
+          ),
+        }));
+      }
+    };
+    setRepeticionesPorObjetivo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTests]);
 
   const handleNumeroLecturasChange = (value: number) => {
