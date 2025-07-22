@@ -107,7 +107,7 @@ export function EficaciaMain() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="space-y-6 p-6">
+      <div className="space-y-1 p-6">
         {/* Header */}
         <div className="space-y-2"></div>
 
@@ -115,10 +115,10 @@ export function EficaciaMain() {
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="space-y-6"
+          className="space-y-3"
         >
           <Card>
-            <CardContent className="flex flex-col items-center justify-center p-6">
+            <CardContent className="flex flex-col items-center justify-center p-2">
               {/* Update the TabsList className to occupy the full width */}
               <TabsList className="grid w-full grid-cols-4">
                 {tabs.map((tab) => (
