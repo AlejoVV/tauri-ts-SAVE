@@ -249,6 +249,8 @@ export const getMontajes = async () => {
         const primeraPrueba = pruebasRelaciones?.[0]?.pruebas_ordenes_trabajo;
         const ot = primeraPrueba?.prueba_orden_id?.toString() || "Sin OT";
         const objetivo = primeraPrueba?.objetivos?.objetivo_nombre || "Sin objetivo";
+        const finca = primeraPrueba?.fincas?.finca_nombre || "Sin finca";
+        const especie = primeraPrueba?.especie_vegetal?.especie_nombre || "Sin especie";
 
         // Usar los tipos correctos de Supabase
         const montajeConTiposCompletos = montaje as {
@@ -268,8 +270,11 @@ export const getMontajes = async () => {
           nombreMontaje: montaje.nombre || "Sin nombre",
           ot,
           objetivo,
+          finca,
+          especie,
           fechaCreacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
           numeroLecturas: montaje.cantidad_lecturas || 0,
+          nombresLecturas: montajeConTiposCompletos.nombres_lecturas || [],
           lecturasCompletadas,
           numeroRepeticiones: montaje.cantidad_repeticiones || 0,
           condicionesIniciales: montajeConTiposCompletos.condiciones_iniciales || { testigo: [], pruebas: {} },

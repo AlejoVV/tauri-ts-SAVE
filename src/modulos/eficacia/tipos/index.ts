@@ -51,8 +51,11 @@ export interface MontageInProgress {
   nombreMontaje: string;
   ot: string;
   objetivo: string;
+  finca: string;
+  especie: string;
   fechaCreacion: string;
   numeroLecturas: number;
+  nombresLecturas: string[];
   lecturasCompletadas: number;
   numeroRepeticiones: number;
   condicionesIniciales: CondicionesIniciales;
