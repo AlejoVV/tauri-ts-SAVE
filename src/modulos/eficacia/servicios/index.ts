@@ -646,3 +646,31 @@ export const getLecturaResultados = async (
     };
   }
 }; 
+
+/**
+ * Obtiene el número de repeticiones recomendado para un objetivo desde catalogo_eficacia
+ * Si no encuentra, retorna 4 por defecto
+ */
+export const getNumeroRepeticionesPorObjetivo = async (objetivo: string): Promise<number> => {
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia")
+      .select("numero_de_repeticiones")
+      .eq("objetivo_eficacia", objetivo)
+      .limit(1)
+      .single();
+
+    if (error || !data || typeof data.numero_de_repeticiones !== 'string') {
+      return 4;
+    }
+
+    // Extraer el número entre paréntesis
+    const match = data.numero_de_repeticiones.match(/\((\d+)\)/);
+    if (match && match[1]) {
+      return parseInt(match[1], 10);
+    }
+    return 4;
+  } catch (e) {
+    return 4;
+  }
+}; 

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      catalogo_eficacia: {
+        Row: {
+          calculo_de_eficacia: string | null
+          condicion_de_inoculacion: string | null
+          condiciones_ambientales: string | null
+          condiciones_de_aplicacion: string | null
+          metodos_de_registro: string | null
+          nombre_cientifico: string | null
+          numero_de_aplicaciones: string | null
+          numero_de_repeticiones: string | null
+          objetivo_eficacia: string
+          tipo_de_evaluacion: string | null
+          unidades_por_repetición: string | null
+        }
+        Insert: {
+          calculo_de_eficacia?: string | null
+          condicion_de_inoculacion?: string | null
+          condiciones_ambientales?: string | null
+          condiciones_de_aplicacion?: string | null
+          metodos_de_registro?: string | null
+          nombre_cientifico?: string | null
+          numero_de_aplicaciones?: string | null
+          numero_de_repeticiones?: string | null
+          objetivo_eficacia: string
+          tipo_de_evaluacion?: string | null
+          unidades_por_repetición?: string | null
+        }
+        Update: {
+          calculo_de_eficacia?: string | null
+          condicion_de_inoculacion?: string | null
+          condiciones_ambientales?: string | null
+          condiciones_de_aplicacion?: string | null
+          metodos_de_registro?: string | null
+          nombre_cientifico?: string | null
+          numero_de_aplicaciones?: string | null
+          numero_de_repeticiones?: string | null
+          objetivo_eficacia?: string
+          tipo_de_evaluacion?: string | null
+          unidades_por_repetición?: string | null
+        }
+        Relationships: []
+      }
       companias: {
         Row: {
           compania_id: number
