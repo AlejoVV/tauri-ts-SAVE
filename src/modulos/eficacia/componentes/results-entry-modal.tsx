@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { Camera, Plus, Save } from "lucide-react";
 import type { MontageInProgress } from "../tipos/index";
+import {
+  saveLecturaResultados,
+  getLecturaResultados,
+} from "../servicios/index";
+import { supabase } from "../../nucleo/lib/supabaseClient";
 
 interface ResultsEntryModalProps {
   open: boolean;
@@ -28,8 +33,60 @@ export function ResultsEntryModal({
   const [currentLectura, setCurrentLectura] = useState(0);
   const [showInitial, setShowInitial] = useState(false);
   const [results, setResults] = useState<Record<string, number[]>>({});
-  const [testigoResults, setTestigoResults] = useState<number[]>([]);
+  const [testigoResults, setTestigoResults] = useState<
+    Record<string, number[]>
+  >({});
   const [photos, setPhotos] = useState<File[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [lecturasGuardadas, setLecturasGuardadas] = useState<
+    Record<string, string>
+  >({}); // lectura -> fecha
+
+  // Cargar datos guardados cuando se abra el modal
+  useEffect(() => {
+    if (open && montage.id) {
+      loadSavedResults();
+    }
+  }, [open, montage.id]);
+
+  const loadSavedResults = async () => {
+    try {
+      setLoading(true);
+
+      // Obtener también las fechas de las lecturas guardadas
+      const { data: fechasLecturas } = await supabase
+        .from("resultados_lecturas")
+        .select("nombre_lectura, fecha_lectura")
+        .eq("montaje_id", parseInt(montage.id));
+
+      // Crear mapa de lecturas guardadas con sus fechas
+      const lecturasConFechas: Record<string, string> = {};
+      fechasLecturas?.forEach((item) => {
+        if (item.nombre_lectura && item.fecha_lectura) {
+          lecturasConFechas[item.nombre_lectura] = item.fecha_lectura;
+        }
+      });
+      setLecturasGuardadas(lecturasConFechas);
+
+      const {
+        testigoResults: savedTestigo,
+        pruebaResults: savedPruebas,
+        success,
+        error,
+      } = await getLecturaResultados(parseInt(montage.id));
+
+      if (success) {
+        setTestigoResults(savedTestigo);
+        setResults(savedPruebas);
+      } else if (error) {
+        console.error("Error al cargar resultados:", error);
+      }
+    } catch (error) {
+      console.error("Error al cargar resultados:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Usar nombres de lecturas reales de la base de datos o generar por defecto
   const lecturas = Array.from({ length: montage.numeroLecturas }, (_, i) => {
@@ -55,11 +112,12 @@ export function ResultsEntryModal({
   };
 
   const handleTestigoChange = (repeticionIndex: number, value: number) => {
-    const newTestigoResults = [...testigoResults];
-    while (newTestigoResults.length < montage.numeroRepeticiones) {
-      newTestigoResults.push(0);
+    const key = `Testigo-${currentLecturaName}`;
+    const newTestigoResults = { ...testigoResults };
+    if (!newTestigoResults[key]) {
+      newTestigoResults[key] = Array(montage.numeroRepeticiones).fill(0);
     }
-    newTestigoResults[repeticionIndex] = value;
+    newTestigoResults[key][repeticionIndex] = value;
     setTestigoResults(newTestigoResults);
   };
 
@@ -71,12 +129,36 @@ export function ResultsEntryModal({
   };
 
   const handleSaveLectura = async () => {
-    console.log("Guardando lectura:", currentLecturaName);
-    console.log("Resultados:", results);
-    console.log("Testigo:", testigoResults);
-    console.log("Fotos:", photos);
-    alert(`Lectura "${currentLecturaName}" guardada exitosamente`);
-    onResultsSaved();
+    try {
+      setLoading(true);
+
+      const { success, error } = await saveLecturaResultados(
+        parseInt(montage.id),
+        currentLecturaName,
+        testigoResults,
+        results,
+        montage.numeroRepeticiones
+      );
+
+      if (success) {
+        // Actualizar el estado de lecturas guardadas
+        setLecturasGuardadas((prev) => ({
+          ...prev,
+          [currentLecturaName]: new Date().toISOString(),
+        }));
+
+        alert(`Lectura "${currentLecturaName}" guardada exitosamente`);
+        // QUITAR esta línea que cierra el modal:
+        // onResultsSaved();
+      } else {
+        alert(`Error al guardar: ${error}`);
+      }
+    } catch (error) {
+      console.error("Error al guardar lectura:", error);
+      alert("Error inesperado al guardar la lectura");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getResultsForPrueba = (pruebaId: string) => {
@@ -85,9 +167,8 @@ export function ResultsEntryModal({
   };
 
   const getTestigoResults = () => {
-    return testigoResults.length > 0
-      ? testigoResults
-      : Array(montage.numeroRepeticiones).fill(0);
+    const key = `Testigo-${currentLecturaName}`;
+    return testigoResults[key] || Array(montage.numeroRepeticiones).fill(0);
   };
 
   const calculateAverage = (values: number[]) => {
@@ -98,6 +179,26 @@ export function ResultsEntryModal({
   const calculateTestigoAverage = () => {
     const testigo = getTestigoResults();
     return calculateAverage(testigo);
+  };
+
+  // Función para verificar si una lectura está guardada
+  const isLecturaGuardada = (lectura: string) => {
+    return lecturasGuardadas.hasOwnProperty(lectura);
+  };
+
+  // Función para obtener la fecha de una lectura guardada
+  const getFechaLectura = (lectura: string) => {
+    const fecha = lecturasGuardadas[lectura];
+    if (fecha) {
+      return new Date(fecha).toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return null;
   };
 
   return (
@@ -129,7 +230,7 @@ export function ResultsEntryModal({
           </div>
 
           <div className="p-3 space-y-3">
-            {/* Selector de lecturas más limpio */}
+            {/* Selector de lecturas */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex gap-2 flex-wrap">
                 {/* Botón Inicial */}
@@ -149,44 +250,68 @@ export function ResultsEntryModal({
                 </Button>
 
                 {/* Botones de lecturas */}
-                {lecturas.map((lectura, index) => (
-                  <Button
-                    key={index}
-                    variant={
-                      !showInitial && currentLectura === index
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() => {
-                      setShowInitial(false);
-                      setCurrentLectura(index);
-                    }}
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
-                      !showInitial && currentLectura === index
-                        ? "bg-blue-600 hover:bg-blue-700 text-white"
-                        : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {lectura}
-                  </Button>
-                ))}
+                {lecturas.map((lectura, index) => {
+                  const isGuardada = isLecturaGuardada(lectura);
+                  const isSelected = !showInitial && currentLectura === index;
+
+                  return (
+                    <Button
+                      key={index}
+                      variant={isSelected ? "default" : "outline"}
+                      onClick={() => {
+                        setShowInitial(false);
+                        setCurrentLectura(index);
+                      }}
+                      className={`px-4 py-2 text-sm font-medium transition-all relative ${
+                        isSelected
+                          ? isGuardada
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                          : isGuardada
+                          ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {lectura}
+                      {isGuardada && (
+                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></div>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Tabla de resultados estilo montaje */}
+            {/* Tabla de resultados */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {showInitial
-                    ? "Condiciones Iniciales"
-                    : `Resultados - ${currentLecturaName}`}
-                </h3>
-                {showInitial && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Número inicial de individuos por réplica establecido al
-                    crear el montaje
-                  </p>
-                )}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {showInitial
+                        ? "Condiciones Iniciales"
+                        : `Resultados - ${currentLecturaName}`}
+                    </h3>
+                    {showInitial && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Número inicial de individuos por réplica establecido al
+                        crear el montaje
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Mostrar fecha de lectura si está guardada */}
+                  {!showInitial && isLecturaGuardada(currentLecturaName) && (
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-green-700">
+                        ✓ Lectura guardada
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {getFechaLectura(currentLecturaName)}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -429,10 +554,11 @@ export function ResultsEntryModal({
                   <div className="flex items-center justify-center h-full">
                     <Button
                       onClick={handleSaveLectura}
+                      disabled={loading}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-base font-medium w-full"
                     >
                       <Save className="mr-2 h-4 w-4" />
-                      Guardar Lectura
+                      {loading ? "Guardando..." : "Guardar Lectura"}
                     </Button>
                   </div>
                 </div>

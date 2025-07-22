@@ -80,3 +80,16 @@ export interface CompletedTest {
   estado: "Completado" | "En Proceso";
   pruebas: string[];
 } 
+
+export interface ResultadoLectura {
+  id: number;
+  montaje_id: number;
+  nombre_lectura: string;
+  prueba_id: number | null;
+  es_testigo: boolean;
+  replica_numero: number;
+  valor_resultado: number;
+  fecha_registro: string;
+  fecha_lectura: string | null;
+  observaciones: string | null;
+} 

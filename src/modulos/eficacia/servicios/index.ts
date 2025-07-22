@@ -217,15 +217,16 @@ export const getMontajes = async () => {
 
         // Contar lecturas completadas (simulado por ahora)
         const { data: lecturasCount, error: lecturasError } = await supabase
-          .from("lecturas_de_pruebas")
-          .select("id", { count: "exact" })
+          .from("resultados_lecturas")
+          .select("id,es_testigo", { count: "exact" })
           .eq("montaje_id", montaje.id);
 
-        const lecturasCompletadas = lecturasError ? 0 : Math.floor((lecturasCount?.length || 0) / (pruebasRelaciones?.length || 1));
+        const totalReps = montaje.cantidad_repeticiones || 1;
+        const lecturasCompletadas = lecturasError ? 0 : Math.floor((lecturasCount?.filter(l => l.es_testigo)?.length || 0) / totalReps);
 
         // Obtener la fecha de la última lectura
         const { data: ultimaLecturaData, error: ultimaLecturaError } = await supabase
-          .from("lecturas_de_pruebas")
+          .from("resultados_lecturas")
           .select("fecha_lectura")
           .eq("montaje_id", montaje.id)
           .order("fecha_lectura", { ascending: false })
@@ -314,7 +315,7 @@ export const deleteMontaje = async (montajeId: number): Promise<{ success: boole
 
     // 2. Eliminar las lecturas del montaje
     const { error: lecturasError } = await supabase
-      .from("lecturas_de_pruebas")
+      .from("resultados_lecturas")
       .delete()
       .eq("montaje_id", montajeId);
 
@@ -487,6 +488,161 @@ export const getEfficacyTestsStats = async (): Promise<{
       totalPruebas: 0,
       pruebasDisponibles: 0,
       pruebasEnMontajes: 0
+    };
+  }
+}; 
+
+/**
+ * Guarda los resultados de una lectura en la base de datos
+ */
+export const saveLecturaResultados = async (
+  montajeId: number,
+  nombreLectura: string,
+  testigoResults: Record<string, number[]>,
+  pruebaResults: Record<string, number[]>,
+  numeroRepeticiones: number
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const resultadosData: any[] = [];
+    const fechaRegistro = new Date().toISOString();
+
+    // Eliminar resultados existentes para esta lectura específica
+    const { error: deleteError } = await supabase
+      .from("resultados_lecturas")
+      .delete()
+      .eq("montaje_id", montajeId)
+      .eq("nombre_lectura", nombreLectura);
+
+    if (deleteError) {
+      console.error("Error al eliminar resultados existentes:", deleteError);
+      return { success: false, error: deleteError.message };
+    }
+
+    // Preparar datos del testigo
+    const testigoKey = `Testigo-${nombreLectura}`;
+    const testigoValues = testigoResults[testigoKey] || [];
+    for (let i = 0; i < numeroRepeticiones; i++) {
+      resultadosData.push({
+        montaje_id: montajeId,
+        nombre_lectura: nombreLectura,
+        prueba_id: null,
+        es_testigo: true,
+        replica_numero: i + 1,
+        valor_resultado: testigoValues[i] || 0,
+        fecha_registro: fechaRegistro,
+        fecha_lectura: fechaRegistro
+      });
+    }
+
+    // Preparar datos de las pruebas
+    Object.entries(pruebaResults).forEach(([key, values]) => {
+      if (key.endsWith(`-${nombreLectura}`)) {
+        const pruebaId = parseInt(key.replace(`-${nombreLectura}`, ''));
+        for (let i = 0; i < numeroRepeticiones; i++) {
+          resultadosData.push({
+            montaje_id: montajeId,
+            nombre_lectura: nombreLectura,
+            prueba_id: pruebaId,
+            es_testigo: false,
+            replica_numero: i + 1,
+            valor_resultado: values[i] || 0,
+            fecha_registro: fechaRegistro,
+            fecha_lectura: fechaRegistro
+          });
+        }
+      }
+    });
+
+    // Insertar nuevos resultados
+    const { error: insertError } = await supabase
+      .from("resultados_lecturas")
+      .insert(resultadosData);
+
+    if (insertError) {
+      console.error("Error al guardar resultados:", insertError);
+      return { success: false, error: insertError.message };
+    }
+
+    console.log("Lectura guardada exitosamente:", {
+      montajeId,
+      nombreLectura,
+      registros: resultadosData.length
+    });
+
+    return { success: true };
+
+  } catch (error) {
+    console.error("Error inesperado al guardar lectura:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error desconocido" 
+    };
+  }
+};
+
+/**
+ * Recupera los resultados de lecturas guardados para un montaje
+ */
+export const getLecturaResultados = async (
+  montajeId: number
+): Promise<{
+  testigoResults: Record<string, number[]>;
+  pruebaResults: Record<string, number[]>;
+  success: boolean;
+  error?: string;
+}> => {
+  try {
+    const { data: resultados, error } = await supabase
+      .from("resultados_lecturas")
+      .select("*")
+      .eq("montaje_id", montajeId)
+      .order("nombre_lectura")
+      .order("replica_numero");
+
+    if (error) {
+      console.error("Error al obtener resultados:", error);
+      return { 
+        testigoResults: {}, 
+        pruebaResults: {}, 
+        success: false, 
+        error: error.message 
+      };
+    }
+
+    const testigoResults: Record<string, number[]> = {};
+    const pruebaResults: Record<string, number[]> = {};
+
+    (resultados || []).forEach(resultado => {
+      if (resultado.es_testigo) {
+        // Es testigo
+        const testigoKey = `Testigo-${resultado.nombre_lectura}`;
+        if (!testigoResults[testigoKey]) {
+          testigoResults[testigoKey] = [];
+        }
+        testigoResults[testigoKey][resultado.replica_numero - 1] = resultado.valor_resultado || 0;
+      } else if (resultado.prueba_id) {
+        // Es prueba
+        const pruebaKey = `${resultado.prueba_id}-${resultado.nombre_lectura}`;
+        if (!pruebaResults[pruebaKey]) {
+          pruebaResults[pruebaKey] = [];
+        }
+        pruebaResults[pruebaKey][resultado.replica_numero - 1] = resultado.valor_resultado || 0;
+      }
+    });
+
+    return {
+      testigoResults,
+      pruebaResults,
+      success: true
+    };
+
+  } catch (error) {
+    console.error("Error inesperado al obtener resultados:", error);
+    return {
+      testigoResults: {},
+      pruebaResults: {},
+      success: false,
+      error: error instanceof Error ? error.message : "Error desconocido"
     };
   }
 }; 

@@ -184,59 +184,6 @@ export type Database = {
         }
         Relationships: []
       }
-      lecturas_de_pruebas: {
-        Row: {
-          fecha_lectura: string | null
-          id: number
-          montaje_id: number | null
-          prueba_id: number | null
-          valor_lectura: number | null
-        }
-        Insert: {
-          fecha_lectura?: string | null
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-          valor_lectura?: number | null
-        }
-        Update: {
-          fecha_lectura?: string | null
-          id?: never
-          montaje_id?: number | null
-          prueba_id?: number | null
-          valor_lectura?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lecturas_de_pruebas_montaje_id_fkey"
-            columns: ["montaje_id"]
-            isOneToOne: false
-            referencedRelation: "montajes_de_laboratorio"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lecturas_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "pruebas_ordenes_trabajo"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "lecturas_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestra"
-            referencedColumns: ["prueba_id"]
-          },
-          {
-            foreignKeyName: "lecturas_de_pruebas_prueba_id_fkey"
-            columns: ["prueba_id"]
-            isOneToOne: false
-            referencedRelation: "vistamaestratotal"
-            referencedColumns: ["prueba_id"]
-          },
-        ]
-      }
       montajes_de_laboratorio: {
         Row: {
           cantidad_lecturas: number | null
@@ -652,6 +599,74 @@ export type Database = {
           prueba_id?: number
         }
         Relationships: []
+      }
+      resultados_lecturas: {
+        Row: {
+          es_testigo: boolean | null
+          fecha_lectura: string | null
+          fecha_registro: string | null
+          id: number
+          montaje_id: number
+          nombre_lectura: string
+          observaciones: string | null
+          prueba_id: number | null
+          replica_numero: number
+          valor_resultado: number
+        }
+        Insert: {
+          es_testigo?: boolean | null
+          fecha_lectura?: string | null
+          fecha_registro?: string | null
+          id?: number
+          montaje_id: number
+          nombre_lectura: string
+          observaciones?: string | null
+          prueba_id?: number | null
+          replica_numero: number
+          valor_resultado: number
+        }
+        Update: {
+          es_testigo?: boolean | null
+          fecha_lectura?: string | null
+          fecha_registro?: string | null
+          id?: number
+          montaje_id?: number
+          nombre_lectura?: string
+          observaciones?: string | null
+          prueba_id?: number | null
+          replica_numero?: number
+          valor_resultado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resultados_lecturas_montaje_id_fkey"
+            columns: ["montaje_id"]
+            isOneToOne: false
+            referencedRelation: "montajes_de_laboratorio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resultados_lecturas_prueba_id_fkey"
+            columns: ["prueba_id"]
+            isOneToOne: false
+            referencedRelation: "pruebas_ordenes_trabajo"
+            referencedColumns: ["prueba_id"]
+          },
+          {
+            foreignKeyName: "resultados_lecturas_prueba_id_fkey"
+            columns: ["prueba_id"]
+            isOneToOne: false
+            referencedRelation: "vistamaestra"
+            referencedColumns: ["prueba_id"]
+          },
+          {
+            foreignKeyName: "resultados_lecturas_prueba_id_fkey"
+            columns: ["prueba_id"]
+            isOneToOne: false
+            referencedRelation: "vistamaestratotal"
+            referencedColumns: ["prueba_id"]
+          },
+        ]
       }
       usuarios: {
         Row: {
