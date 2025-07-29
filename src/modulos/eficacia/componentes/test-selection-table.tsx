@@ -25,7 +25,7 @@ interface TestSelectionTableProps {
   onTestsSelected: (tests: EfficacyTestData[]) => void;
   rowSelection: MRT_RowSelectionState;
   onRowSelectionChange: (selection: MRT_RowSelectionState) => void;
-  onCreateBasicMontage: () => void; // Función para crear montaje básico
+  onCreateBasicMontage: (tests: EfficacyTestData[]) => void; // Pasar pruebas como parámetro
 }
 
 export function TestSelectionTable({
@@ -307,7 +307,7 @@ export function TestSelectionTable({
     if (isValidSelection && selectedTests.length > 0) {
       // Actualizar la selección de pruebas y crear montaje básico
       onTestsSelected(selectedTests);
-      onCreateBasicMontage();
+      onCreateBasicMontage(selectedTests);
     }
   };
 

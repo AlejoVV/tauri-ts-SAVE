@@ -56,8 +56,8 @@ export function EficaciaMain() {
   };
 
   // Crear montaje básico directamente desde selección de pruebas
-  const handleCreateBasicMontage = async () => {
-    if (selectedTests.length === 0) {
+  const handleCreateBasicMontage = async (tests: EfficacyTestData[]) => {
+    if (tests.length === 0) {
       alert("Debe seleccionar al menos una prueba para crear un montaje");
       return;
     }
@@ -66,7 +66,7 @@ export function EficaciaMain() {
 
     try {
       const montajeBasico: MontajeBasico = {
-        pruebasSeleccionadas: selectedTests,
+        pruebasSeleccionadas: tests,
       };
 
       const result = await createMontajeBasico(montajeBasico);
@@ -81,7 +81,7 @@ export function EficaciaMain() {
         setRefreshTestSelection((prev) => prev + 1);
 
         alert(
-          `¡Montaje creado exitosamente!\n\nID: ${result.montajeId}\nNombre: ${result.nombreGenerado}\nPruebas asociadas: ${selectedTests.length}\n\nPuede configurar el montaje desde la tabla de "Montajes en Curso".`
+          `¡Montaje creado exitosamente!\n\nID: ${result.montajeId}\nNombre: ${result.nombreGenerado}\nPruebas asociadas: ${tests.length}\n\nPuede configurar el montaje desde la tabla de "Montajes en Curso".`
         );
       } else {
         alert(`Error al crear el montaje: ${result.error}`);
