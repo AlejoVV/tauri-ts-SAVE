@@ -104,13 +104,23 @@ export const getEfficacyTestById = async (pruebaId: number): Promise<EfficacyTes
  */
 export const createMontajeBasico = async (
   montajeBasico: MontajeBasico
-): Promise<{ success: boolean; montajeId?: number; error?: string }> => {
+): Promise<{ success: boolean; montajeId?: number; error?: string; nombreGenerado?: string }> => {
   try {
-    // 1. Crear el montaje básico en la tabla montajes_de_laboratorio
+    // 1. Generar nombre automático basado en el OT de las pruebas
+    if (montajeBasico.pruebasSeleccionadas.length === 0) {
+      return { success: false, error: "Debe seleccionar al menos una prueba" };
+    }
+
+    const numeroOT = montajeBasico.pruebasSeleccionadas[0].ot;
+    const cantidadExistentes = await contarMontajesPorOT(numeroOT);
+    const secuencia = cantidadExistentes + 1;
+    const nombreGenerado = `OT-${numeroOT} M-${secuencia}`;
+
+    // 2. Crear el montaje básico en la tabla montajes_de_laboratorio
     const { data: montajeCreado, error: montajeError } = await supabase
       .from("montajes_de_laboratorio")
       .insert({
-        nombre: montajeBasico.nombreMontaje,
+        nombre: nombreGenerado, // Usar el nombre generado automáticamente
         fecha_creacion: new Date().toISOString(),
         // Los campos de configuración se dejan como null/default
         cantidad_lecturas: null,
@@ -132,7 +142,7 @@ export const createMontajeBasico = async (
 
     const montajeId = montajeCreado.id;
 
-    // 2. Crear las relaciones en pruebas_en_montajes
+    // 3. Crear las relaciones en pruebas_en_montajes
     const pruebasEnMontajes = montajeBasico.pruebasSeleccionadas.map((test: EfficacyTestData) => ({
       montaje_id: montajeId,
       prueba_id: test.id
@@ -155,11 +165,11 @@ export const createMontajeBasico = async (
 
     console.log("Montaje básico creado exitosamente:", {
       montajeId,
-      nombre: montajeBasico.nombreMontaje,
+      nombre: nombreGenerado,
       pruebasAsociadas: montajeBasico.pruebasSeleccionadas.length
     });
 
-    return { success: true, montajeId };
+    return { success: true, montajeId, nombreGenerado };
 
   } catch (error) {
     console.error("Error inesperado al crear montaje básico:", error);

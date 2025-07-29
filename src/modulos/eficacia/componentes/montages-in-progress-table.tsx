@@ -94,11 +94,6 @@ export function MontagesInProgressTable({
     () => [
       {
         accessorKey: "nombreMontaje",
-        header: "Nombre",
-        size: 120,
-      },
-      {
-        accessorKey: "nombreMontaje",
         header: "Nombre del Montaje",
         size: 200,
       },
@@ -427,14 +422,12 @@ export function MontagesInProgressTable({
                 </Button>
               </div>
               <MontageSetupForm
-                selectedTests={[]} // Se obtendrán desde el montaje
                 onMontageCreated={() => {
                   setShowSetupModal(false);
                   loadMontages();
                   onMontageConfigured?.();
                 }}
                 onBack={() => setShowSetupModal(false)}
-                isCreatingMontage={false}
                 montajeExistente={selectedMontage}
               />
             </div>

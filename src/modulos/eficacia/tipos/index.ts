@@ -36,8 +36,7 @@ export interface CondicionesIniciales {
 
 // Tipo para los datos del montaje básico (sin configuración de setup)
 export interface MontajeBasico {
-  nombreMontaje: string;
-  pruebasSeleccionadas: EfficacyTestData[];
+  pruebasSeleccionadas: EfficacyTestData[]; // Solo necesitamos las pruebas, el nombre se genera automáticamente
 }
 
 // Tipo para los datos del montaje completo (con configuración de setup)

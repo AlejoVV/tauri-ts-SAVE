@@ -62,17 +62,10 @@ export function EficaciaMain() {
       return;
     }
 
-    const nombreMontaje = prompt("Ingrese el nombre para el montaje:");
-    if (!nombreMontaje || nombreMontaje.trim() === "") {
-      alert("Debe ingresar un nombre para el montaje");
-      return;
-    }
-
     setIsCreatingMontage(true);
 
     try {
       const montajeBasico: MontajeBasico = {
-        nombreMontaje: nombreMontaje.trim(),
         pruebasSeleccionadas: selectedTests,
       };
 
@@ -88,7 +81,7 @@ export function EficaciaMain() {
         setRefreshTestSelection((prev) => prev + 1);
 
         alert(
-          `¡Montaje creado exitosamente!\n\nID: ${result.montajeId}\nNombre: ${nombreMontaje}\nPruebas asociadas: ${selectedTests.length}\n\nPuede configurar el montaje desde la tabla de "Montajes en Curso".`
+          `¡Montaje creado exitosamente!\n\nID: ${result.montajeId}\nNombre: ${result.nombreGenerado}\nPruebas asociadas: ${selectedTests.length}\n\nPuede configurar el montaje desde la tabla de "Montajes en Curso".`
         );
       } else {
         alert(`Error al crear el montaje: ${result.error}`);
