@@ -235,7 +235,6 @@ export type Database = {
           id: number
           nombre: string | null
           nombres_lecturas: Json | null
-          numero_montaje: string | null
         }
         Insert: {
           cantidad_lecturas?: number | null
@@ -245,7 +244,6 @@ export type Database = {
           id?: never
           nombre?: string | null
           nombres_lecturas?: Json | null
-          numero_montaje?: string | null
         }
         Update: {
           cantidad_lecturas?: number | null
@@ -255,7 +253,6 @@ export type Database = {
           id?: never
           nombre?: string | null
           nombres_lecturas?: Json | null
-          numero_montaje?: string | null
         }
         Relationships: []
       }
