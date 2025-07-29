@@ -24,23 +24,106 @@ import {
   getUnidadesPorRepeticionPorObjetivo,
   contarMontajesPorOT,
   updateMontajeSetup,
+  getMontajeById,
 } from "../servicios/index";
 
 interface MontageSetupFormProps {
-  selectedTests: EfficacyTestData[];
   onMontageCreated: (montageData: MontageData) => void;
   onBack: () => void;
-  isCreatingMontage?: boolean;
-  montajeExistente?: MontageInProgress; // Para configurar montajes existentes
+  montajeExistente: MontageInProgress; // Requerido - siempre configurando montajes existentes
 }
 
 export function MontageSetupForm({
-  selectedTests,
   onMontageCreated,
   onBack,
-  isCreatingMontage = false,
   montajeExistente,
 }: MontageSetupFormProps) {
+  const [pruebasMontaje, setPruebasMontaje] = useState<EfficacyTestData[]>([]);
+  const [isLoadingPruebas, setIsLoadingPruebas] = useState(true);
+
+  // Cargar las pruebas del montaje existente
+  useEffect(() => {
+    const loadPruebasMontaje = async () => {
+      try {
+        setIsLoadingPruebas(true);
+        const { pruebas } = await getMontajeById(parseInt(montajeExistente.id));
+
+        // Mapear las pruebas al formato EfficacyTestData
+        const pruebasFormateadas: EfficacyTestData[] = pruebas.map(
+          (relacion) => ({
+            id: relacion.prueba_id || 0,
+            ot: relacion.pruebas_ordenes_trabajo?.prueba_orden_id || 0,
+            prueba: relacion.prueba_id || 0,
+            finca:
+              relacion.pruebas_ordenes_trabajo?.fincas?.finca_nombre ||
+              "Sin finca",
+            objetivo:
+              relacion.pruebas_ordenes_trabajo?.objetivos?.objetivo_nombre ||
+              "Sin objetivo",
+            producto:
+              relacion.pruebas_ordenes_trabajo?.productos?.producto_nombre ||
+              "Sin producto",
+            especieVegetal:
+              relacion.pruebas_ordenes_trabajo?.especie_vegetal
+                ?.especie_nombre || "Sin especie",
+            fechaIngreso: "", // No disponible en esta consulta
+            estado: "Montaje",
+            dosis:
+              relacion.pruebas_ordenes_trabajo?.prueba_dosis_producto?.toString() ||
+              "0",
+            unidades:
+              relacion.pruebas_ordenes_trabajo?.prueba_producto_unid || "",
+            contacto: "", // No disponible en esta consulta
+          })
+        );
+
+        setPruebasMontaje(pruebasFormateadas);
+
+        // Actualizar condiciones iniciales cuando se cargan las pruebas
+        if (pruebasFormateadas.length > 0 && formData.numeroRepeticiones > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            condicionesIniciales:
+              prev.condicionesIniciales?.testigo?.length > 0
+                ? prev.condicionesIniciales
+                : initializeCondicionesInicialesWithPruebas(
+                    prev.numeroRepeticiones,
+                    pruebasFormateadas
+                  ),
+          }));
+        }
+      } catch (error) {
+        console.error("Error al cargar pruebas del montaje:", error);
+        alert("Error al cargar las pruebas del montaje");
+      } finally {
+        setIsLoadingPruebas(false);
+      }
+    };
+
+    loadPruebasMontaje();
+  }, [montajeExistente.id]);
+
+  // Función auxiliar para inicializar condiciones con pruebas específicas
+  const initializeCondicionesInicialesWithPruebas = (
+    numeroRepeticiones: number,
+    pruebas: EfficacyTestData[]
+  ): CondicionesIniciales => {
+    const testigo = Array(numeroRepeticiones).fill(0);
+    const pruebasObj: { [key: string]: any } = {};
+
+    pruebas.forEach((test) => {
+      const pruebaKey = `${test.id}`;
+      pruebasObj[pruebaKey] = {
+        numeroIndividuos: Array(numeroRepeticiones).fill(0),
+        producto: test.producto,
+        dosis: test.dosis,
+        unidades: test.unidades,
+      };
+    });
+
+    return { testigo, pruebas: pruebasObj };
+  };
+
   // Inicializar condiciones iniciales
   const initializeCondicionesIniciales = (
     numeroRepeticiones: number
@@ -48,7 +131,7 @@ export function MontageSetupForm({
     const testigo = Array(numeroRepeticiones).fill(0);
     const pruebas: { [key: string]: any } = {};
 
-    selectedTests.forEach((test) => {
+    pruebasMontaje.forEach((test) => {
       const pruebaKey = `${test.id}`;
       pruebas[pruebaKey] = {
         numeroIndividuos: Array(numeroRepeticiones).fill(0),
@@ -61,33 +144,20 @@ export function MontageSetupForm({
     return { testigo, pruebas };
   };
 
-  // Inicializar formData según si es montaje existente o nuevo
-  const [formData, setFormData] = useState<MontageData>(() => {
-    if (montajeExistente) {
-      // Configurar montaje existente
-      return {
-        nombreMontaje: montajeExistente.nombreMontaje,
-        numeroLecturas: montajeExistente.numeroLecturas || 1,
-        nombresLecturas:
-          montajeExistente.nombresLecturas.length > 0
-            ? montajeExistente.nombresLecturas
-            : ["Lectura 1"],
-        numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
-        condicionesIniciales:
-          montajeExistente.condicionesIniciales ||
-          initializeCondicionesIniciales(3),
-      };
-    } else {
-      // Nuevo montaje
-      return {
-        nombreMontaje: "Cargando...",
-        numeroLecturas: 1,
-        nombresLecturas: ["Lectura 1"],
-        numeroRepeticiones: 3,
-        condicionesIniciales: initializeCondicionesIniciales(3),
-      };
-    }
-  });
+  // Inicializar formData para montaje existente
+  const [formData, setFormData] = useState<MontageData>(() => ({
+    nombreMontaje: montajeExistente.nombreMontaje,
+    numeroLecturas: montajeExistente.numeroLecturas || 1,
+    nombresLecturas:
+      montajeExistente.nombresLecturas.length > 0
+        ? montajeExistente.nombresLecturas
+        : ["Lectura 1"],
+    numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
+    condicionesIniciales: montajeExistente.condicionesIniciales || {
+      testigo: [],
+      pruebas: {},
+    },
+  }));
 
   const [sobrescribirTodos, setSobrescribirTodos] = useState(false);
   const [valorSobrescribir, setValorSobrescribir] = useState(25);
@@ -112,7 +182,7 @@ export function MontageSetupForm({
 
     // Ajustar pruebas preservando valores existentes
     const newPruebas: { [key: string]: any } = {};
-    selectedTests.forEach((test) => {
+    pruebasMontaje.forEach((test) => {
       const pruebaKey = `${test.id}`;
       const currentPrueba = currentCondiciones.pruebas[pruebaKey];
 
@@ -145,8 +215,8 @@ export function MontageSetupForm({
   // Actualizar condiciones iniciales y número de repeticiones según el objetivo de la primera prueba seleccionada
   useEffect(() => {
     const setRepeticionesPorObjetivo = async () => {
-      if (selectedTests.length > 0) {
-        const objetivo = selectedTests[0].objetivo;
+      if (pruebasMontaje.length > 0) {
+        const objetivo = pruebasMontaje[0].objetivo;
         const repeticiones = await getNumeroRepeticionesPorObjetivo(objetivo);
         setFormData((prev) => ({
           ...prev,
@@ -160,13 +230,13 @@ export function MontageSetupForm({
     };
     setRepeticionesPorObjetivo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTests]);
+  }, [pruebasMontaje]);
 
   // Generar nombre automático del montaje
   useEffect(() => {
     const generarNombreMontaje = async () => {
-      if (selectedTests.length > 0) {
-        const numeroOT = selectedTests[0].ot;
+      if (pruebasMontaje.length > 0) {
+        const numeroOT = pruebasMontaje[0].ot;
         const cantidadExistentes = await contarMontajesPorOT(numeroOT);
         const secuencia = cantidadExistentes + 1;
         const nombreGenerado = `OT-${numeroOT} M-${secuencia}`;
@@ -179,13 +249,13 @@ export function MontageSetupForm({
     };
     generarNombreMontaje();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTests]);
+  }, [pruebasMontaje]);
 
   // Rellenar condiciones iniciales automáticamente por objetivo
   useEffect(() => {
     const rellenarCondicionesPorObjetivo = async () => {
-      if (selectedTests.length > 0) {
-        const objetivos = selectedTests.map((t) => t.objetivo);
+      if (pruebasMontaje.length > 0) {
+        const objetivos = pruebasMontaje.map((t) => t.objetivo);
         const unidadesPorObjetivo = await getUnidadesPorRepeticionPorObjetivo(
           objetivos
         );
@@ -195,7 +265,7 @@ export function MontageSetupForm({
 
         setFormData((prev) => {
           const newCondiciones = { ...prev.condicionesIniciales };
-          selectedTests.forEach((test) => {
+          pruebasMontaje.forEach((test) => {
             const pruebaKey = `${test.id}`;
             let valor = unidadesPorObjetivo[test.objetivo];
             // Extraer número de string tipo "Cinco (5)" o "25 individuos"
@@ -244,7 +314,7 @@ export function MontageSetupForm({
     };
     if (!sobrescribirTodos) rellenarCondicionesPorObjetivo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTests, formData.numeroRepeticiones, sobrescribirTodos]);
+  }, [pruebasMontaje, formData.numeroRepeticiones, sobrescribirTodos]);
 
   // Si el usuario activa el checkbox, rellenar todos los inputs con el valor indicado
   useEffect(() => {
@@ -341,35 +411,41 @@ export function MontageSetupForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (montajeExistente) {
-      // Actualizar montaje existente
-      try {
-        const result = await updateMontajeSetup(
-          parseInt(montajeExistente.id),
-          formData
-        );
-        if (result.success) {
-          alert("Montaje configurado exitosamente");
-          onMontageCreated(formData); // Llamar callback para cerrar modal y refrescar
-        } else {
-          alert(`Error al configurar el montaje: ${result.error}`);
-        }
-      } catch (error) {
-        console.error("Error al configurar montaje:", error);
-        alert("Error inesperado al configurar el montaje");
+    try {
+      const result = await updateMontajeSetup(
+        parseInt(montajeExistente.id),
+        formData
+      );
+      if (result.success) {
+        alert("Montaje configurado exitosamente");
+        onMontageCreated(formData); // Llamar callback para cerrar modal y refrescar
+      } else {
+        alert(`Error al configurar el montaje: ${result.error}`);
       }
-    } else {
-      // Crear nuevo montaje
-      onMontageCreated(formData);
+    } catch (error) {
+      console.error("Error al configurar montaje:", error);
+      alert("Error inesperado al configurar el montaje");
     }
   };
 
+  if (isLoadingPruebas) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="text-center py-8">
+            <p>Cargando información del montaje...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Resumen de pruebas seleccionadas */}
+      {/* Pruebas del montaje */}
       <Card>
         <CardHeader className="bg-white">
-          <CardTitle className="text-gray-900">Pruebas Seleccionadas</CardTitle>
+          <CardTitle className="text-gray-900">Pruebas del Montaje</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Información de control del montaje */}
@@ -380,7 +456,7 @@ export function MontageSetupForm({
                   Orden de Trabajo:
                 </span>
                 <span className="font-bold text-gray-900 text-base">
-                  {selectedTests[0]?.ot}
+                  {pruebasMontaje[0]?.ot}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -388,7 +464,7 @@ export function MontageSetupForm({
                   Objetivo:
                 </span>
                 <span className="font-bold text-gray-900 text-base">
-                  {selectedTests[0]?.objetivo}
+                  {pruebasMontaje[0]?.objetivo}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -396,7 +472,7 @@ export function MontageSetupForm({
                   Especie Vegetal:
                 </span>
                 <span className="font-bold text-gray-900 text-base">
-                  {selectedTests[0]?.especieVegetal}
+                  {pruebasMontaje[0]?.especieVegetal}
                 </span>
               </div>
             </div>
@@ -405,10 +481,10 @@ export function MontageSetupForm({
           {/* Lista de pruebas compacta */}
           <div>
             <span className="text-sm font-medium text-gray-700">
-              {selectedTests.length} prueba(s):
+              {pruebasMontaje.length} prueba(s):
             </span>
             <div className="flex flex-wrap gap-2 mt-2">
-              {selectedTests.map((test) => (
+              {pruebasMontaje.map((test) => (
                 <Badge key={test.id} variant="secondary" className="text-xs">
                   {test.prueba} - {test.producto}
                 </Badge>
@@ -570,7 +646,7 @@ export function MontageSetupForm({
                         <th className="px-4 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-100">
                           Testigo
                         </th>
-                        {selectedTests.map((test) => (
+                        {pruebasMontaje.map((test) => (
                           <th
                             key={test.id}
                             className="px-3 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[150px]"
@@ -633,7 +709,7 @@ export function MontageSetupForm({
                               </div>
                             </td>
                             {/* Columnas de pruebas */}
-                            {selectedTests.map((test) => (
+                            {pruebasMontaje.map((test) => (
                               <td
                                 key={test.id}
                                 className="px-4 py-2 border-r border-gray-200 text-center"
@@ -681,7 +757,7 @@ export function MontageSetupForm({
                             )}
                           </div>
                         </td>
-                        {selectedTests.map((test) => (
+                        {pruebasMontaje.map((test) => (
                           <td
                             key={test.id}
                             className="px-4 py-2 border-r border-gray-200"
@@ -704,8 +780,8 @@ export function MontageSetupForm({
               <Button type="button" variant="outline" onClick={onBack}>
                 Volver a Selección
               </Button>
-              <Button type="submit" disabled={isCreatingMontage}>
-                {isCreatingMontage ? "Creando Montaje..." : "Crear Montaje"}
+              <Button type="submit" disabled={isLoadingPruebas}>
+                {isLoadingPruebas ? "Cargando..." : "Configurar Montaje"}
               </Button>
             </div>
           </form>

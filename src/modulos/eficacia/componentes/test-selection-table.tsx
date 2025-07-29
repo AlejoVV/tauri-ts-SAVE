@@ -25,7 +25,7 @@ interface TestSelectionTableProps {
   onTestsSelected: (tests: EfficacyTestData[]) => void;
   rowSelection: MRT_RowSelectionState;
   onRowSelectionChange: (selection: MRT_RowSelectionState) => void;
-  onCreateBasicMontage?: () => void; // Nueva función para crear montaje básico
+  onCreateBasicMontage: () => void; // Función para crear montaje básico
 }
 
 export function TestSelectionTable({
@@ -305,13 +305,9 @@ export function TestSelectionTable({
 
   const handleContinue = () => {
     if (isValidSelection && selectedTests.length > 0) {
-      // Si existe la función para crear montaje básico, la usamos
-      if (onCreateBasicMontage) {
-        onCreateBasicMontage();
-      } else {
-        // Fallback al comportamiento anterior
-        onTestsSelected(selectedTests);
-      }
+      // Actualizar la selección de pruebas y crear montaje básico
+      onTestsSelected(selectedTests);
+      onCreateBasicMontage();
     }
   };
 
@@ -474,9 +470,7 @@ export function TestSelectionTable({
                 onClick={handleContinue}
                 disabled={!isValidSelection || selectedTests.length === 0}
               >
-                {onCreateBasicMontage
-                  ? "Crear Montaje"
-                  : "Continuar con Montaje"}
+                Crear Montaje
               </Button>
             </div>
           </div>
