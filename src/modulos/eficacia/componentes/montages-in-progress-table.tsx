@@ -407,29 +407,33 @@ export function MontagesInProgressTable({
             showSetupModal ? "flex" : "hidden"
           } items-center justify-center bg-black/50`}
         >
-          <div className="bg-white rounded-lg shadow-lg max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">
-                  Configurar Montaje: {selectedMontage.nombreMontaje}
-                </h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSetupModal(false)}
-                >
-                  Cancelar
-                </Button>
+          <div className="bg-white rounded-lg shadow-lg max-w-[85vw] w-[85vw] h-[96vh] max-h-[96vh] sm:max-w-[96vw] md:max-w-[96vw] lg:max-w-[96vw] xl:max-w-[96vw] overflow-hidden">
+            <div className="h-full w-full overflow-y-auto">
+              <div className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    Configurar Montaje: {selectedMontage.nombreMontaje}
+                  </h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSetupModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
               </div>
-              <MontageSetupForm
-                onMontageCreated={() => {
-                  setShowSetupModal(false);
-                  loadMontages();
-                  onMontageConfigured?.();
-                }}
-                onBack={() => setShowSetupModal(false)}
-                montajeExistente={selectedMontage}
-              />
+              <div className="p-8">
+                <MontageSetupForm
+                  onMontageCreated={() => {
+                    setShowSetupModal(false);
+                    loadMontages();
+                    onMontageConfigured?.();
+                  }}
+                  onBack={() => setShowSetupModal(false)}
+                  montajeExistente={selectedMontage}
+                />
+              </div>
             </div>
           </div>
         </div>
