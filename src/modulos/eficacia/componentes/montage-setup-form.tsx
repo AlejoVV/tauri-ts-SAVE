@@ -29,7 +29,7 @@ import {
 
 interface MontageSetupFormProps {
   onMontageCreated: (montageData: MontageData) => void;
-  onBack: () => void;
+  onBack?: () => void; // Opcional - el modal se puede cerrar desde fuera
   montajeExistente: MontageInProgress; // Requerido - siempre configurando montajes existentes
 }
 
@@ -776,10 +776,7 @@ export function MontageSetupForm({
                 </div>
               </div>
             </div>
-            <div className="flex justify-between pt-4">
-              <Button type="button" variant="outline" onClick={onBack}>
-                Volver a Selección
-              </Button>
+            <div className="flex justify-end pt-4">
               <Button type="submit" disabled={isLoadingPruebas}>
                 {isLoadingPruebas ? "Cargando..." : "Configurar Montaje"}
               </Button>

@@ -406,8 +406,17 @@ export function MontagesInProgressTable({
           className={`fixed inset-0 z-50 ${
             showSetupModal ? "flex" : "hidden"
           } items-center justify-center bg-black/50`}
+          onClick={(e) => {
+            // Cerrar modal si se hace clic en el overlay (fuera del contenido)
+            if (e.target === e.currentTarget) {
+              setShowSetupModal(false);
+            }
+          }}
         >
-          <div className="bg-white rounded-lg shadow-lg max-w-[85vw] w-[85vw] h-[96vh] max-h-[96vh] sm:max-w-[96vw] md:max-w-[96vw] lg:max-w-[96vw] xl:max-w-[96vw] overflow-hidden">
+          <div
+            className="bg-white rounded-lg shadow-lg max-w-[85vw] w-[85vw] h-[96vh] max-h-[96vh] sm:max-w-[96vw] md:max-w-[96vw] lg:max-w-[96vw] xl:max-w-[96vw] overflow-hidden"
+            onClick={(e) => e.stopPropagation()} // Evitar que se cierre al hacer clic dentro del modal
+          >
             <div className="h-full w-full overflow-y-auto">
               <div className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10">
                 <div className="flex justify-between items-center">
@@ -430,7 +439,6 @@ export function MontagesInProgressTable({
                     loadMontages();
                     onMontageConfigured?.();
                   }}
-                  onBack={() => setShowSetupModal(false)}
                   montajeExistente={selectedMontage}
                 />
               </div>
