@@ -196,8 +196,7 @@ export const updateMontajeSetup = async (
         cantidad_lecturas: montageData.numeroLecturas,
         cantidad_repeticiones: montageData.numeroRepeticiones,
         condiciones_iniciales: montageData.condicionesIniciales as any,
-        nombres_lecturas: montageData.nombresLecturas as any,
-        updated_at: new Date().toISOString()
+        nombres_lecturas: montageData.nombresLecturas as any
       })
       .eq("id", montajeId);
 
