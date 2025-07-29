@@ -4,6 +4,7 @@ import {
   useMaterialReactTable,
   type MRT_ColumnDef,
   type MRT_RowSelectionState,
+  type MRT_ColumnFiltersState,
 } from "material-react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,10 @@ export function TestSelectionTable({
     pruebasDisponibles: 0,
     pruebasEnMontajes: 0,
   });
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
+    []
+  );
+  const [globalFilter, setGlobalFilter] = useState<string>("");
 
   // Función para cargar datos
   const loadData = async () => {
@@ -81,12 +86,95 @@ export function TestSelectionTable({
     }
   };
 
+  // Función para aplicar filtros manualmente
+  const applyFilters = (data: EfficacyTestData[], excludeColumn?: string) => {
+    let filteredData = [...data];
+
+    // Aplicar filtro global
+    if (globalFilter) {
+      filteredData = filteredData.filter((item) =>
+        Object.values(item).some((value) =>
+          value?.toString().toLowerCase().includes(globalFilter.toLowerCase())
+        )
+      );
+    }
+
+    // Aplicar filtros de columna (excepto la excluida)
+    columnFilters.forEach((filter) => {
+      if (filter.id !== excludeColumn && filter.value) {
+        filteredData = filteredData.filter((item) => {
+          const cellValue = item[filter.id as keyof EfficacyTestData];
+          return cellValue?.toString() === filter.value;
+        });
+      }
+    });
+
+    return filteredData;
+  };
+
+  // Obtener valores únicos para los filtros select basados en datos filtrados
+  const uniqueOTs = useMemo(() => {
+    const filteredData = applyFilters(data, "ot");
+    const values = Array.from(
+      new Set(filteredData.map((item) => item.ot?.toString()).filter(Boolean))
+    );
+    return values.sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+  }, [data, columnFilters, globalFilter]);
+
+  const uniqueObjetivos = useMemo(() => {
+    const filteredData = applyFilters(data, "objetivo");
+    const values = Array.from(
+      new Set(filteredData.map((item) => item.objetivo).filter(Boolean))
+    );
+    return values.sort((a, b) => a.localeCompare(b, "es"));
+  }, [data, columnFilters, globalFilter]);
+
+  const uniqueEspecies = useMemo(() => {
+    const filteredData = applyFilters(data, "especieVegetal");
+    const values = Array.from(
+      new Set(filteredData.map((item) => item.especieVegetal).filter(Boolean))
+    );
+    return values.sort((a, b) => a.localeCompare(b, "es"));
+  }, [data, columnFilters, globalFilter]);
+
   const columns = useMemo<MRT_ColumnDef<EfficacyTestData>[]>(
     () => [
       {
         accessorKey: "ot",
         header: "OT",
-        size: 120,
+        size: 100,
+        minSize: 100,
+        maxSize: 100,
+        enableColumnFilter: true,
+        filterFn: "equals",
+        filterVariant: "select",
+        filterSelectOptions: uniqueOTs.map((ot) => ({ text: ot, value: ot })),
+      },
+      {
+        accessorKey: "objetivo",
+        header: "Objetivo",
+        size: 200,
+        enableColumnFilter: true,
+        filterFn: "equals",
+        filterVariant: "select",
+        filterSelectOptions: uniqueObjetivos.map((obj) => ({
+          text: obj,
+          value: obj,
+        })),
+      },
+      {
+        accessorKey: "especieVegetal",
+        header: "Especie Vegetal",
+        size: 140,
+        minSize: 140,
+        maxSize: 140,
+        enableColumnFilter: true,
+        filterFn: "equals",
+        filterVariant: "select",
+        filterSelectOptions: uniqueEspecies.map((esp) => ({
+          text: esp,
+          value: esp,
+        })),
       },
       {
         accessorKey: "prueba",
@@ -96,12 +184,7 @@ export function TestSelectionTable({
       {
         accessorKey: "finca",
         header: "Finca",
-        size: 150,
-      },
-      {
-        accessorKey: "objetivo",
-        header: "Objetivo",
-        size: 150,
+        size: 100,
       },
       {
         accessorKey: "producto",
@@ -117,11 +200,6 @@ export function TestSelectionTable({
         accessorKey: "unidades",
         header: "Unidades",
         size: 80,
-      },
-      {
-        accessorKey: "especieVegetal",
-        header: "Especie Vegetal",
-        size: 130,
       },
       {
         accessorKey: "fechaIngreso",
@@ -147,7 +225,7 @@ export function TestSelectionTable({
         },
       },
     ],
-    []
+    [uniqueOTs, uniqueObjetivos, uniqueEspecies]
   );
 
   // Validar selección: mismo OT, objetivo y especie vegetal
@@ -174,14 +252,25 @@ export function TestSelectionTable({
     data: data || [],
     enableRowSelection: true,
     enableMultiRowSelection: true,
+    enableColumnFilters: true,
+    enableGlobalFilter: true,
     onRowSelectionChange: setRowSelection,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     state: {
       rowSelection,
+      columnFilters,
+      globalFilter,
     },
     getRowId: (row) => row.id.toString(),
     muiTableContainerProps: {
       sx: {
         minHeight: "400px",
+      },
+    },
+    muiTableProps: {
+      sx: {
+        tableLayout: "fixed",
       },
     },
     muiTableHeadCellProps: {
@@ -201,6 +290,14 @@ export function TestSelectionTable({
         pageIndex: 0,
       },
       density: "compact",
+      showColumnFilters: true,
+    },
+    muiFilterTextFieldProps: {
+      size: "small",
+      variant: "outlined",
+      sx: {
+        minWidth: "100px",
+      },
     },
   });
 
@@ -344,7 +441,7 @@ export function TestSelectionTable({
                           </div>
                         </div>
                         <Badge variant="outline" className="text-xs">
-                          {test.finca}
+                          Finca: {test.finca}
                         </Badge>
                       </div>
                     ))}

@@ -19,7 +19,6 @@ import { FileText } from "lucide-react";
 // Tipo de datos para las pruebas completadas
 type CompletedTest = {
   id: string;
-  numeroMontaje: string;
   nombreMontaje: string;
   ot: string;
   objetivo: string;
@@ -35,7 +34,6 @@ type CompletedTest = {
 const mockCompletedTests: CompletedTest[] = [
   {
     id: "1",
-    numeroMontaje: "M-001",
     nombreMontaje: "Montaje Control Plagas Tomate",
     ot: "OT-2024-001",
     objetivo: "Control de plagas",
@@ -48,7 +46,6 @@ const mockCompletedTests: CompletedTest[] = [
   },
   {
     id: "2",
-    numeroMontaje: "M-002",
     nombreMontaje: "Montaje Fertilización Papa",
     ot: "OT-2024-002",
     objetivo: "Fertilización",
@@ -61,7 +58,6 @@ const mockCompletedTests: CompletedTest[] = [
   },
   {
     id: "3",
-    numeroMontaje: "M-003",
     nombreMontaje: "Montaje Control Malezas Maíz",
     ot: "OT-2024-003",
     objetivo: "Control de malezas",
@@ -85,11 +81,6 @@ export function CompletedTestsTable({
 
   const columns = useMemo<MRT_ColumnDef<CompletedTest>[]>(
     () => [
-      {
-        accessorKey: "numeroMontaje",
-        header: "Número Montaje",
-        size: 130,
-      },
       {
         accessorKey: "nombreMontaje",
         header: "Nombre Montaje",

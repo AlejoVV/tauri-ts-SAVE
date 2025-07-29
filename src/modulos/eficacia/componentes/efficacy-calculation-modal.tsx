@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +19,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Calculator, TrendingUp } from "lucide-react";
 import type { MontageInProgress } from "../tipos/index";
+import {
+  getLecturaResultados,
+  getMetodoCalculoPorObjetivo,
+} from "../servicios/index";
 
 interface EfficacyCalculationModalProps {
   open: boolean;
@@ -50,241 +54,256 @@ export function EfficacyCalculationModal({
 }: EfficacyCalculationModalProps) {
   const [selectedLecturas, setSelectedLecturas] = useState<string[]>([]);
   const [calculationMethod, setCalculationMethod] = useState<string>("");
-  const [efficacyResults, setEfficacyResults] = useState<any>(null);
+  const [efficacyResults, setEfficacyResults] = useState<{
+    [pruebaId: string]: number;
+  }>({});
+  const [lecturaPromedios, setLecturaPromedios] = useState<any>({});
+  const [loading, setLoading] = useState(false);
+  const [formula, setFormula] = useState("");
 
-  const lecturas = mockLecturas.slice(0, montage.numeroLecturas);
-
-  const handleLecturaToggle = (lectura: string, checked: boolean) => {
-    if (checked) {
-      setSelectedLecturas((prev) => [...prev, lectura]);
-    } else {
-      setSelectedLecturas((prev) => prev.filter((l) => l !== lectura));
-    }
-  };
-
-  const calculateEfficacy = () => {
-    if (selectedLecturas.length === 0 || !calculationMethod) {
-      alert("Seleccione al menos una lectura y un método de cálculo");
-      return;
-    }
-
-    // Cálculo de eficacia simulado
-    const results = montage.pruebas.map((prueba, index) => {
-      const testResults = mockResults[prueba as keyof typeof mockResults] || {};
-
-      // Calcular promedios para las lecturas seleccionadas
-      const averages = selectedLecturas.map((lectura) => {
-        const values = testResults[lectura] || [];
-        return values.reduce((sum, val) => sum + val, 0) / values.length;
+  // Cargar datos reales al abrir el modal
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    const fetchData = async () => {
+      // Obtener método de cálculo recomendado
+      const metodo = await getMetodoCalculoPorObjetivo(montage.objetivo);
+      setCalculationMethod(metodo);
+      // Mostrar la fórmula
+      if (metodo.toLowerCase().includes("abbott")) {
+        setFormula("Eficacia = ((Testigo - Tratado) / Testigo) * 100");
+      } else if (metodo.toLowerCase().includes("henderson")) {
+        setFormula(
+          "Eficacia = [1 - (Testigo Final * Tratado Inicial) / (Testigo Inicial * Tratado Final)] * 100"
+        );
+      } else {
+        setFormula(metodo);
+      }
+      // Obtener resultados de lecturas
+      const { testigoResults, pruebaResults } = await getLecturaResultados(
+        Number(montage.id)
+      );
+      // Determinar lecturas únicas
+      const allLecturas = new Set<string>();
+      Object.keys(testigoResults).forEach((k) =>
+        allLecturas.add(k.replace(/^Testigo-/, ""))
+      );
+      Object.keys(pruebaResults).forEach((k) => {
+        const parts = k.split("-");
+        if (parts.length > 1)
+          allLecturas.add(parts.slice(1).join("-").toString());
       });
+      const lecturasArr = Array.from(allLecturas);
+      setSelectedLecturas(lecturasArr);
+      // Calcular promedios por lectura y prueba
+      const promedios: any = {};
+      // Testigo
+      promedios["testigo"] = lecturasArr.map((nombreLectura) => {
+        const arr = testigoResults[`Testigo-${nombreLectura}`] || [];
+        if (arr.length === 0) return "-";
+        return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
+      });
+      // Pruebas
+      montage.pruebas.forEach((pruebaId: string) => {
+        promedios[pruebaId] = lecturasArr.map((nombreLectura) => {
+          const arr = pruebaResults[`${pruebaId}-${nombreLectura}`] || [];
+          if (arr.length === 0) return "-";
+          return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
+        });
+      });
+      setLecturaPromedios(promedios);
+      // Calcular reducción y eficacia por prueba
+      const eficacia: { [pruebaId: string]: number } = {};
+      montage.pruebas.forEach((pruebaId: string) => {
+        const inicial = Number(promedios[pruebaId][0]);
+        const final = Number(
+          promedios[pruebaId][promedios[pruebaId].length - 1]
+        );
+        const testigoInicial = Number(promedios["testigo"][0]);
+        const testigoFinal = Number(
+          promedios["testigo"][promedios["testigo"].length - 1]
+        );
+        let valor = 0;
+        if (metodo.toLowerCase().includes("abbott")) {
+          valor =
+            testigoFinal !== 0
+              ? ((testigoFinal - final) / testigoFinal) * 100
+              : 0;
+        } else if (metodo.toLowerCase().includes("henderson")) {
+          valor =
+            (1 - (testigoFinal * inicial) / (testigoInicial * final)) * 100;
+        } else {
+          valor = inicial - final;
+        }
+        eficacia[pruebaId] = Number.isFinite(valor)
+          ? Number(valor.toFixed(2))
+          : 0;
+      });
+      setEfficacyResults(eficacia);
+      setLoading(false);
+    };
+    fetchData();
+  }, [open, montage]);
 
-      // Cálculo de eficacia (fórmula simplificada)
-      const initialValue = averages[0] || 0;
-      const finalValue = averages[averages.length - 1] || 0;
-      const efficacy = ((initialValue - finalValue) / initialValue) * 100;
-
-      return {
-        prueba,
-        producto: montage.productos[index],
-        averages,
-        efficacy: Math.max(0, efficacy),
-        reduction: initialValue - finalValue,
-      };
-    });
-
-    setEfficacyResults(results);
+  // Handler para editar eficacia manualmente
+  const handleEfficacyEdit = (pruebaId: string, value: string) => {
+    setEfficacyResults((prev) => ({ ...prev, [pruebaId]: Number(value) }));
   };
 
+  // Handler para guardar
   const handleComplete = () => {
-    if (efficacyResults) {
-      // Aquí se guardaría el cálculo en la base de datos
-      console.log("Cálculo completado:", efficacyResults);
-      alert("Cálculo de eficacia completado y guardado");
-      onCalculationComplete();
-    }
+    // Aquí guardarías efficacyResults
+    onCalculationComplete();
   };
+
+  // Encabezados de columnas
+  const columns = [
+    {
+      key: "testigo",
+      label: "Testigo",
+      producto: "",
+      dosis: "",
+      unidades: "",
+    },
+    ...montage.pruebas.map((pruebaId: string, idx: number) => {
+      // Intentar obtener dosis y unidades desde condicionesIniciales
+      let dosis = "";
+      let unidades = "";
+      if (
+        montage.condicionesIniciales &&
+        montage.condicionesIniciales.pruebas &&
+        montage.condicionesIniciales.pruebas[pruebaId]
+      ) {
+        dosis = montage.condicionesIniciales.pruebas[pruebaId].dosis || "";
+        unidades =
+          montage.condicionesIniciales.pruebas[pruebaId].unidades || "";
+      }
+      return {
+        key: pruebaId,
+        label: `Prueba ${pruebaId}`,
+        producto: montage.productos[idx] || "",
+        dosis,
+        unidades,
+      };
+    }),
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-screen h-screen max-w-none max-h-none overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Cálculo de Eficacia - {montage.nombreMontaje}
           </DialogTitle>
           <DialogDescription>
-            Montaje: {montage.numeroMontaje} | Seleccione las lecturas y método
-            para calcular la eficacia
+            Montaje: {montage.nombreMontaje} | Objetivo: {montage.objetivo} |
+            Método: {calculationMethod}
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Información del montaje */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Pruebas del Montaje:</h4>
-            <div className="flex flex-wrap gap-2">
-              {montage.pruebas.map((prueba, index) => (
-                <Badge key={prueba} variant="secondary">
-                  {prueba} - {montage.productos[index]}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          {/* Selección de lecturas */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium">Selección de Lecturas</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {lecturas.map((lectura, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`lectura-${index}`}
-                    checked={selectedLecturas.includes(lectura)}
-                    onCheckedChange={(checked) =>
-                      handleLecturaToggle(lectura, checked as boolean)
-                    }
-                  />
-                  <Label
-                    htmlFor={`lectura-${index}`}
-                    className="text-sm font-medium"
-                  >
-                    {lectura}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Método de cálculo */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-medium">Método de Cálculo</h4>
-            <div className="space-y-2">
-              <Label>Método de Cálculo</Label>
-              <Select
-                value={calculationMethod}
-                onValueChange={setCalculationMethod}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar método" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="abbott">Fórmula de Abbott</SelectItem>
-                  <SelectItem value="henderson-tilton">
-                    Henderson-Tilton
-                  </SelectItem>
-                  <SelectItem value="porcentaje-reduccion">
-                    Porcentaje de Reducción
-                  </SelectItem>
-                  <SelectItem value="mortalidad-corregida">
-                    Mortalidad Corregida
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Botón de cálculo */}
-          <div className="flex justify-center">
-            <Button
-              onClick={calculateEfficacy}
-              disabled={selectedLecturas.length === 0 || !calculationMethod}
-              className="flex items-center gap-2"
-            >
-              <Calculator className="h-4 w-4" />
-              Calcular Eficacia
-            </Button>
-          </div>
-
-          {/* Resultados de eficacia */}
-          {efficacyResults && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-medium flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Resultados de Eficacia
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Método utilizado: {calculationMethod} | Lecturas:{" "}
-                {selectedLecturas.join(", ")}
-              </p>
-
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 p-3 text-left">
-                        Prueba
-                      </th>
-                      <th className="border border-gray-300 p-3 text-left">
-                        Producto
-                      </th>
-                      {selectedLecturas.map((lectura, index) => (
-                        <th
-                          key={index}
-                          className="border border-gray-300 p-3 text-center"
-                        >
-                          {lectura}
-                        </th>
-                      ))}
-                      <th className="border border-gray-300 p-3 text-center">
-                        Reducción
-                      </th>
-                      <th className="border border-gray-300 p-3 text-center">
-                        Eficacia (%)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {efficacyResults.map((result: any, index: number) => (
-                      <tr key={index}>
-                        <td className="border border-gray-300 p-3">
-                          {result.prueba}
-                        </td>
-                        <td className="border border-gray-300 p-3">
-                          {result.producto}
-                        </td>
-                        {result.averages.map(
-                          (avg: number, avgIndex: number) => (
-                            <td
-                              key={avgIndex}
-                              className="border border-gray-300 p-3 text-center"
-                            >
-                              {avg.toFixed(2)}
-                            </td>
-                          )
+        {loading ? (
+          <div className="text-center py-8">Cargando datos...</div>
+        ) : (
+          <div className="space-y-6">
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-300 rounded-lg">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-100">
+                      Lectura
+                    </th>
+                    {columns.map((col) => (
+                      <th
+                        key={col.key}
+                        className="px-4 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-100 min-w-[180px] whitespace-normal break-words"
+                        style={{
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        <div className="font-semibold">{col.label}</div>
+                        {col.key !== "testigo" && (
+                          <>
+                            <div className="text-xs font-bold text-gray-800">
+                              {col.producto}
+                            </div>
+                            {(col.dosis || col.unidades) && (
+                              <div className="text-xs text-gray-600">
+                                {col.dosis} {col.unidades}
+                              </div>
+                            )}
+                          </>
                         )}
-                        <td className="border border-gray-300 p-3 text-center">
-                          {result.reduction.toFixed(2)}
-                        </td>
-                        <td className="border border-gray-300 p-3 text-center font-bold">
-                          <span
-                            className={
-                              result.efficacy >= 80
-                                ? "text-green-600"
-                                : result.efficacy >= 60
-                                ? "text-yellow-600"
-                                : "text-red-600"
-                            }
-                          >
-                            {result.efficacy.toFixed(2)}%
-                          </span>
-                        </td>
-                      </tr>
+                      </th>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleComplete}
-                  className="flex items-center gap-2"
-                >
-                  <TrendingUp className="h-4 w-4" />
-                  Completar Cálculo
-                </Button>
-              </div>
+                  </tr>
+                </thead>
+                <tbody className="bg-white">
+                  {selectedLecturas.map((lectura, idx) => (
+                    <tr key={lectura} className="border-t border-gray-200">
+                      <td className="px-4 py-2 text-sm font-medium text-gray-900 border-r border-gray-200 bg-green-50">
+                        {lectura}
+                      </td>
+                      {columns.map((col) => (
+                        <td
+                          key={col.key}
+                          className="px-4 py-2 border-r border-gray-200 text-center"
+                        >
+                          {lecturaPromedios[col.key] &&
+                          lecturaPromedios[col.key][idx] !== undefined &&
+                          lecturaPromedios[col.key][idx] !== null &&
+                          lecturaPromedios[col.key][idx] !== ""
+                            ? lecturaPromedios[col.key][idx]
+                            : "-"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {/* Fila de Eficacia */}
+                  <tr className="border-t-2 border-gray-300 bg-yellow-50">
+                    <td className="px-4 py-2 text-sm font-bold text-gray-900 border-r border-gray-200">
+                      Eficacia (%)
+                    </td>
+                    {columns.map((col) =>
+                      col.key === "testigo" ? (
+                        <td
+                          key={col.key}
+                          className="px-4 py-2 border-r border-gray-200 text-center text-gray-400"
+                        >
+                          -
+                        </td>
+                      ) : (
+                        <td
+                          key={col.key}
+                          className="px-4 py-2 border-r border-gray-200 text-center"
+                        >
+                          <input
+                            type="number"
+                            value={efficacyResults[col.key] ?? ""}
+                            onChange={(e) =>
+                              handleEfficacyEdit(col.key, e.target.value)
+                            }
+                            className="w-20 text-center border border-gray-300 rounded"
+                          />
+                        </td>
+                      )
+                    )}
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+            <div className="text-sm text-gray-600 mt-2">
+              Fórmula aplicada: <span className="font-mono">{formula}</span>
+            </div>
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handleComplete}
+                className="flex items-center gap-2"
+              >
+                Guardar resultado definitivo
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -118,7 +118,7 @@ export function EfficacyCalculation({
             Cálculo de Eficacia - {montageData.nombreMontaje}
           </CardTitle>
           <CardDescription>
-            Montaje: {montageData.numeroMontaje} | Seleccione las lecturas y
+            Montaje: {montageData.nombreMontaje} | Seleccione las lecturas y
             método para calcular la eficacia
           </CardDescription>
         </CardHeader>

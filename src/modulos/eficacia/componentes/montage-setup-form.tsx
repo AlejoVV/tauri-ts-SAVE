@@ -18,7 +18,11 @@ import type {
   MontageData,
   CondicionesIniciales,
 } from "../tipos/index";
-import { getNumeroRepeticionesPorObjetivo } from "../servicios/index";
+import {
+  getNumeroRepeticionesPorObjetivo,
+  getUnidadesPorRepeticionPorObjetivo,
+  contarMontajesPorOT,
+} from "../servicios/index";
 
 interface MontageSetupFormProps {
   selectedTests: EfficacyTestData[];
@@ -54,13 +58,18 @@ export function MontageSetupForm({
   };
 
   const [formData, setFormData] = useState<MontageData>({
-    numeroMontaje: `M-${Date.now()}`,
-    nombreMontaje: "",
+    nombreMontaje: "Cargando...",
     numeroLecturas: 1,
     nombresLecturas: ["Lectura 1"],
     numeroRepeticiones: 3,
     condicionesIniciales: initializeCondicionesIniciales(3),
   });
+
+  const [sobrescribirTodos, setSobrescribirTodos] = useState(false);
+  const [valorSobrescribir, setValorSobrescribir] = useState(25);
+  const [valorEncontradoDB, setValorEncontradoDB] = useState<number | null>(
+    null
+  );
 
   // Función para ajustar condiciones iniciales preservando valores existentes
   const adjustCondicionesIniciales = (
@@ -128,6 +137,115 @@ export function MontageSetupForm({
     setRepeticionesPorObjetivo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTests]);
+
+  // Generar nombre automático del montaje
+  useEffect(() => {
+    const generarNombreMontaje = async () => {
+      if (selectedTests.length > 0) {
+        const numeroOT = selectedTests[0].ot;
+        const cantidadExistentes = await contarMontajesPorOT(numeroOT);
+        const secuencia = cantidadExistentes + 1;
+        const nombreGenerado = `OT-${numeroOT} M-${secuencia}`;
+
+        setFormData((prev) => ({
+          ...prev,
+          nombreMontaje: nombreGenerado,
+        }));
+      }
+    };
+    generarNombreMontaje();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTests]);
+
+  // Rellenar condiciones iniciales automáticamente por objetivo
+  useEffect(() => {
+    const rellenarCondicionesPorObjetivo = async () => {
+      if (selectedTests.length > 0) {
+        const objetivos = selectedTests.map((t) => t.objetivo);
+        const unidadesPorObjetivo = await getUnidadesPorRepeticionPorObjetivo(
+          objetivos
+        );
+
+        // Buscar el primer valor válido encontrado en la BD
+        let valorEncontrado: number | null = null;
+
+        setFormData((prev) => {
+          const newCondiciones = { ...prev.condicionesIniciales };
+          selectedTests.forEach((test) => {
+            const pruebaKey = `${test.id}`;
+            let valor = unidadesPorObjetivo[test.objetivo];
+            // Extraer número de string tipo "Cinco (5)" o "25 individuos"
+            let num = 0;
+            if (valor) {
+              const match = valor.match(/(\d+)/);
+              if (match) {
+                num = parseInt(match[1], 10);
+                // Guardar el primer valor válido encontrado
+                if (valorEncontrado === null && num > 0) {
+                  valorEncontrado = num;
+                }
+              }
+            }
+            // Si no se pudo extraer, dejar en 0
+            newCondiciones.pruebas[pruebaKey] = {
+              ...newCondiciones.pruebas[pruebaKey],
+              numeroIndividuos: Array(prev.numeroRepeticiones).fill(num),
+              producto: test.producto,
+              dosis: test.dosis,
+              unidades: test.unidades,
+            };
+          });
+
+          // Aplicar el valor encontrado también al testigo si existe
+          const valorTestigo = valorEncontrado || 0;
+          newCondiciones.testigo = Array(prev.numeroRepeticiones).fill(
+            valorTestigo
+          );
+
+          return {
+            ...prev,
+            condicionesIniciales: newCondiciones,
+          };
+        });
+
+        // Actualizar el estado del valor encontrado y el input de sobrescribir
+        if (valorEncontrado !== null && valorEncontrado > 0) {
+          setValorEncontradoDB(valorEncontrado);
+          setValorSobrescribir(valorEncontrado);
+        } else {
+          setValorEncontradoDB(null);
+          setValorSobrescribir(25); // Valor por defecto
+        }
+      }
+    };
+    if (!sobrescribirTodos) rellenarCondicionesPorObjetivo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTests, formData.numeroRepeticiones, sobrescribirTodos]);
+
+  // Si el usuario activa el checkbox, rellenar todos los inputs con el valor indicado
+  useEffect(() => {
+    if (sobrescribirTodos && valorSobrescribir > 0) {
+      setFormData((prev) => {
+        const newCondiciones = { ...prev.condicionesIniciales };
+        newCondiciones.testigo = Array(prev.numeroRepeticiones).fill(
+          valorSobrescribir
+        );
+        Object.keys(newCondiciones.pruebas).forEach((pruebaKey) => {
+          newCondiciones.pruebas[pruebaKey].numeroIndividuos = Array(
+            prev.numeroRepeticiones
+          ).fill(valorSobrescribir);
+        });
+        return {
+          ...prev,
+          condicionesIniciales: newCondiciones,
+        };
+      });
+    }
+    if (!sobrescribirTodos) {
+      // Cuando se desactiva, se vuelve a rellenar por objetivo (ya lo hace el otro useEffect)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sobrescribirTodos, valorSobrescribir, formData.numeroRepeticiones]);
 
   const handleNumeroLecturasChange = (value: number) => {
     const newNombresLecturas = Array.from(
@@ -259,29 +377,15 @@ export function MontageSetupForm({
       <Card>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="numero-montaje">Número de Montaje</Label>
-                <Input
-                  id="numero-montaje"
-                  value={formData.numeroMontaje}
-                  onChange={(e) =>
-                    setFormData({ ...formData, numeroMontaje: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nombre-montaje">Nombre del Montaje</Label>
                 <Input
                   id="nombre-montaje"
                   value={formData.nombreMontaje}
-                  onChange={(e) =>
-                    setFormData({ ...formData, nombreMontaje: e.target.value })
-                  }
-                  placeholder="Ej: Montaje Control Plagas Tomate"
-                  required
+                  readOnly
+                  className="bg-gray-100 cursor-not-allowed"
+                  placeholder="Se genera automáticamente"
                 />
               </div>
 
@@ -359,6 +463,55 @@ export function MontageSetupForm({
                 <p className="text-sm text-gray-600 mt-1">
                   Ingrese el número inicial de individuos para cada réplica
                 </p>
+                {valorEncontradoDB !== null && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600 font-semibold">✓</span>
+                      <span className="text-sm text-green-800">
+                        Se encontró configuración automática en la base de
+                        datos:
+                        <strong> {valorEncontradoDB} individuos</strong>{" "}
+                        aplicados a todas las pruebas y testigo
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4 mb-2">
+                <input
+                  type="checkbox"
+                  id="sobrescribir-todos"
+                  checked={sobrescribirTodos}
+                  onChange={(e) => setSobrescribirTodos(e.target.checked)}
+                  className="mr-2"
+                />
+                <Label htmlFor="sobrescribir-todos" className="mr-2">
+                  Numero de individuos igual para todas las pruebas
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    value={valorSobrescribir === 0 ? "" : valorSobrescribir}
+                    onChange={(e) =>
+                      setValorSobrescribir(
+                        e.target.value === "" ? 0 : Number(e.target.value)
+                      )
+                    }
+                    disabled={!sobrescribirTodos}
+                    className={`w-32 ${
+                      valorEncontradoDB !== null
+                        ? "border-green-500 bg-green-50"
+                        : ""
+                    }`}
+                    placeholder="Valor para todos"
+                  />
+                  {valorEncontradoDB !== null && (
+                    <div className="absolute -top-8 left-0 bg-green-100 border border-green-300 rounded px-2 py-1 text-xs text-green-800 whitespace-nowrap">
+                      ✓ Valor encontrado en BD: {valorEncontradoDB}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -375,14 +528,22 @@ export function MontageSetupForm({
                         {selectedTests.map((test) => (
                           <th
                             key={test.id}
-                            className="px-4 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[120px]"
+                            className="px-3 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[150px]"
                           >
                             <div className="space-y-1">
-                              <div className="font-semibold">{test.prueba}</div>
-                              <div className="text-xs text-gray-600">
+                              <div className="font-semibold text-blue-700">
+                                Prueba: {test.prueba}
+                              </div>
+                              <div className="text-xs text-gray-700 font-medium">
+                                {test.finca}
+                              </div>
+                              <div className="text-xs text-green-600 font-medium">
+                                {test.especieVegetal}
+                              </div>
+                              <div className="text-xs text-gray-800 font-semibold">
                                 {test.producto}
                               </div>
-                              <div className="text-xs text-blue-600">
+                              <div className="text-xs text-purple-600 font-medium">
                                 {test.dosis} {test.unidades}
                               </div>
                             </div>
@@ -494,7 +655,6 @@ export function MontageSetupForm({
                 </div>
               </div>
             </div>
-
             <div className="flex justify-between pt-4">
               <Button type="button" variant="outline" onClick={onBack}>
                 Volver a Selección

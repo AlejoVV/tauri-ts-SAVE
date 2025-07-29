@@ -36,11 +36,21 @@ export function ResultsEntryModal({
   const [testigoResults, setTestigoResults] = useState<
     Record<string, number[]>
   >({});
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<
+    Record<string, Record<string, File | null>>
+  >({});
   const [loading, setLoading] = useState(false);
   const [lecturasGuardadas, setLecturasGuardadas] = useState<
     Record<string, string>
   >({}); // lectura -> fecha
+  const [selectedPhoto, setSelectedPhoto] = useState<{
+    file: File;
+    title: string;
+  } | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   // Cargar datos guardados cuando se abra el modal
   useEffect(() => {
@@ -121,11 +131,81 @@ export function ResultsEntryModal({
     setTestigoResults(newTestigoResults);
   };
 
-  const handlePhotoUpload = (files: FileList | null) => {
-    if (files) {
-      const newPhotos = Array.from(files);
-      setPhotos((prev) => [...prev, ...newPhotos]);
+  const handlePhotoUpload = (
+    lectura: string,
+    pruebaId: string,
+    file: File | null
+  ) => {
+    if (file) {
+      setPhotos((prev) => ({
+        ...prev,
+        [lectura]: {
+          ...prev[lectura],
+          [pruebaId]: file,
+        },
+      }));
     }
+  };
+
+  const getPhotoForPrueba = (
+    lectura: string,
+    pruebaId: string
+  ): File | null => {
+    return photos[lectura]?.[pruebaId] || null;
+  };
+
+  const openPhotoModal = (
+    file: File,
+    pruebaId: string,
+    productInfo?: { nombre: string; dosis: string; unidades: string }
+  ) => {
+    let title = pruebaId === "testigo" ? "Testigo" : `Prueba ${pruebaId}`;
+
+    if (productInfo && pruebaId !== "testigo") {
+      title = `${title} - ${productInfo.nombre} (${productInfo.dosis} ${productInfo.unidades})`;
+    }
+
+    setSelectedPhoto({ file, title: `${title} - ${currentLecturaName}` });
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const closePhotoModal = () => {
+    setSelectedPhoto(null);
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+    setIsDragging(false);
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 0.5, 5));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => Math.max(prev - 0.5, 0.5));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPanOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoomLevel((prev) => Math.max(0.5, Math.min(5, prev + delta)));
   };
 
   const handleSaveLectura = async () => {
@@ -212,7 +292,7 @@ export function ResultsEntryModal({
             </h1>
             <div className="flex flex-wrap gap-6 text-sm text-gray-600">
               <span>
-                <strong>Montaje:</strong> {montage.numeroMontaje}
+                <strong>Montaje:</strong> {montage.nombreMontaje}
               </span>
               <span>
                 <strong>OT:</strong> {montage.ot}
@@ -324,7 +404,7 @@ export function ResultsEntryModal({
                       <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                         Testigo
                       </th>
-                      {montage.pruebas.slice(0, 3).map((prueba, index) => {
+                      {montage.pruebas.map((prueba, index) => {
                         // Obtener datos reales desde condicionesIniciales
                         const pruebaInfo =
                           montage.condicionesIniciales?.pruebas?.[prueba];
@@ -339,14 +419,22 @@ export function ResultsEntryModal({
                         return (
                           <th
                             key={prueba}
-                            className="px-4 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[120px]"
+                            className="px-3 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[150px]"
                           >
                             <div className="space-y-1">
-                              <div className="font-semibold">{prueba}</div>
-                              <div className="text-xs text-gray-600">
+                              <div className="font-semibold text-blue-700">
+                                Prueba: {prueba}
+                              </div>
+                              <div className="text-xs text-gray-700 font-medium">
+                                {montage.finca}
+                              </div>
+                              <div className="text-xs text-green-600 font-medium">
+                                {montage.especie}
+                              </div>
+                              <div className="text-xs text-gray-800 font-semibold">
                                 {productInfo.nombre}
                               </div>
-                              <div className="text-xs text-blue-600">
+                              <div className="text-xs text-purple-600 font-medium">
                                 {productInfo.dosis}{" "}
                                 {productInfo.unidades
                                   ? productInfo.unidades.toLowerCase()
@@ -398,7 +486,7 @@ export function ResultsEntryModal({
                                 </div>
                               )}
                             </td>
-                            {montage.pruebas.slice(0, 3).map((prueba) => {
+                            {montage.pruebas.map((prueba) => {
                               const pruebaResults = showInitial
                                 ? montage.condicionesIniciales?.pruebas?.[
                                     prueba
@@ -458,7 +546,7 @@ export function ResultsEntryModal({
                             : calculateTestigoAverage()}
                         </div>
                       </td>
-                      {montage.pruebas.slice(0, 3).map((prueba) => {
+                      {montage.pruebas.map((prueba) => {
                         const pruebaResults = showInitial
                           ? montage.condicionesIniciales?.pruebas?.[prueba]
                               ?.numeroIndividuos || []
@@ -476,96 +564,289 @@ export function ResultsEntryModal({
                         );
                       })}
                     </tr>
+
+                    {/* Fila de fotos - Solo para lecturas, no para condiciones iniciales */}
+                    {!showInitial && (
+                      <tr className="bg-green-50 border-t-2 border-green-200">
+                        <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
+                          <div className="text-sm font-semibold text-green-900">
+                            Fotos
+                          </div>
+                        </td>
+                        {/* Foto para testigo */}
+                        <td className="px-4 py-2 border-r border-gray-200 bg-gray-100">
+                          <div className="flex flex-col items-center gap-2">
+                            {getPhotoForPrueba(
+                              currentLecturaName,
+                              "testigo"
+                            ) ? (
+                              <div className="relative">
+                                <img
+                                  src={URL.createObjectURL(
+                                    getPhotoForPrueba(
+                                      currentLecturaName,
+                                      "testigo"
+                                    )!
+                                  )}
+                                  alt="Foto testigo"
+                                  className="w-32 h-24 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() =>
+                                    openPhotoModal(
+                                      getPhotoForPrueba(
+                                        currentLecturaName,
+                                        "testigo"
+                                      )!,
+                                      "testigo"
+                                    )
+                                  }
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePhotoUpload(
+                                      currentLecturaName,
+                                      "testigo",
+                                      null
+                                    );
+                                  }}
+                                  className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 hover:bg-red-600 text-white border-0"
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            ) : (
+                              <Label
+                                htmlFor={`photo-testigo-${currentLecturaName}`}
+                                className="cursor-pointer"
+                              >
+                                <div className="w-32 h-24 border-2 border-dashed border-gray-300 rounded flex items-center justify-center hover:border-gray-400 transition-colors">
+                                  <Camera className="h-5 w-5 text-gray-400" />
+                                </div>
+                              </Label>
+                            )}
+                            <Input
+                              id={`photo-testigo-${currentLecturaName}`}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                handlePhotoUpload(
+                                  currentLecturaName,
+                                  "testigo",
+                                  file
+                                );
+                              }}
+                            />
+                          </div>
+                        </td>
+                        {/* Fotos para cada prueba */}
+                        {montage.pruebas.map((prueba, index) => {
+                          // Obtener información del producto para cada prueba
+                          const pruebaInfo =
+                            montage.condicionesIniciales?.pruebas?.[prueba];
+                          const productInfo = {
+                            nombre:
+                              pruebaInfo?.producto ||
+                              montage.productos?.[index] ||
+                              "Sin producto",
+                            dosis: pruebaInfo?.dosis || "Sin dosis",
+                            unidades: pruebaInfo?.unidades || "Sin unidades",
+                          };
+
+                          return (
+                            <td
+                              key={prueba}
+                              className="px-4 py-2 border-r border-gray-200"
+                            >
+                              <div className="flex flex-col items-center gap-2">
+                                {getPhotoForPrueba(
+                                  currentLecturaName,
+                                  prueba
+                                ) ? (
+                                  <div className="relative">
+                                    <img
+                                      src={URL.createObjectURL(
+                                        getPhotoForPrueba(
+                                          currentLecturaName,
+                                          prueba
+                                        )!
+                                      )}
+                                      alt={`Foto prueba ${prueba}`}
+                                      className="w-32 h-24 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={() =>
+                                        openPhotoModal(
+                                          getPhotoForPrueba(
+                                            currentLecturaName,
+                                            prueba
+                                          )!,
+                                          prueba,
+                                          productInfo
+                                        )
+                                      }
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePhotoUpload(
+                                          currentLecturaName,
+                                          prueba,
+                                          null
+                                        );
+                                      }}
+                                      className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 hover:bg-red-600 text-white border-0"
+                                    >
+                                      ×
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Label
+                                    htmlFor={`photo-${prueba}-${currentLecturaName}`}
+                                    className="cursor-pointer"
+                                  >
+                                    <div className="w-32 h-24 border-2 border-dashed border-gray-300 rounded flex items-center justify-center hover:border-gray-400 transition-colors">
+                                      <Camera className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                  </Label>
+                                )}
+                                <Input
+                                  id={`photo-${prueba}-${currentLecturaName}`}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    handlePhotoUpload(
+                                      currentLecturaName,
+                                      prueba,
+                                      file
+                                    );
+                                  }}
+                                />
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Sección de fotos y botón en la misma fila - Solo para lecturas, no para condiciones iniciales */}
+            {/* Botón para guardar lectura - Solo para lecturas, no para condiciones iniciales */}
             {!showInitial && (
               <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">
-                  Documentación Fotográfica
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-                  {/* Subir fotos */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer">
-                    <Label htmlFor="photo-upload" className="cursor-pointer">
-                      <Plus className="mx-auto h-6 w-6 text-gray-400 mb-2" />
-                      <div className="text-xs font-medium text-gray-600">
-                        Subir fotos
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        PNG, JPG - 10MB
-                      </div>
-                    </Label>
-                    <Input
-                      id="photo-upload"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => handlePhotoUpload(e.target.files)}
-                    />
-                  </div>
-
-                  {/* Fotos subidas */}
-                  {photos.slice(0, 2).map((photo, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-lg overflow-hidden"
-                    >
-                      <div className="aspect-video">
-                        <img
-                          src={URL.createObjectURL(photo)}
-                          alt={`Foto ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Placeholders para fotos */}
-                  {photos.length === 0 && (
-                    <>
-                      <div className="border border-gray-200 rounded-lg bg-gray-50">
-                        <div className="aspect-video flex items-center justify-center">
-                          <Camera className="h-6 w-6 text-gray-300" />
-                        </div>
-                      </div>
-                      <div className="border border-gray-200 rounded-lg bg-gray-50">
-                        <div className="aspect-video flex items-center justify-center">
-                          <Camera className="h-6 w-6 text-gray-300" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Placeholder para foto 2 si solo hay una */}
-                  {photos.length === 1 && (
-                    <div className="border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="aspect-video flex items-center justify-center">
-                        <Camera className="h-6 w-6 text-gray-300" />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Botón guardar en la misma fila */}
-                  <div className="flex items-center justify-center h-full">
-                    <Button
-                      onClick={handleSaveLectura}
-                      disabled={loading}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-base font-medium w-full"
-                    >
-                      <Save className="mr-2 h-4 w-4" />
-                      {loading ? "Guardando..." : "Guardar Lectura"}
-                    </Button>
-                  </div>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={handleSaveLectura}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-8 py-3"
+                  >
+                    <Save className="h-5 w-5" />
+                    {loading ? "Guardando..." : "Guardar Lectura"}
+                  </Button>
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Modal de foto ampliada con zoom */}
+        {selectedPhoto && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+            onClick={closePhotoModal}
+          >
+            <div className="relative w-full h-full flex flex-col">
+              {/* Header del modal de foto */}
+              <div className="absolute top-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4 z-10">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">{selectedPhoto.title}</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleZoomOut();
+                        }}
+                        className="bg-white bg-opacity-20 text-white border-white border-opacity-50 hover:bg-opacity-30"
+                      >
+                        -
+                      </Button>
+                      <span className="text-sm min-w-[4rem] text-center">
+                        {Math.round(zoomLevel * 100)}%
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleZoomIn();
+                        }}
+                        className="bg-white bg-opacity-20 text-white border-white border-opacity-50 hover:bg-opacity-30"
+                      >
+                        +
+                      </Button>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={closePhotoModal}
+                      className="bg-white bg-opacity-20 text-white border-white border-opacity-50 hover:bg-opacity-30"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contenedor de la imagen */}
+              <div
+                className="flex-1 flex items-center justify-center overflow-hidden cursor-move"
+                onClick={(e) => e.stopPropagation()}
+                onWheel={handleWheel}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+              >
+                <img
+                  src={URL.createObjectURL(selectedPhoto.file)}
+                  alt={selectedPhoto.title}
+                  className="max-w-none select-none"
+                  style={{
+                    transform: `scale(${zoomLevel}) translate(${
+                      panOffset.x / zoomLevel
+                    }px, ${panOffset.y / zoomLevel}px)`,
+                    transition: isDragging ? "none" : "transform 0.1s ease-out",
+                    cursor:
+                      zoomLevel > 1
+                        ? isDragging
+                          ? "grabbing"
+                          : "grab"
+                        : "default",
+                  }}
+                  draggable={false}
+                />
+              </div>
+
+              {/* Footer con instrucciones */}
+              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center">
+                <div className="text-sm opacity-75">
+                  Scroll para zoom • Arrastra para desplazar • Click fuera para
+                  cerrar
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

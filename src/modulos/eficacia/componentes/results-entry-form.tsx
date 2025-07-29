@@ -112,7 +112,7 @@ export function ResultsEntryForm({
             Registro de Resultados - {montageData.nombreMontaje}
           </CardTitle>
           <CardDescription>
-            Montaje: {montageData.numeroMontaje} | OT: {selectedTests[0]?.ot} |
+            Montaje: {montageData.nombreMontaje} | OT: {selectedTests[0]?.ot} |
             Objetivo: {selectedTests[0]?.objetivo}
           </CardDescription>
         </CardHeader>

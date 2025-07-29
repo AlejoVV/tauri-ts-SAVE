@@ -78,9 +78,9 @@ export function MontagesInProgressTable() {
   const columns = useMemo<MRT_ColumnDef<MontageInProgress>[]>(
     () => [
       {
-        accessorKey: "numeroMontaje",
-        header: "Número",
-        size: 100,
+        accessorKey: "nombreMontaje",
+        header: "Nombre",
+        size: 120,
       },
       {
         accessorKey: "nombreMontaje",
