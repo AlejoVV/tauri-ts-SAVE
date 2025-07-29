@@ -1,7 +1,7 @@
 // Servicios del módulo de eficacia
 
 import { supabase } from "../../nucleo/lib/supabaseClient";
-import type { VistaMaestraTotalRow, EfficacyTestData, MontageData } from "../tipos/index";
+import type { VistaMaestraTotalRow, EfficacyTestData, MontageData, MontajeBasico } from "../tipos/index";
 
 /**
  * Obtiene las pruebas disponibles para montajes de eficacia
@@ -98,6 +98,121 @@ export const getEfficacyTestById = async (pruebaId: number): Promise<EfficacyTes
     contacto: data.contacto || "Sin contacto",
   };
 }; 
+
+/**
+ * Crea un nuevo montaje básico sin configuración del setup
+ */
+export const createMontajeBasico = async (
+  montajeBasico: MontajeBasico
+): Promise<{ success: boolean; montajeId?: number; error?: string }> => {
+  try {
+    // 1. Crear el montaje básico en la tabla montajes_de_laboratorio
+    const { data: montajeCreado, error: montajeError } = await supabase
+      .from("montajes_de_laboratorio")
+      .insert({
+        nombre: montajeBasico.nombreMontaje,
+        fecha_creacion: new Date().toISOString(),
+        // Los campos de configuración se dejan como null/default
+        cantidad_lecturas: null,
+        cantidad_repeticiones: null,
+        condiciones_iniciales: null,
+        nombres_lecturas: null
+      })
+      .select()
+      .single();
+
+    if (montajeError) {
+      console.error("Error al crear montaje básico:", montajeError);
+      return { success: false, error: montajeError.message };
+    }
+
+    if (!montajeCreado) {
+      return { success: false, error: "No se pudo crear el montaje básico" };
+    }
+
+    const montajeId = montajeCreado.id;
+
+    // 2. Crear las relaciones en pruebas_en_montajes
+    const pruebasEnMontajes = montajeBasico.pruebasSeleccionadas.map((test: EfficacyTestData) => ({
+      montaje_id: montajeId,
+      prueba_id: test.id
+    }));
+
+    const { error: relacionesError } = await supabase
+      .from("pruebas_en_montajes")
+      .insert(pruebasEnMontajes);
+
+    if (relacionesError) {
+      console.error("Error al crear relaciones de pruebas:", relacionesError);
+      // Si fallan las relaciones, eliminar el montaje creado
+      await supabase
+        .from("montajes_de_laboratorio")
+        .delete()
+        .eq("id", montajeId);
+      
+      return { success: false, error: relacionesError.message };
+    }
+
+    console.log("Montaje básico creado exitosamente:", {
+      montajeId,
+      nombre: montajeBasico.nombreMontaje,
+      pruebasAsociadas: montajeBasico.pruebasSeleccionadas.length
+    });
+
+    return { success: true, montajeId };
+
+  } catch (error) {
+    console.error("Error inesperado al crear montaje básico:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error desconocido" 
+    };
+  }
+};
+
+/**
+ * Actualiza un montaje existente con la configuración del setup
+ */
+export const updateMontajeSetup = async (
+  montajeId: number, 
+  montageData: MontageData
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Actualizar el montaje con los datos de configuración
+    const { error: updateError } = await supabase
+      .from("montajes_de_laboratorio")
+      .update({
+        nombre: montageData.nombreMontaje,
+        cantidad_lecturas: montageData.numeroLecturas,
+        cantidad_repeticiones: montageData.numeroRepeticiones,
+        condiciones_iniciales: montageData.condicionesIniciales as any,
+        nombres_lecturas: montageData.nombresLecturas as any,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", montajeId);
+
+    if (updateError) {
+      console.error("Error al actualizar montaje con setup:", updateError);
+      return { success: false, error: updateError.message };
+    }
+
+    console.log("Montaje actualizado exitosamente con configuración:", {
+      montajeId,
+      nombre: montageData.nombreMontaje,
+      condicionesIniciales: montageData.condicionesIniciales,
+      nombresLecturas: montageData.nombresLecturas
+    });
+
+    return { success: true };
+
+  } catch (error) {
+    console.error("Error inesperado al actualizar montaje:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error desconocido" 
+    };
+  }
+};
 
 /**
  * Crea un nuevo montaje de eficacia en la base de datos
@@ -262,6 +377,9 @@ export const getMontajes = async () => {
           nombres_lecturas: any | null;
         };
 
+        // Determinar si el montaje está configurado
+        const configurado = !!(montaje.cantidad_lecturas && montaje.cantidad_repeticiones && montajeConTiposCompletos.condiciones_iniciales);
+
         return {
           id: montaje.id.toString(),
           nombreMontaje: montaje.nombre || "Sin nombre",
@@ -274,12 +392,13 @@ export const getMontajes = async () => {
           nombresLecturas: montajeConTiposCompletos.nombres_lecturas || [],
           lecturasCompletadas,
           numeroRepeticiones: montaje.cantidad_repeticiones || 0,
-          condicionesIniciales: montajeConTiposCompletos.condiciones_iniciales || { testigo: [], pruebas: {} },
+          condicionesIniciales: configurado ? montajeConTiposCompletos.condiciones_iniciales : null,
           pruebas,
           productos,
-          estado: estado as "En Proceso" | "Listo para Cálculo",
+          estado: configurado ? (estado as "En Proceso" | "Listo para Cálculo") : "Sin Configurar" as any,
           ultimaActualizacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
-          ultimaLectura: ultimaLectura ? new Date(ultimaLectura).toLocaleDateString() : "Sin fecha"
+          ultimaLectura: ultimaLectura ? new Date(ultimaLectura).toLocaleDateString() : "Sin fecha",
+          configurado
         };
       })
     );

@@ -13,17 +13,32 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Edit, Eye, Calculator, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Edit,
+  Eye,
+  Calculator,
+  RefreshCw,
+  Trash2,
+  Settings,
+} from "lucide-react";
 import { ResultsEntryModal } from "./results-entry-modal";
 import { EfficacyCalculationModal } from "./efficacy-calculation-modal";
+import { MontageSetupForm } from "./montage-setup-form";
 import type { MontageInProgress } from "../tipos/index";
 import { getMontajes, deleteMontaje } from "../servicios/index";
 
-export function MontagesInProgressTable() {
+interface MontagesInProgressTableProps {
+  onMontageConfigured?: () => void;
+}
+
+export function MontagesInProgressTable({
+  onMontageConfigured,
+}: MontagesInProgressTableProps) {
   const [selectedMontage, setSelectedMontage] =
     useState<MontageInProgress | null>(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [showCalculationModal, setShowCalculationModal] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(false);
   const [montages, setMontages] = useState<MontageInProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,11 +185,17 @@ export function MontagesInProgressTable() {
           return (
             <Badge
               variant={
-                estado === "Listo para Cálculo" ? "default" : "secondary"
+                estado === "Listo para Cálculo"
+                  ? "default"
+                  : estado === "Sin Configurar"
+                  ? "destructive"
+                  : "secondary"
               }
               className={
                 estado === "Listo para Cálculo"
                   ? "bg-green-100 text-green-800"
+                  : estado === "Sin Configurar"
+                  ? "bg-orange-100 text-orange-800"
                   : ""
               }
             >
@@ -194,19 +215,39 @@ export function MontagesInProgressTable() {
     positionActionsColumn: "last",
     renderRowActions: ({ row }) => (
       <div className="flex gap-1">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setSelectedMontage(row.original);
-            setShowResultsModal(true);
-          }}
-          className="h-8 w-8 p-0"
-          title="Registrar resultados"
-        >
-          <Edit className="h-3 w-3" />
-        </Button>
+        {/* Botón Configurar - Solo para montajes sin configurar */}
+        {!row.original.configurado && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setSelectedMontage(row.original);
+              setShowSetupModal(true);
+            }}
+            className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+            title="Configurar montaje"
+          >
+            <Settings className="h-3 w-3" />
+          </Button>
+        )}
 
+        {/* Botón Registrar resultados - Solo para montajes configurados */}
+        {row.original.configurado && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setSelectedMontage(row.original);
+              setShowResultsModal(true);
+            }}
+            className="h-8 w-8 p-0"
+            title="Registrar resultados"
+          >
+            <Edit className="h-3 w-3" />
+          </Button>
+        )}
+
+        {/* Botón Calcular eficacia - Solo para montajes listos para cálculo */}
         {row.original.estado === "Listo para Cálculo" && (
           <Button
             size="sm"
@@ -362,6 +403,43 @@ export function MontagesInProgressTable() {
             loadMontages();
           }}
         />
+      )}
+
+      {/* Modal para configuración de montaje */}
+      {selectedMontage && (
+        <div
+          className={`fixed inset-0 z-50 ${
+            showSetupModal ? "flex" : "hidden"
+          } items-center justify-center bg-black/50`}
+        >
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">
+                  Configurar Montaje: {selectedMontage.nombreMontaje}
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSetupModal(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+              <MontageSetupForm
+                selectedTests={[]} // Se obtendrán desde el montaje
+                onMontageCreated={() => {
+                  setShowSetupModal(false);
+                  loadMontages();
+                  onMontageConfigured?.();
+                }}
+                onBack={() => setShowSetupModal(false)}
+                isCreatingMontage={false}
+                montajeExistente={selectedMontage}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -34,7 +34,13 @@ export interface CondicionesIniciales {
   };
 }
 
-// Tipo para los datos del montaje
+// Tipo para los datos del montaje básico (sin configuración de setup)
+export interface MontajeBasico {
+  nombreMontaje: string;
+  pruebasSeleccionadas: EfficacyTestData[];
+}
+
+// Tipo para los datos del montaje completo (con configuración de setup)
 export interface MontageData {
   nombreMontaje: string;
   numeroLecturas: number;
@@ -56,12 +62,13 @@ export interface MontageInProgress {
   nombresLecturas: string[];
   lecturasCompletadas: number;
   numeroRepeticiones: number;
-  condicionesIniciales: CondicionesIniciales;
+  condicionesIniciales: CondicionesIniciales | null; // Puede ser null si no está configurado
   pruebas: string[];
   productos: string[];
   ultimaLectura: string | null; // Nueva campo para la fecha de la última lectura
-  estado: "En Proceso" | "Listo para Cálculo";
+  estado: "En Proceso" | "Listo para Cálculo" | "Sin Configurar";
   ultimaActualizacion: string;
+  configurado: boolean; // Nuevo campo para indicar si el montaje está configurado
 }
 
 // Tipo para pruebas completadas

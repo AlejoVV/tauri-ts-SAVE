@@ -17,11 +17,13 @@ import type {
   EfficacyTestData,
   MontageData,
   CondicionesIniciales,
+  MontageInProgress,
 } from "../tipos/index";
 import {
   getNumeroRepeticionesPorObjetivo,
   getUnidadesPorRepeticionPorObjetivo,
   contarMontajesPorOT,
+  updateMontajeSetup,
 } from "../servicios/index";
 
 interface MontageSetupFormProps {
@@ -29,6 +31,7 @@ interface MontageSetupFormProps {
   onMontageCreated: (montageData: MontageData) => void;
   onBack: () => void;
   isCreatingMontage?: boolean;
+  montajeExistente?: MontageInProgress; // Para configurar montajes existentes
 }
 
 export function MontageSetupForm({
@@ -36,6 +39,7 @@ export function MontageSetupForm({
   onMontageCreated,
   onBack,
   isCreatingMontage = false,
+  montajeExistente,
 }: MontageSetupFormProps) {
   // Inicializar condiciones iniciales
   const initializeCondicionesIniciales = (
@@ -57,12 +61,32 @@ export function MontageSetupForm({
     return { testigo, pruebas };
   };
 
-  const [formData, setFormData] = useState<MontageData>({
-    nombreMontaje: "Cargando...",
-    numeroLecturas: 1,
-    nombresLecturas: ["Lectura 1"],
-    numeroRepeticiones: 3,
-    condicionesIniciales: initializeCondicionesIniciales(3),
+  // Inicializar formData según si es montaje existente o nuevo
+  const [formData, setFormData] = useState<MontageData>(() => {
+    if (montajeExistente) {
+      // Configurar montaje existente
+      return {
+        nombreMontaje: montajeExistente.nombreMontaje,
+        numeroLecturas: montajeExistente.numeroLecturas || 1,
+        nombresLecturas:
+          montajeExistente.nombresLecturas.length > 0
+            ? montajeExistente.nombresLecturas
+            : ["Lectura 1"],
+        numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
+        condicionesIniciales:
+          montajeExistente.condicionesIniciales ||
+          initializeCondicionesIniciales(3),
+      };
+    } else {
+      // Nuevo montaje
+      return {
+        nombreMontaje: "Cargando...",
+        numeroLecturas: 1,
+        nombresLecturas: ["Lectura 1"],
+        numeroRepeticiones: 3,
+        condicionesIniciales: initializeCondicionesIniciales(3),
+      };
+    }
   });
 
   const [sobrescribirTodos, setSobrescribirTodos] = useState(false);
@@ -314,9 +338,30 @@ export function MontageSetupForm({
     return Number(average.toFixed(2)).toString();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onMontageCreated(formData);
+
+    if (montajeExistente) {
+      // Actualizar montaje existente
+      try {
+        const result = await updateMontajeSetup(
+          parseInt(montajeExistente.id),
+          formData
+        );
+        if (result.success) {
+          alert("Montaje configurado exitosamente");
+          onMontageCreated(formData); // Llamar callback para cerrar modal y refrescar
+        } else {
+          alert(`Error al configurar el montaje: ${result.error}`);
+        }
+      } catch (error) {
+        console.error("Error al configurar montaje:", error);
+        alert("Error inesperado al configurar el montaje");
+      }
+    } else {
+      // Crear nuevo montaje
+      onMontageCreated(formData);
+    }
   };
 
   return (

@@ -13,7 +13,8 @@ import { CompletedTestsTable } from "./completed-tests-table";
 import { Calculator, FlaskConical, FileText, Plus } from "lucide-react";
 import type { EfficacyTestData, MontageData } from "../tipos/index";
 import type { MRT_RowSelectionState } from "material-react-table";
-import { createMontaje } from "../servicios/index";
+import { createMontaje, createMontajeBasico } from "../servicios/index";
+import type { MontajeBasico } from "../tipos/index";
 
 export function EficaciaMain() {
   const [selectedTests, setSelectedTests] = useState<EfficacyTestData[]>([]);
@@ -64,6 +65,54 @@ export function EficaciaMain() {
     });
     setRowSelection(newRowSelection);
     setShowNewMontageForm(false);
+  };
+
+  // Crear montaje básico directamente desde selección de pruebas
+  const handleCreateBasicMontage = async () => {
+    if (selectedTests.length === 0) {
+      alert("Debe seleccionar al menos una prueba para crear un montaje");
+      return;
+    }
+
+    const nombreMontaje = prompt("Ingrese el nombre para el montaje:");
+    if (!nombreMontaje || nombreMontaje.trim() === "") {
+      alert("Debe ingresar un nombre para el montaje");
+      return;
+    }
+
+    setIsCreatingMontage(true);
+
+    try {
+      const montajeBasico: MontajeBasico = {
+        nombreMontaje: nombreMontaje.trim(),
+        pruebasSeleccionadas: selectedTests,
+      };
+
+      const result = await createMontajeBasico(montajeBasico);
+
+      if (result.success) {
+        // Limpiar estado y mostrar mensaje de éxito
+        setSelectedTests([]);
+        setRowSelection({});
+        setActiveTab("montajes"); // Cambiar a la pestaña de montajes para ver el resultado
+
+        // Forzar actualización de la tabla de selección de pruebas
+        setRefreshTestSelection((prev) => prev + 1);
+
+        alert(
+          `¡Montaje creado exitosamente!\n\nID: ${result.montajeId}\nNombre: ${nombreMontaje}\nPruebas asociadas: ${selectedTests.length}\n\nPuede configurar el montaje desde la tabla de "Montajes en Curso".`
+        );
+      } else {
+        alert(`Error al crear el montaje: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Error al crear montaje:", error);
+      alert(
+        "Error inesperado al crear el montaje. Por favor, inténtelo de nuevo."
+      );
+    } finally {
+      setIsCreatingMontage(false);
+    }
   };
 
   const handleMontageCreated = async (montageData: MontageData) => {
@@ -137,7 +186,12 @@ export function EficaciaMain() {
 
           {/* Contenido de cada sección */}
           <TabsContent value="montajes" className="space-y-6">
-            <MontagesInProgressTable />
+            <MontagesInProgressTable
+              onMontageConfigured={() => {
+                // Forzar actualización de la tabla de selección de pruebas cuando se configure un montaje
+                setRefreshTestSelection((prev) => prev + 1);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="nuevo" className="space-y-6">
@@ -147,6 +201,7 @@ export function EficaciaMain() {
                 onTestsSelected={handleTestsSelected}
                 rowSelection={rowSelection}
                 onRowSelectionChange={setRowSelection}
+                onCreateBasicMontage={handleCreateBasicMontage}
               />
             ) : (
               <Card>
