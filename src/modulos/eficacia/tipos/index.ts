@@ -36,7 +36,6 @@ export interface CondicionesIniciales {
 
 // Tipo para los datos del montaje
 export interface MontageData {
-  numeroMontaje: string;
   nombreMontaje: string;
   numeroLecturas: number;
   nombresLecturas: string[];
@@ -47,7 +46,6 @@ export interface MontageData {
 // Tipo para montajes en progreso  
 export interface MontageInProgress {
   id: string;
-  numeroMontaje: string;
   nombreMontaje: string;
   ot: string;
   objetivo: string;
@@ -69,7 +67,6 @@ export interface MontageInProgress {
 // Tipo para pruebas completadas
 export interface CompletedTest {
   id: string;
-  numeroMontaje: string;
   nombreMontaje: string;
   ot: string;
   objetivo: string;

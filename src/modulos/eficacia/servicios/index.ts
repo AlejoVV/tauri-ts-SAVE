@@ -5,7 +5,7 @@ import type { VistaMaestraTotalRow, EfficacyTestData, MontageData } from "../tip
 
 /**
  * Obtiene las pruebas disponibles para montajes de eficacia
- * Filtra por estado_lab = "En Curso" y tipo_prueba = "Eficacia"
+ * Filtra por estado_proceso = "Montaje" y tipo_prueba = "Eficacia"
  * Excluye pruebas que ya están asignadas a montajes existentes
  */
 export const getEfficacyTestsForMontage = async (): Promise<EfficacyTestData[]> => {
@@ -23,11 +23,11 @@ export const getEfficacyTestsForMontage = async (): Promise<EfficacyTestData[]> 
     // Extraer los IDs de las pruebas que ya están en montajes
     const pruebasAsignadas = pruebasEnMontajes?.map(item => item.prueba_id).filter(id => id !== null) || [];
     
-    // 2. Obtener todas las pruebas de eficacia en curso
+    // 2. Obtener todas las pruebas de eficacia en montaje
     const { data, error } = await supabase
       .from("vistamaestratotal")
       .select("*")
-      .eq("prueba_estado_lab", "En Curso")
+      .eq("prueba_estado_proceso", "Montaje")
       .eq("tipo_prueba", "Eficacia")
       .order("prueba_id", { ascending: false });
 
@@ -50,7 +50,7 @@ export const getEfficacyTestsForMontage = async (): Promise<EfficacyTestData[]> 
       producto: row.producto_nombre || "Sin producto",
       especieVegetal: row.especie_nombre || "Sin especie",
       fechaIngreso: row.prueba_fecha_creacion || "",
-      estado: row.prueba_estado_lab || "Desconocido",
+      estado: row.prueba_estado_proceso || "Desconocido",
       dosis: row.dosis_producto || "Sin dosis",
       unidades: row.producto_unid || "Sin unidades",
       contacto: row.contacto || "Sin contacto",
@@ -92,7 +92,7 @@ export const getEfficacyTestById = async (pruebaId: number): Promise<EfficacyTes
     producto: data.producto_nombre || "Sin producto",
     especieVegetal: data.especie_nombre || "Sin especie",
     fechaIngreso: data.prueba_fecha_creacion || "",
-    estado: data.prueba_estado_lab || "Desconocido",
+    estado: data.prueba_estado_proceso || "Desconocido",
     dosis: data.dosis_producto || "Sin dosis",
     unidades: data.producto_unid || "Sin unidades",
     contacto: data.contacto || "Sin contacto",
@@ -112,7 +112,6 @@ export const createMontaje = async (
       .from("montajes_de_laboratorio")
       .insert({
         nombre: montageData.nombreMontaje,
-        numero_montaje: montageData.numeroMontaje,
         cantidad_lecturas: montageData.numeroLecturas,
         cantidad_repeticiones: montageData.numeroRepeticiones,
         condiciones_iniciales: montageData.condicionesIniciales as any,
@@ -157,7 +156,6 @@ export const createMontaje = async (
     console.log("Montaje creado exitosamente:", {
       montajeId,
       nombre: montageData.nombreMontaje,
-      numeroMontaje: montageData.numeroMontaje,
       pruebasAsociadas: selectedTests.length,
       condicionesIniciales: montageData.condicionesIniciales,
       nombresLecturas: montageData.nombresLecturas
@@ -261,13 +259,11 @@ export const getMontajes = async () => {
           cantidad_repeticiones: number | null;
           cantidad_lecturas: number | null;
           condiciones_iniciales: any | null;
-          numero_montaje: string | null;
           nombres_lecturas: any | null;
         };
 
         return {
           id: montaje.id.toString(),
-          numeroMontaje: montajeConTiposCompletos.numero_montaje || "Sin número",
           nombreMontaje: montaje.nombre || "Sin nombre",
           ot,
           objetivo,
@@ -450,11 +446,11 @@ export const getEfficacyTestsStats = async (): Promise<{
   pruebasEnMontajes: number;
 }> => {
   try {
-    // Obtener total de pruebas de eficacia en curso
+    // Obtener total de pruebas de eficacia en montaje
     const { data: todasPruebas, error: totalError } = await supabase
       .from("vistamaestratotal")
       .select("prueba_id", { count: "exact" })
-      .eq("prueba_estado_lab", "En Curso")
+      .eq("prueba_estado_proceso", "Montaje")
       .eq("tipo_prueba", "Eficacia");
 
     if (totalError) {
@@ -672,5 +668,93 @@ export const getNumeroRepeticionesPorObjetivo = async (objetivo: string): Promis
     return 4;
   } catch (e) {
     return 4;
+  }
+}; 
+
+/**
+ * Obtiene el método de cálculo de eficacia recomendado para un objetivo desde catalogo_eficacia
+ * Si no encuentra, retorna 'Fórmula de Abbott' por defecto
+ */
+export const getMetodoCalculoPorObjetivo = async (objetivo: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia")
+      .select("calculo_de_eficacia")
+      .eq("objetivo_eficacia", objetivo)
+      .limit(1)
+      .single();
+    if (error || !data || typeof data.calculo_de_eficacia !== 'string') {
+      return 'Fórmula de Abbott';
+    }
+    return data.calculo_de_eficacia;
+  } catch (e) {
+    return 'Fórmula de Abbott';
+  }
+}; 
+
+/**
+ * Obtiene las unidades por repetición para una lista de objetivos desde catalogo_eficacia
+ * Devuelve un objeto { objetivo: unidades_por_repetición }
+ */
+export const getUnidadesPorRepeticionPorObjetivo = async (objetivos: string[]): Promise<Record<string, string | null>> => {
+  if (!objetivos.length) return {};
+  const result: Record<string, string | null> = {};
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia")
+      .select("objetivo_eficacia, unidades_por_repetición")
+      .in("objetivo_eficacia", objetivos);
+    if (error) {
+      console.error("Error al obtener unidades_por_repetición:", error);
+      objetivos.forEach(obj => result[obj] = null);
+      return result;
+    }
+    objetivos.forEach(obj => {
+      const found = data?.find((row: any) => row.objetivo_eficacia === obj);
+      result[obj] = found ? (found as any)["unidades_por_repetición"] : null;
+    });
+    return result;
+  } catch (e) {
+    objetivos.forEach(obj => result[obj] = null);
+    return result;
+  }
+}; 
+
+/**
+ * Cuenta cuántos montajes existen para una OT específica
+ * Usado para generar el número secuencial del montaje
+ */
+export const contarMontajesPorOT = async (numeroOT: number): Promise<number> => {
+  try {
+    // Obtener todos los montajes que tienen pruebas de esta OT
+    const { data: montajes, error } = await supabase
+      .from("montajes_de_laboratorio")
+      .select(`
+        id,
+        pruebas_en_montajes (
+          prueba_id,
+          pruebas_ordenes_trabajo (
+            prueba_orden_id
+          )
+        )
+      `);
+
+    if (error) {
+      console.error("Error al contar montajes por OT:", error);
+      return 0;
+    }
+
+    // Filtrar montajes que tienen pruebas de esta OT
+    const montajesDeEstaOT = (montajes || []).filter(montaje => 
+      montaje.pruebas_en_montajes?.some(relacion => 
+        relacion.pruebas_ordenes_trabajo?.prueba_orden_id === numeroOT
+      )
+    );
+
+    return montajesDeEstaOT.length;
+
+  } catch (error) {
+    console.error("Error inesperado al contar montajes:", error);
+    return 0;
   }
 }; 
