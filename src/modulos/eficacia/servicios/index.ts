@@ -106,15 +106,32 @@ export const createMontajeBasico = async (
   montajeBasico: MontajeBasico
 ): Promise<{ success: boolean; montajeId?: number; error?: string; nombreGenerado?: string }> => {
   try {
-    // 1. Generar nombre automático basado en el OT de las pruebas
+    // 1. Generar nombre automático basado en las pruebas seleccionadas
     if (montajeBasico.pruebasSeleccionadas.length === 0) {
       return { success: false, error: "Debe seleccionar al menos una prueba" };
     }
 
-    const numeroOT = montajeBasico.pruebasSeleccionadas[0].ot;
-    const cantidadExistentes = await contarMontajesPorOT(numeroOT);
-    const secuencia = cantidadExistentes + 1;
-    const nombreGenerado = `OT-${numeroOT} M-${secuencia}`;
+    // Verificar si todas las pruebas tienen el mismo OT
+    const primerOT = montajeBasico.pruebasSeleccionadas[0].ot;
+    const todosIgualOT = montajeBasico.pruebasSeleccionadas.every(prueba => prueba.ot === primerOT);
+    
+    let nombreGenerado;
+    if (todosIgualOT) {
+      // Si todas las pruebas tienen el mismo OT, usar el formato solicitado
+      const cantidadExistentes = await contarMontajesPorOT(primerOT);
+      const secuencia = cantidadExistentes + 1;
+      nombreGenerado = `OT ${primerOT} M${secuencia}`;
+    } else {
+      // Si hay múltiples OTs, usar el formato solicitado para múltiples OTs
+      // Obtener OTs únicas y crear una lista
+      const otsUnicas = [...new Set(montajeBasico.pruebasSeleccionadas.map(prueba => prueba.ot))];
+      const listaOTs = otsUnicas.join("-");
+      const cantidadExistentes = await contarMontajesPorOT(primerOT);
+      const secuencia = cantidadExistentes + 1;
+      
+      nombreGenerado = `OT ${listaOTs} M${secuencia}`;
+
+    }
 
     // 2. Crear el montaje básico en la tabla montajes_de_laboratorio
     const { data: montajeCreado, error: montajeError } = await supabase
@@ -885,4 +902,4 @@ export const contarMontajesPorOT = async (numeroOT: number): Promise<number> => 
     console.error("Error inesperado al contar montajes:", error);
     return 0;
   }
-}; 
+};
