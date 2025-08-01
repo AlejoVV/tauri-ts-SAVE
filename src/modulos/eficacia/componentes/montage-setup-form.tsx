@@ -232,14 +232,30 @@ export function MontageSetupForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pruebasMontaje]);
 
-  // Generar nombre automático del montaje
+  // Generar nombre automático del montaje (solo para montajes nuevos)
   useEffect(() => {
     const generarNombreMontaje = async () => {
-      if (pruebasMontaje.length > 0) {
-        const numeroOT = pruebasMontaje[0].ot;
-        const cantidadExistentes = await contarMontajesPorOT(numeroOT);
-        const secuencia = cantidadExistentes + 1;
-        const nombreGenerado = `OT-${numeroOT} M-${secuencia}`;
+      // Solo generar nombre automático si el montaje no tiene un nombre ya asignado
+      // o si el nombre actual es el placeholder por defecto
+      if (pruebasMontaje.length > 0 && (!montajeExistente.nombreMontaje || montajeExistente.nombreMontaje === '')) {
+        // Verificar si todas las pruebas tienen el mismo OT
+        const primerOT = pruebasMontaje[0].ot;
+        const todosIgualOT = pruebasMontaje.every(prueba => prueba.ot === primerOT);
+        
+        let nombreGenerado;
+        if (todosIgualOT) {
+          // Si todas las pruebas tienen el mismo OT
+          const cantidadExistentes = await contarMontajesPorOT(primerOT);
+          const secuencia = cantidadExistentes + 1;
+          nombreGenerado = `OT ${primerOT} M${secuencia}`;
+        } else {
+          // Si hay múltiples OTs
+          const otsUnicas = [...new Set(pruebasMontaje.map(prueba => prueba.ot))];
+          const listaOTs = otsUnicas.join("-");
+          const cantidadExistentes = await contarMontajesPorOT(primerOT);
+          const secuencia = cantidadExistentes + 1;
+          nombreGenerado = `OT ${listaOTs} M${secuencia}`;
+        }
 
         setFormData((prev) => ({
           ...prev,
@@ -249,7 +265,7 @@ export function MontageSetupForm({
     };
     generarNombreMontaje();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pruebasMontaje]);
+  }, [pruebasMontaje, montajeExistente.nombreMontaje]);
 
   // Rellenar condiciones iniciales automáticamente por objetivo
   useEffect(() => {
@@ -277,6 +293,10 @@ export function MontageSetupForm({
                 // Guardar el primer valor válido encontrado
                 if (valorEncontrado === null && num > 0) {
                   valorEncontrado = num;
+                  console.log('Valor encontrado dentro de setFormData:', valorEncontrado);
+                  // Establecer valorEncontradoDB aquí donde tenemos acceso al valor
+                  setValorEncontradoDB(valorEncontrado);
+                  setValorSobrescribir(valorEncontrado);
                 }
               }
             }
@@ -302,11 +322,9 @@ export function MontageSetupForm({
           };
         });
 
-        // Actualizar el estado del valor encontrado y el input de sobrescribir
-        if (valorEncontrado !== null && valorEncontrado > 0) {
-          setValorEncontradoDB(valorEncontrado);
-          setValorSobrescribir(valorEncontrado);
-        } else {
+        // Si no se encontró ningún valor, establecer valores por defecto
+        if (valorEncontrado === null) {
+          console.log('No se encontró valor válido, estableciendo valores por defecto');
           setValorEncontradoDB(null);
           setValorSobrescribir(25); // Valor por defecto
         }
@@ -314,7 +332,7 @@ export function MontageSetupForm({
     };
     if (!sobrescribirTodos) rellenarCondicionesPorObjetivo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pruebasMontaje, formData.numeroRepeticiones, sobrescribirTodos]);
+  }, [pruebasMontaje, sobrescribirTodos]);
 
   // Si el usuario activa el checkbox, rellenar todos los inputs con el valor indicado
   useEffect(() => {
@@ -456,7 +474,20 @@ export function MontageSetupForm({
                   Orden de Trabajo:
                 </span>
                 <span className="font-bold text-gray-900 text-base">
-                  {pruebasMontaje[0]?.ot}
+                  {(() => {
+                    if (pruebasMontaje.length === 0) return '';
+                    
+                    // Obtener todas las OTs únicas
+                    const otsUnicas = [...new Set(pruebasMontaje.map(prueba => prueba.ot))];
+                    
+                    // Si hay solo una OT única, mostrarla sola
+                    if (otsUnicas.length === 1) {
+                      return otsUnicas[0];
+                    }
+                    
+                    // Si hay múltiples OTs, mostrarlas separadas por guiones
+                    return otsUnicas.join(', ');
+                  })()}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -486,7 +517,7 @@ export function MontageSetupForm({
             <div className="flex flex-wrap gap-2 mt-2">
               {pruebasMontaje.map((test) => (
                 <Badge key={test.id} variant="secondary" className="text-xs">
-                  {test.prueba} - {test.producto}
+                  {test.ot}-{test.prueba} - {test.producto}
                 </Badge>
               ))}
             </div>
@@ -584,7 +615,8 @@ export function MontageSetupForm({
                 <p className="text-sm text-gray-600 mt-1">
                   Ingrese el número inicial de individuos para cada réplica
                 </p>
-                {valorEncontradoDB !== null && (
+                {console.log('Renderizando - valorEncontradoDB:', valorEncontradoDB)}
+                {valorEncontradoDB !== null && valorEncontradoDB > 0 && (
                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2">
                       <span className="text-green-600 font-semibold">✓</span>
@@ -627,11 +659,6 @@ export function MontageSetupForm({
                     }`}
                     placeholder="Valor para todos"
                   />
-                  {valorEncontradoDB !== null && (
-                    <div className="absolute -top-8 left-0 bg-green-100 border border-green-300 rounded px-2 py-1 text-xs text-green-800 whitespace-nowrap">
-                      ✓ Valor encontrado en BD: {valorEncontradoDB}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -653,7 +680,18 @@ export function MontageSetupForm({
                           >
                             <div className="space-y-1">
                               <div className="font-semibold text-blue-700">
-                                Prueba: {test.prueba}
+                                {(() => {
+                                  // Obtener todas las OTs únicas
+                                  const otsUnicas = [...new Set(pruebasMontaje.map(prueba => prueba.ot))];
+                                  
+                                  // Si hay solo una OT única, mostrar formato actual
+                                  if (otsUnicas.length === 1) {
+                                    return `Prueba: ${test.prueba}`;
+                                  }
+                                  
+                                  // Si hay múltiples OTs, mostrar formato OT-Prueba
+                                  return `Prueba: ${test.ot}-${test.prueba}`;
+                                })()}
                               </div>
                               <div className="text-xs text-gray-700 font-medium">
                                 {test.finca}
