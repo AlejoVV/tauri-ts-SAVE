@@ -230,14 +230,13 @@ export function TestSelectionTable({
     [uniqueOTs, uniqueObjetivos, uniqueEspecies]
   );
 
-  // Validar selección: mismo OT, objetivo y especie vegetal
+  // Validar selección: mismo objetivo y especie vegetal (sin restricción de OT)
   const validateSelection = (selectedRows: EfficacyTestData[]) => {
     if (selectedRows.length === 0) return true;
 
     const firstRow = selectedRows[0];
     return selectedRows.every(
       (row) =>
-        row.ot === firstRow.ot &&
         row.objetivo === firstRow.objetivo &&
         row.especieVegetal === firstRow.especieVegetal
     );
@@ -318,7 +317,7 @@ export function TestSelectionTable({
           <div className="space-y-2">
             <CardDescription>
               Seleccione las pruebas que desea incluir en el montaje de
-              eficacia. Las pruebas deben ser del mismo OT, objetivo y especie
+              eficacia. Las pruebas deben ser del mismo objetivo y especie
               vegetal.
             </CardDescription>
 
@@ -403,7 +402,9 @@ export function TestSelectionTable({
                     <div>
                       <span className="font-medium text-blue-700">OT:</span>{" "}
                       <span className="text-blue-600">
-                        {selectedTests[0]?.ot}
+                        {selectedTests.length > 1 && selectedTests.every(test => test.ot === selectedTests[0].ot) 
+                          ? selectedTests[0]?.ot 
+                          : selectedTests.map(test => test.ot).filter((ot, index, self) => self.indexOf(ot) === index).join(", ")}
                       </span>
                     </div>
                     <div>
@@ -438,7 +439,7 @@ export function TestSelectionTable({
                       >
                         <div className="flex-1">
                           <div className="font-medium text-sm">
-                            Prueba {test.prueba}
+                            Prueba {test.ot}-{test.prueba}
                           </div>
                           <div className="text-xs text-gray-600">
                             {test.producto} - {test.dosis} {test.unidades}
@@ -461,7 +462,7 @@ export function TestSelectionTable({
                 </p>
                 {!isValidSelection && (
                   <p className="text-sm text-red-600">
-                    Error: Las pruebas deben ser del mismo OT, objetivo y
+                    Error: Las pruebas deben ser del mismo objetivo y
                     especie vegetal
                   </p>
                 )}
