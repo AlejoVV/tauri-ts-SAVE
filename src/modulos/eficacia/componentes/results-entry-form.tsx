@@ -236,6 +236,7 @@ export function ResultsEntryForm({
                                         Number.parseFloat(e.target.value) || 0
                                       )
                                     }
+                                    onWheel={(e) => e.currentTarget.blur()}
                                     className="w-full text-center"
                                     step="0.01"
                                   />

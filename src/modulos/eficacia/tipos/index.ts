@@ -23,10 +23,10 @@ export interface EfficacyTestData {
 
 // Tipo para las condiciones iniciales (número de individuos por réplica)
 export interface CondicionesIniciales {
-  testigo: number[];  // Array con número de individuos por réplica [12, 10, 11, 12]
+  testigo: (number | null)[];  // Array con número de individuos por réplica [12, 10, 11, 12] o null para campos vacíos
   pruebas: { 
     [pruebaId: string]: {
-      numeroIndividuos: number[];  // Array con número de individuos por réplica [9, 8, 9, 9]
+      numeroIndividuos: (number | null)[];  // Array con número de individuos por réplica [9, 8, 9, 9] o null para campos vacíos
       producto: string;
       dosis: string;
       unidades: string;
@@ -64,6 +64,7 @@ export interface MontageInProgress {
   condicionesIniciales: CondicionesIniciales | null; // Puede ser null si no está configurado
   pruebas: string[];
   productos: string[];
+  pruebaToOT: Record<string, string>; // Mapeo de prueba ID a OT
   ultimaLectura: string | null; // Nueva campo para la fecha de la última lectura
   estado: "En Proceso" | "Listo para Cálculo" | "Sin Configurar";
   ultimaActualizacion: string;
@@ -95,4 +96,4 @@ export interface ResultadoLectura {
   fecha_registro: string;
   fecha_lectura: string | null;
   observaciones: string | null;
-} 
+}

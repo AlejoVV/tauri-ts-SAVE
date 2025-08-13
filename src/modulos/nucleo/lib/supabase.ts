@@ -25,6 +25,7 @@ export type Database = {
           numero_de_aplicaciones: string | null
           numero_de_repeticiones: string | null
           objetivo_eficacia: string
+          plaga_enfermedad: string | null
           tipo_de_evaluacion: string | null
           unidades_por_repetición: string | null
         }
@@ -38,6 +39,7 @@ export type Database = {
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia: string
+          plaga_enfermedad?: string | null
           tipo_de_evaluacion?: string | null
           unidades_por_repetición?: string | null
         }
@@ -51,6 +53,7 @@ export type Database = {
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia?: string
+          plaga_enfermedad?: string | null
           tipo_de_evaluacion?: string | null
           unidades_por_repetición?: string | null
         }
@@ -235,24 +238,27 @@ export type Database = {
           id: number
           nombre: string | null
           nombres_lecturas: Json | null
+          variedad: string | null
         }
         Insert: {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
           fecha_creacion?: string | null
-          id?: never
+          id?: number
           nombre?: string | null
           nombres_lecturas?: Json | null
+          variedad?: string | null
         }
         Update: {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
           fecha_creacion?: string | null
-          id?: never
+          id?: number
           nombre?: string | null
           nombres_lecturas?: Json | null
+          variedad?: string | null
         }
         Relationships: []
       }

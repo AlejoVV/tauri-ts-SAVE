@@ -282,6 +282,7 @@ export function EfficacyCalculationModal({
                             onChange={(e) =>
                               handleEfficacyEdit(col.key, e.target.value)
                             }
+                            onWheel={(e) => e.currentTarget.blur()}
                             className="w-20 text-center border border-gray-300 rounded"
                           />
                         </td>

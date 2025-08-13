@@ -423,7 +423,22 @@ export function ResultsEntryModal({
                           >
                             <div className="space-y-1">
                               <div className="font-semibold text-blue-700">
-                                Prueba: {prueba}
+                                {(() => {
+                                  // Obtener todas las OTs únicas del montaje
+                                  const otsUnicas = montage.ot.includes(", ")
+                                    ? montage.ot.split(", ")
+                                    : [montage.ot];
+
+                                  // Si hay solo una OT única, mostrar formato actual
+                                  if (otsUnicas.length === 1) {
+                                    return `Prueba: ${prueba}`;
+                                  }
+
+                                  // Si hay múltiples OTs, mostrar formato "numeroOT-numeroPrueba"
+                                  const otDePrueba =
+                                    montage.pruebaToOT[prueba] || "Sin OT";
+                                  return `Prueba: ${otDePrueba}-${prueba}`;
+                                })()}
                               </div>
                               <div className="text-xs text-gray-700 font-medium">
                                 {montage.finca}
@@ -479,6 +494,7 @@ export function ResultsEntryModal({
                                         Number.parseFloat(e.target.value) || 0
                                       )
                                     }
+                                    onWheel={(e) => e.currentTarget.blur()}
                                     className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                     step="0.1"
                                     placeholder="0.0"
@@ -517,6 +533,7 @@ export function ResultsEntryModal({
                                               0
                                           )
                                         }
+                                        onWheel={(e) => e.currentTarget.blur()}
                                         className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                         step="0.1"
                                         placeholder="0.0"

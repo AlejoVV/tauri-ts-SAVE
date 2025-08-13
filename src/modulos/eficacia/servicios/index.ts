@@ -385,9 +385,14 @@ export const getMontajes = async () => {
         const totalLecturas = montaje.cantidad_lecturas || 1;
         const estado = lecturasCompletadas >= totalLecturas ? "Listo para Cálculo" : "En Proceso";
 
+        // Obtener información de todas las OTs únicas
+        const otsUnicas = [...new Set(pruebasRelaciones?.map(rel => 
+          rel.pruebas_ordenes_trabajo?.prueba_orden_id?.toString()
+        ).filter(Boolean))] || [];
+        const ot = otsUnicas.length > 0 ? otsUnicas.join(", ") : "Sin OT";
+        
         // Obtener información del primer OT para contexto
         const primeraPrueba = pruebasRelaciones?.[0]?.pruebas_ordenes_trabajo;
-        const ot = primeraPrueba?.prueba_orden_id?.toString() || "Sin OT";
         const objetivo = primeraPrueba?.objetivos?.objetivo_nombre || "Sin objetivo";
         const finca = primeraPrueba?.fincas?.finca_nombre || "Sin finca";
         const especie = primeraPrueba?.especie_vegetal?.especie_nombre || "Sin especie";
@@ -406,6 +411,14 @@ export const getMontajes = async () => {
         // Determinar si el montaje está configurado
         const configurado = !!(montaje.cantidad_lecturas && montaje.cantidad_repeticiones && montajeConTiposCompletos.condiciones_iniciales);
 
+        // Crear mapeo de prueba a OT para el modal de resultados
+        const pruebaToOT: Record<string, string> = {};
+        pruebasRelaciones?.forEach(rel => {
+          if (rel.pruebas_ordenes_trabajo?.prueba_id && rel.pruebas_ordenes_trabajo?.prueba_orden_id) {
+            pruebaToOT[rel.pruebas_ordenes_trabajo.prueba_id.toString()] = rel.pruebas_ordenes_trabajo.prueba_orden_id.toString();
+          }
+        });
+
         return {
           id: montaje.id.toString(),
           nombreMontaje: montaje.nombre || "Sin nombre",
@@ -421,6 +434,7 @@ export const getMontajes = async () => {
           condicionesIniciales: configurado ? montajeConTiposCompletos.condiciones_iniciales : null,
           pruebas,
           productos,
+          pruebaToOT, // Nuevo campo para mapear prueba a OT
           estado: configurado ? (estado as "En Proceso" | "Listo para Cálculo") : "Sin Configurar" as any,
           ultimaActualizacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
           ultimaLectura: ultimaLectura ? new Date(ultimaLectura).toLocaleDateString() : "Sin fecha",

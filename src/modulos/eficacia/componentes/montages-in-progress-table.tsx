@@ -434,6 +434,7 @@ export function MontagesInProgressTable({
               </div>
               <div className="p-8">
                 <MontageSetupForm
+                  key={selectedMontage.id}
                   onMontageCreated={() => {
                     setShowSetupModal(false);
                     loadMontages();

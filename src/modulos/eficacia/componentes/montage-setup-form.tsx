@@ -41,10 +41,15 @@ export function MontageSetupForm({
   const [pruebasMontaje, setPruebasMontaje] = useState<EfficacyTestData[]>([]);
   const [isLoadingPruebas, setIsLoadingPruebas] = useState(true);
 
-  // Cargar las pruebas del montaje existente
+  // Cargar las pruebas del montaje existente y resetear estados
   useEffect(() => {
     const loadPruebasMontaje = async () => {
       try {
+        // Primero resetear todos los estados
+        setSobrescribirTodos(false);
+        setValorSobrescribir(25);
+        setValorEncontradoDB(null);
+
         setIsLoadingPruebas(true);
         const { pruebas } = await getMontajeById(parseInt(montajeExistente.id));
 
@@ -79,19 +84,49 @@ export function MontageSetupForm({
 
         setPruebasMontaje(pruebasFormateadas);
 
+        // Resetear formData con los datos del nuevo montaje
+        const baseFormData = {
+          nombreMontaje: montajeExistente.nombreMontaje,
+          numeroLecturas: montajeExistente.numeroLecturas || 1,
+          nombresLecturas:
+            montajeExistente.nombresLecturas.length > 0
+              ? montajeExistente.nombresLecturas
+              : ["Lectura 1"],
+          numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
+          condicionesIniciales: {
+            testigo: [],
+            pruebas: {},
+          },
+        };
+
         // Actualizar condiciones iniciales cuando se cargan las pruebas
-        if (pruebasFormateadas.length > 0 && formData.numeroRepeticiones > 0) {
-          setFormData((prev) => ({
-            ...prev,
-            condicionesIniciales:
-              prev.condicionesIniciales?.testigo?.length > 0
-                ? prev.condicionesIniciales
-                : initializeCondicionesInicialesWithPruebas(
-                    prev.numeroRepeticiones,
-                    pruebasFormateadas
-                  ),
-          }));
+        if (
+          pruebasFormateadas.length > 0 &&
+          baseFormData.numeroRepeticiones > 0
+        ) {
+          // Si el montaje tiene condiciones iniciales guardadas y válidas, usarlas
+          if (
+            montajeExistente.condicionesIniciales &&
+            montajeExistente.condicionesIniciales.testigo &&
+            Array.isArray(montajeExistente.condicionesIniciales.testigo) &&
+            montajeExistente.condicionesIniciales.testigo.length > 0 &&
+            montajeExistente.condicionesIniciales.testigo.some(
+              (val) => val !== null && val !== undefined
+            )
+          ) {
+            baseFormData.condicionesIniciales =
+              montajeExistente.condicionesIniciales;
+          } else {
+            // Si no hay condiciones guardadas válidas, inicializar con valores null
+            baseFormData.condicionesIniciales =
+              initializeCondicionesInicialesWithPruebas(
+                baseFormData.numeroRepeticiones,
+                pruebasFormateadas
+              );
+          }
         }
+
+        setFormData(baseFormData);
       } catch (error) {
         console.error("Error al cargar pruebas del montaje:", error);
         alert("Error al cargar las pruebas del montaje");
@@ -108,13 +143,13 @@ export function MontageSetupForm({
     numeroRepeticiones: number,
     pruebas: EfficacyTestData[]
   ): CondicionesIniciales => {
-    const testigo = Array(numeroRepeticiones).fill(0);
+    const testigo = Array(numeroRepeticiones).fill(null);
     const pruebasObj: { [key: string]: any } = {};
 
     pruebas.forEach((test) => {
       const pruebaKey = `${test.id}`;
       pruebasObj[pruebaKey] = {
-        numeroIndividuos: Array(numeroRepeticiones).fill(0),
+        numeroIndividuos: Array(numeroRepeticiones).fill(null),
         producto: test.producto,
         dosis: test.dosis,
         unidades: test.unidades,
@@ -128,13 +163,13 @@ export function MontageSetupForm({
   const initializeCondicionesIniciales = (
     numeroRepeticiones: number
   ): CondicionesIniciales => {
-    const testigo = Array(numeroRepeticiones).fill(0);
+    const testigo = Array(numeroRepeticiones).fill(null);
     const pruebas: { [key: string]: any } = {};
 
     pruebasMontaje.forEach((test) => {
       const pruebaKey = `${test.id}`;
       pruebas[pruebaKey] = {
-        numeroIndividuos: Array(numeroRepeticiones).fill(0),
+        numeroIndividuos: Array(numeroRepeticiones).fill(null),
         producto: test.producto,
         dosis: test.dosis,
         unidades: test.unidades,
@@ -153,7 +188,7 @@ export function MontageSetupForm({
         ? montajeExistente.nombresLecturas
         : ["Lectura 1"],
     numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
-    condicionesIniciales: montajeExistente.condicionesIniciales || {
+    condicionesIniciales: {
       testigo: [],
       pruebas: {},
     },
@@ -171,7 +206,7 @@ export function MontageSetupForm({
     newNumeroRepeticiones: number
   ): CondicionesIniciales => {
     // Ajustar testigo preservando valores existentes
-    const newTestigo = Array(newNumeroRepeticiones).fill(0);
+    const newTestigo = Array(newNumeroRepeticiones).fill(null);
     for (
       let i = 0;
       i < Math.min(currentCondiciones.testigo.length, newNumeroRepeticiones);
@@ -186,7 +221,7 @@ export function MontageSetupForm({
       const pruebaKey = `${test.id}`;
       const currentPrueba = currentCondiciones.pruebas[pruebaKey];
 
-      const newNumeroIndividuos = Array(newNumeroRepeticiones).fill(0);
+      const newNumeroIndividuos = Array(newNumeroRepeticiones).fill(null);
       if (currentPrueba && currentPrueba.numeroIndividuos) {
         for (
           let i = 0;
@@ -237,11 +272,17 @@ export function MontageSetupForm({
     const generarNombreMontaje = async () => {
       // Solo generar nombre automático si el montaje no tiene un nombre ya asignado
       // o si el nombre actual es el placeholder por defecto
-      if (pruebasMontaje.length > 0 && (!montajeExistente.nombreMontaje || montajeExistente.nombreMontaje === '')) {
+      if (
+        pruebasMontaje.length > 0 &&
+        (!montajeExistente.nombreMontaje ||
+          montajeExistente.nombreMontaje === "")
+      ) {
         // Verificar si todas las pruebas tienen el mismo OT
         const primerOT = pruebasMontaje[0].ot;
-        const todosIgualOT = pruebasMontaje.every(prueba => prueba.ot === primerOT);
-        
+        const todosIgualOT = pruebasMontaje.every(
+          (prueba) => prueba.ot === primerOT
+        );
+
         let nombreGenerado;
         if (todosIgualOT) {
           // Si todas las pruebas tienen el mismo OT
@@ -250,7 +291,9 @@ export function MontageSetupForm({
           nombreGenerado = `OT ${primerOT} M${secuencia}`;
         } else {
           // Si hay múltiples OTs
-          const otsUnicas = [...new Set(pruebasMontaje.map(prueba => prueba.ot))];
+          const otsUnicas = [
+            ...new Set(pruebasMontaje.map((prueba) => prueba.ot)),
+          ];
           const listaOTs = otsUnicas.join("-");
           const cantidadExistentes = await contarMontajesPorOT(primerOT);
           const secuencia = cantidadExistentes + 1;
@@ -293,7 +336,6 @@ export function MontageSetupForm({
                 // Guardar el primer valor válido encontrado
                 if (valorEncontrado === null && num > 0) {
                   valorEncontrado = num;
-                  console.log('Valor encontrado dentro de setFormData:', valorEncontrado);
                   // Establecer valorEncontradoDB aquí donde tenemos acceso al valor
                   setValorEncontradoDB(valorEncontrado);
                   setValorSobrescribir(valorEncontrado);
@@ -324,13 +366,24 @@ export function MontageSetupForm({
 
         // Si no se encontró ningún valor, establecer valores por defecto
         if (valorEncontrado === null) {
-          console.log('No se encontró valor válido, estableciendo valores por defecto');
           setValorEncontradoDB(null);
           setValorSobrescribir(25); // Valor por defecto
         }
       }
     };
-    if (!sobrescribirTodos) rellenarCondicionesPorObjetivo();
+    // Solo rellenar automáticamente si no hay condiciones iniciales guardadas válidas y no está activado sobrescribir todos
+    if (
+      !sobrescribirTodos &&
+      (!montajeExistente.condicionesIniciales ||
+        !montajeExistente.condicionesIniciales.testigo ||
+        !Array.isArray(montajeExistente.condicionesIniciales.testigo) ||
+        montajeExistente.condicionesIniciales.testigo.length === 0 ||
+        !montajeExistente.condicionesIniciales.testigo.some(
+          (val) => val !== null && val !== undefined
+        ))
+    ) {
+      rellenarCondicionesPorObjetivo();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pruebasMontaje, sobrescribirTodos]);
 
@@ -352,9 +405,25 @@ export function MontageSetupForm({
           condicionesIniciales: newCondiciones,
         };
       });
-    }
-    if (!sobrescribirTodos) {
-      // Cuando se desactiva, se vuelve a rellenar por objetivo (ya lo hace el otro useEffect)
+    } else if (
+      !sobrescribirTodos ||
+      valorSobrescribir === 0 ||
+      valorSobrescribir === ""
+    ) {
+      // Cuando se desactiva o el valor es 0/vacío, limpiar todos los campos
+      setFormData((prev) => {
+        const newCondiciones = { ...prev.condicionesIniciales };
+        newCondiciones.testigo = Array(prev.numeroRepeticiones).fill(null);
+        Object.keys(newCondiciones.pruebas).forEach((pruebaKey) => {
+          newCondiciones.pruebas[pruebaKey].numeroIndividuos = Array(
+            prev.numeroRepeticiones
+          ).fill(null);
+        });
+        return {
+          ...prev,
+          condicionesIniciales: newCondiciones,
+        };
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sobrescribirTodos, valorSobrescribir, formData.numeroRepeticiones]);
@@ -394,7 +463,7 @@ export function MontageSetupForm({
   };
 
   // Manejar cambios en la matriz de condiciones iniciales
-  const handleTestigoChange = (replicaIndex: number, value: number) => {
+  const handleTestigoChange = (replicaIndex: number, value: number | null) => {
     const newCondiciones = { ...formData.condicionesIniciales };
     newCondiciones.testigo[replicaIndex] = value;
     setFormData({
@@ -406,7 +475,7 @@ export function MontageSetupForm({
   const handlePruebaChange = (
     pruebaId: string,
     replicaIndex: number,
-    value: number
+    value: number | null
   ) => {
     const newCondiciones = { ...formData.condicionesIniciales };
     newCondiciones.pruebas[pruebaId].numeroIndividuos[replicaIndex] = value;
@@ -417,8 +486,10 @@ export function MontageSetupForm({
   };
 
   // Calcular promedio
-  const calculateAverage = (values: number[]) => {
-    const validValues = values.filter((val) => val > 0);
+  const calculateAverage = (values: (number | null)[]) => {
+    const validValues = values.filter(
+      (val) => val !== null && val !== undefined && !isNaN(val)
+    );
     if (validValues.length === 0) return "-";
     const sum = validValues.reduce((acc, val) => acc + val, 0);
     const average = sum / validValues.length;
@@ -475,18 +546,20 @@ export function MontageSetupForm({
                 </span>
                 <span className="font-bold text-gray-900 text-base">
                   {(() => {
-                    if (pruebasMontaje.length === 0) return '';
-                    
+                    if (pruebasMontaje.length === 0) return "";
+
                     // Obtener todas las OTs únicas
-                    const otsUnicas = [...new Set(pruebasMontaje.map(prueba => prueba.ot))];
-                    
+                    const otsUnicas = [
+                      ...new Set(pruebasMontaje.map((prueba) => prueba.ot)),
+                    ];
+
                     // Si hay solo una OT única, mostrarla sola
                     if (otsUnicas.length === 1) {
                       return otsUnicas[0];
                     }
-                    
+
                     // Si hay múltiples OTs, mostrarlas separadas por guiones
-                    return otsUnicas.join(', ');
+                    return otsUnicas.join(", ");
                   })()}
                 </span>
               </div>
@@ -552,6 +625,7 @@ export function MontageSetupForm({
                   onChange={(e) =>
                     handleNumeroLecturasChange(Number.parseInt(e.target.value))
                   }
+                  onWheel={(e) => e.currentTarget.blur()}
                   required
                 />
               </div>
@@ -572,6 +646,7 @@ export function MontageSetupForm({
                   onChange={(e) =>
                     handleNumeroRepeticionesChange(e.target.value)
                   }
+                  onWheel={(e) => e.currentTarget.blur()}
                   required
                 />
               </div>
@@ -615,7 +690,7 @@ export function MontageSetupForm({
                 <p className="text-sm text-gray-600 mt-1">
                   Ingrese el número inicial de individuos para cada réplica
                 </p>
-                {console.log('Renderizando - valorEncontradoDB:', valorEncontradoDB)}
+
                 {valorEncontradoDB !== null && valorEncontradoDB > 0 && (
                   <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2">
@@ -651,6 +726,7 @@ export function MontageSetupForm({
                         e.target.value === "" ? 0 : Number(e.target.value)
                       )
                     }
+                    onWheel={(e) => e.currentTarget.blur()}
                     disabled={!sobrescribirTodos}
                     className={`w-32 ${
                       valorEncontradoDB !== null
@@ -682,13 +758,17 @@ export function MontageSetupForm({
                               <div className="font-semibold text-blue-700">
                                 {(() => {
                                   // Obtener todas las OTs únicas
-                                  const otsUnicas = [...new Set(pruebasMontaje.map(prueba => prueba.ot))];
-                                  
+                                  const otsUnicas = [
+                                    ...new Set(
+                                      pruebasMontaje.map((prueba) => prueba.ot)
+                                    ),
+                                  ];
+
                                   // Si hay solo una OT única, mostrar formato actual
                                   if (otsUnicas.length === 1) {
                                     return `Prueba: ${test.prueba}`;
                                   }
-                                  
+
                                   // Si hay múltiples OTs, mostrar formato OT-Prueba
                                   return `Prueba: ${test.ot}-${test.prueba}`;
                                 })()}
@@ -723,25 +803,39 @@ export function MontageSetupForm({
                             <td className="px-4 py-2 border-r border-gray-200 bg-gray-50 text-center">
                               <div className="flex justify-center">
                                 <Input
+                                  key={`testigo-${montajeExistente.id}-${index}`}
                                   type="number"
                                   min="0"
-                                  step="0.1"
+                                  step="0.01"
                                   value={
                                     formData.condicionesIniciales.testigo[
                                       index
-                                    ] === 0
+                                    ] === null ||
+                                    formData.condicionesIniciales.testigo[
+                                      index
+                                    ] === undefined
                                       ? ""
                                       : formData.condicionesIniciales.testigo[
                                           index
-                                        ] || ""
+                                        ]
                                   }
                                   onChange={(e) =>
                                     handleTestigoChange(
                                       index,
-                                      Number.parseFloat(e.target.value) || 0
+                                      e.target.value === ""
+                                        ? null
+                                        : Number.parseFloat(e.target.value) || 0
                                     )
                                   }
+                                  onWheel={(e) => e.currentTarget.blur()}
                                   className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                  placeholder={
+                                    !sobrescribirTodos ||
+                                    valorSobrescribir === 0 ||
+                                    valorSobrescribir === ""
+                                      ? "0.0"
+                                      : ""
+                                  }
                                   required
                                 />
                               </div>
@@ -754,26 +848,41 @@ export function MontageSetupForm({
                               >
                                 <div className="flex justify-center">
                                   <Input
+                                    key={`prueba-${montajeExistente.id}-${test.id}-${index}`}
                                     type="number"
                                     min="0"
-                                    step="0.1"
+                                    step="0.01"
                                     value={
                                       formData.condicionesIniciales.pruebas[
                                         test.id
-                                      ]?.numeroIndividuos[index] === 0
+                                      ]?.numeroIndividuos[index] === null ||
+                                      formData.condicionesIniciales.pruebas[
+                                        test.id
+                                      ]?.numeroIndividuos[index] === undefined
                                         ? ""
                                         : formData.condicionesIniciales.pruebas[
                                             test.id
-                                          ]?.numeroIndividuos[index] || ""
+                                          ]?.numeroIndividuos[index]
                                     }
                                     onChange={(e) =>
                                       handlePruebaChange(
                                         test.id.toString(),
                                         index,
-                                        Number.parseFloat(e.target.value) || 0
+                                        e.target.value === ""
+                                          ? null
+                                          : Number.parseFloat(e.target.value) ||
+                                              0
                                       )
                                     }
+                                    onWheel={(e) => e.currentTarget.blur()}
                                     className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder={
+                                      !sobrescribirTodos ||
+                                      valorSobrescribir === 0 ||
+                                      valorSobrescribir === ""
+                                        ? "0.0"
+                                        : ""
+                                    }
                                     required
                                   />
                                 </div>

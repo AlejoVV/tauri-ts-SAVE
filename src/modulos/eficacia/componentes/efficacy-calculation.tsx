@@ -126,7 +126,7 @@ export function EfficacyCalculation({
           <div className="flex flex-wrap gap-2">
             {selectedTests.map((test) => (
               <Badge key={test.id} variant="secondary">
-                {test.prueba} - {test.producto}
+                {test.ot}-{test.prueba} - {test.producto}
               </Badge>
             ))}
           </div>
