@@ -182,6 +182,7 @@ export function MontageSetupForm({
   // Inicializar formData para montaje existente
   const [formData, setFormData] = useState<MontageData>(() => ({
     nombreMontaje: montajeExistente.nombreMontaje,
+    variedad: "",
     numeroLecturas: montajeExistente.numeroLecturas || 1,
     nombresLecturas:
       montajeExistente.nombresLecturas.length > 0
@@ -602,7 +603,7 @@ export function MontageSetupForm({
       <Card>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nombre-montaje">Nombre del Montaje</Label>
                 <Input
@@ -611,6 +612,16 @@ export function MontageSetupForm({
                   readOnly
                   className="bg-gray-100 cursor-not-allowed"
                   placeholder="Se genera automáticamente"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="variedad">Variedad</Label>
+                <Input
+                  id="variedad"
+                  value={formData.variedad}
+                  onChange={(e) => setFormData({ ...formData, variedad: e.target.value })}
+                  placeholder="Ingrese la variedad"
                 />
               </div>
 
@@ -836,7 +847,6 @@ export function MontageSetupForm({
                                       ? "0.0"
                                       : ""
                                   }
-                                  required
                                 />
                               </div>
                             </td>
@@ -883,7 +893,6 @@ export function MontageSetupForm({
                                         ? "0.0"
                                         : ""
                                     }
-                                    required
                                   />
                                 </div>
                               </td>
