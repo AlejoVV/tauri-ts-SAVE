@@ -381,9 +381,25 @@ export const getMontajes = async () => {
           rel.pruebas_ordenes_trabajo?.productos?.producto_nombre || "Sin producto"
         ) || [];
 
-        // Determinar estado basado en lecturas completadas
+        // Verificar si existen resultados de eficacia guardados
+        const { data: efficacyResults } = await supabase
+          .from("eficacia_de_pruebas")
+          .select("id")
+          .eq("montaje_id", montaje.id)
+          .limit(1);
+
+        // Determinar estado basado en lecturas completadas y resultados de eficacia
         const totalLecturas = montaje.cantidad_lecturas || 1;
-        const estado = lecturasCompletadas >= totalLecturas ? "Listo para Cálculo" : "En Proceso";
+        const tieneEficaciaGuardada = efficacyResults && efficacyResults.length > 0;
+        
+        let estado: string;
+        if (tieneEficaciaGuardada) {
+          estado = "Eficacia guardada";
+        } else if (lecturasCompletadas >= totalLecturas) {
+          estado = "Listo para Cálculo";
+        } else {
+          estado = "En Proceso";
+        }
 
         // Obtener información de todas las OTs únicas
         const otsUnicas = [...new Set(pruebasRelaciones?.map(rel => 
@@ -406,6 +422,7 @@ export const getMontajes = async () => {
           cantidad_lecturas: number | null;
           condiciones_iniciales: any | null;
           nombres_lecturas: any | null;
+          asignado_a: string | null;
         };
 
         // Determinar si el montaje está configurado
@@ -438,7 +455,8 @@ export const getMontajes = async () => {
           estado: configurado ? (estado as "En Proceso" | "Listo para Cálculo") : "Sin Configurar" as any,
           ultimaActualizacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
           ultimaLectura: ultimaLectura ? new Date(ultimaLectura).toLocaleDateString() : "Sin fecha",
-          configurado
+          configurado,
+          asignadoA: montajeConTiposCompletos.asignado_a // Leer asignación de la base de datos
         };
       })
     );
@@ -849,6 +867,50 @@ export const getMetodoCalculoPorObjetivo = async (objetivo: string): Promise<str
   } catch (e) {
     return 'Fórmula de Abbott';
   }
+};
+
+/**
+ * Obtiene información completa del catálogo de eficacia para un objetivo específico
+ */
+export const getCatalogoEficaciaPorObjetivo = async (objetivo: string): Promise<{
+  calculo_de_eficacia: string | null;
+  metodos_de_registro: string | null;
+  condiciones_de_aplicacion: string | null;
+  condiciones_ambientales: string | null;
+  tipo_de_evaluacion: string | null;
+  numero_de_aplicaciones: string | null;
+  condicion_de_inoculacion: string | null;
+  plaga_enfermedad: string | null;
+  nombre_cientifico: string | null;
+} | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia")
+      .select(`
+        calculo_de_eficacia,
+        metodos_de_registro,
+        condiciones_de_aplicacion,
+        condiciones_ambientales,
+        tipo_de_evaluacion,
+        numero_de_aplicaciones,
+        condicion_de_inoculacion,
+        plaga_enfermedad,
+        nombre_cientifico
+      `)
+      .eq("objetivo_eficacia", objetivo)
+      .limit(1)
+      .single();
+    
+    if (error || !data) {
+      console.error("Error al obtener catálogo de eficacia:", error);
+      return null;
+    }
+    
+    return data;
+  } catch (e) {
+    console.error("Error inesperado al obtener catálogo de eficacia:", e);
+    return null;
+  }
 }; 
 
 /**
@@ -915,5 +977,106 @@ export const contarMontajesPorOT = async (numeroOT: number): Promise<number> => 
   } catch (error) {
     console.error("Error inesperado al contar montajes:", error);
     return 0;
+  }
+};
+
+/**
+ * Guarda los resultados de eficacia calculados para un montaje
+ */
+export const saveEfficacyResults = async (
+  montajeId: number,
+  efficacyResults: { [pruebaId: string]: number }
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Primero eliminar los resultados existentes para este montaje
+    const { error: deleteError } = await supabase
+      .from("eficacia_de_pruebas")
+      .delete()
+      .eq("montaje_id", montajeId);
+
+    if (deleteError) {
+      console.error("Error al eliminar resultados existentes:", deleteError);
+      return { success: false, error: deleteError.message };
+    }
+
+    // Preparar los datos para insertar
+    const dataToInsert = Object.entries(efficacyResults).map(([pruebaId, eficacia]) => ({
+      montaje_id: montajeId,
+      prueba_id: parseInt(pruebaId),
+      eficacia: eficacia,
+      fecha_calculo: new Date().toISOString()
+    }));
+
+    // Insertar los nuevos resultados
+    const { error: insertError } = await supabase
+      .from("eficacia_de_pruebas")
+      .insert(dataToInsert);
+
+    if (insertError) {
+      console.error("Error al insertar resultados de eficacia:", insertError);
+      return { success: false, error: insertError.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error inesperado al guardar eficacia:", error);
+    return { success: false, error: "Error inesperado al guardar los resultados" };
+  }
+};
+
+/**
+ * Obtiene los resultados de eficacia guardados para un montaje
+ */
+export const getEfficacyResults = async (
+  montajeId: number
+): Promise<{ [pruebaId: string]: number }> => {
+  try {
+    const { data, error } = await supabase
+      .from("eficacia_de_pruebas")
+      .select("prueba_id, eficacia")
+      .eq("montaje_id", montajeId);
+
+    if (error) {
+      console.error("Error al obtener resultados de eficacia:", error);
+      return {};
+    }
+
+    // Convertir a formato { pruebaId: eficacia }
+    const results: { [pruebaId: string]: number } = {};
+    (data || []).forEach(row => {
+      if (row.prueba_id && row.eficacia !== null) {
+        results[row.prueba_id.toString()] = row.eficacia;
+      }
+    });
+
+    return results;
+  } catch (error) {
+    console.error("Error inesperado al obtener eficacia:", error);
+    return {};
+  }
+};
+
+/**
+ * Actualiza la asignación de un montaje a una persona específica
+ */
+export const updateMontajeAssignment = async (
+  montajeId: number,
+  asignadoA: string | null
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase
+      .from("montajes_de_laboratorio")
+      .update({ asignado_a: asignadoA })
+      .eq("id", montajeId);
+
+    if (error) {
+      console.error("Error al actualizar asignación del montaje:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error al actualizar asignación del montaje:", error);
+    return { success: false, error: "Error inesperado al actualizar la asignación" };
   }
 };
