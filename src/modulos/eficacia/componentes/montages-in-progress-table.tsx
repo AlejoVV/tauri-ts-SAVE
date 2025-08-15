@@ -14,18 +14,26 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Edit,
   Eye,
   Calculator,
   RefreshCw,
   Trash2,
   Settings,
+  User,
 } from "lucide-react";
 import { ResultsEntryModal } from "./results-entry-modal";
 import { EfficacyCalculationModal } from "./efficacy-calculation-modal";
 import { MontageSetupForm } from "./montage-setup-form";
 import type { MontageInProgress } from "../tipos/index";
-import { getMontajes, deleteMontaje } from "../servicios/index";
+import { getMontajes, deleteMontaje, updateMontajeAssignment } from "../servicios/index";
 
 interface MontagesInProgressTableProps {
   onMontageConfigured?: () => void;
@@ -43,6 +51,18 @@ export function MontagesInProgressTable({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Lista de personas disponibles para asignación
+  const personasDisponibles = [
+    "María González",
+    "Carlos Rodríguez",
+    "Ana Martínez",
+    "Luis Fernández",
+    "Carmen López",
+    "José García",
+    "Laura Sánchez",
+    "Miguel Torres"
+  ];
+
   // Función para cargar montajes
   const loadMontages = async () => {
     try {
@@ -56,6 +76,35 @@ export function MontagesInProgressTable({
       setMontages([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Función para actualizar la asignación de un montaje
+  const handleAssignmentChange = async (montageId: string, persona: string | null) => {
+    try {
+      // Actualizar el estado local inmediatamente para mejor UX
+      setMontages(prevMontages => 
+        prevMontages.map(montage => 
+          montage.id === montageId 
+            ? { ...montage, asignadoA: persona }
+            : montage
+        )
+      );
+
+      // Llamar a la API para actualizar en la base de datos
+      const result = await updateMontajeAssignment(parseInt(montageId), persona);
+      
+      if (!result.success) {
+        // Revertir el cambio en caso de error
+        await loadMontages();
+        alert(`Error al actualizar la asignación: ${result.error}`);
+      }
+      
+    } catch (error) {
+      console.error("Error al actualizar asignación:", error);
+      // Revertir el cambio en caso de error
+      await loadMontages();
+      alert("Error al actualizar la asignación. Por favor, intente de nuevo.");
     }
   };
 
@@ -184,6 +233,8 @@ export function MontagesInProgressTable({
                   ? "default"
                   : estado === "Sin Configurar"
                   ? "destructive"
+                  : estado === "Eficacia guardada"
+                  ? "default"
                   : "secondary"
               }
               className={
@@ -191,11 +242,48 @@ export function MontagesInProgressTable({
                   ? "bg-green-100 text-green-800"
                   : estado === "Sin Configurar"
                   ? "bg-orange-100 text-orange-800"
+                  : estado === "Eficacia guardada"
+                  ? "bg-blue-100 text-blue-800"
                   : ""
               }
             >
               {estado}
             </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "asignadoA",
+        header: "Asignado a",
+        size: 180,
+        enableColumnFilter: false,
+        Cell: ({ row }) => {
+          const montage = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={montage.asignadoA || ""}
+                onValueChange={(value) => {
+                  const persona = value === "sin-asignar" ? null : value;
+                  handleAssignmentChange(montage.id, persona);
+                }}
+              >
+                <SelectTrigger className="w-full h-8 text-xs">
+                  <SelectValue placeholder="Sin asignar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sin-asignar" className="text-xs">
+                    <span className="text-muted-foreground italic">Sin asignar</span>
+                  </SelectItem>
+                  {personasDisponibles.map((persona) => (
+                    <SelectItem key={persona} value={persona} className="text-xs">
+                      {persona}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           );
         },
       },
@@ -243,7 +331,7 @@ export function MontagesInProgressTable({
         )}
 
         {/* Botón Calcular eficacia - Solo para montajes listos para cálculo */}
-        {row.original.estado === "Listo para Cálculo" && (
+        {(row.original.estado === "Listo para Cálculo" || row.original.estado === "Eficacia guardada") && (
           <Button
             size="sm"
             variant="outline"
@@ -252,7 +340,7 @@ export function MontagesInProgressTable({
               setShowCalculationModal(true);
             }}
             className="h-8 w-8 p-0"
-            title="Calcular eficacia"
+            title={row.original.estado === "Eficacia guardada" ? "Ver/Recalcular eficacia" : "Calcular eficacia"}
           >
             <Calculator className="h-3 w-3" />
           </Button>
