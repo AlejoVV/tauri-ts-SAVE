@@ -42,6 +42,7 @@ export interface MontajeBasico {
 // Tipo para los datos del montaje completo (con configuración de setup)
 export interface MontageData {
   nombreMontaje: string;
+  variedad: string;
   numeroLecturas: number;
   nombresLecturas: string[];
   numeroRepeticiones: number;
@@ -66,9 +67,10 @@ export interface MontageInProgress {
   productos: string[];
   pruebaToOT: Record<string, string>; // Mapeo de prueba ID a OT
   ultimaLectura: string | null; // Nueva campo para la fecha de la última lectura
-  estado: "En Proceso" | "Listo para Cálculo" | "Sin Configurar";
+  estado: "En Proceso" | "Listo para Cálculo" | "Sin Configurar" | "Eficacia guardada";
   ultimaActualizacion: string;
   configurado: boolean; // Nuevo campo para indicar si el montaje está configurado
+  asignadoA: string | null; // Campo para asignar el montaje a una persona
 }
 
 // Tipo para pruebas completadas
