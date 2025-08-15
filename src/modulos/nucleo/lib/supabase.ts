@@ -231,6 +231,7 @@ export type Database = {
       }
       montajes_de_laboratorio: {
         Row: {
+          asignado_a: string | null
           cantidad_lecturas: number | null
           cantidad_repeticiones: number | null
           condiciones_iniciales: Json | null
@@ -241,6 +242,7 @@ export type Database = {
           variedad: string | null
         }
         Insert: {
+          asignado_a?: string | null
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
@@ -251,6 +253,7 @@ export type Database = {
           variedad?: string | null
         }
         Update: {
+          asignado_a?: string | null
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
