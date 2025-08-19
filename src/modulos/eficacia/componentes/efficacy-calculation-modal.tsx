@@ -34,21 +34,6 @@ interface EfficacyCalculationModalProps {
   onCalculationComplete: () => void;
 }
 
-const mockLecturas = [
-  "Lectura Inicial",
-  "Lectura 7 días",
-  "Lectura 14 días",
-  "Lectura Final",
-];
-const mockResults = {
-  "1206": {
-    "Lectura Inicial": [20, 18, 19, 21],
-    "Lectura 7 días": [18, 17, 16, 19],
-    "Lectura 14 días": [15, 14, 16, 17],
-    "Lectura Final": [12, 11, 13, 14],
-  },
-};
-
 export function EfficacyCalculationModal({
   open,
   onOpenChange,
@@ -565,7 +550,10 @@ export function EfficacyCalculationModal({
                                         : ""
                                     }
                                     onChange={(e) =>
-                                      handleEfficacyEdit(col.key, e.target.value)
+                                      handleEfficacyEdit(
+                                        col.key,
+                                        e.target.value
+                                      )
                                     }
                                     onWheel={(e) => e.currentTarget.blur()}
                                     className="w-32 text-center text-xl font-bold border-2 border-green-300 bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-500 rounded p-3"
@@ -577,9 +565,13 @@ export function EfficacyCalculationModal({
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      const maxEfficacy = maxEfficacyByPrueba[col.key]?.value;
+                                      const maxEfficacy =
+                                        maxEfficacyByPrueba[col.key]?.value;
                                       if (maxEfficacy !== undefined) {
-                                        handleEfficacyEdit(col.key, maxEfficacy.toString());
+                                        handleEfficacyEdit(
+                                          col.key,
+                                          maxEfficacy.toString()
+                                        );
                                       }
                                     }}
                                     className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full transition-colors duration-200"

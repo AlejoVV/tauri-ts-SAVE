@@ -1,6 +1,4 @@
-import type React from "react";
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +33,6 @@ interface MontageSetupFormProps {
 
 export function MontageSetupForm({
   onMontageCreated,
-  onBack,
   montajeExistente,
 }: MontageSetupFormProps) {
   const [pruebasMontaje, setPruebasMontaje] = useState<EfficacyTestData[]>([]);
@@ -94,7 +91,7 @@ export function MontageSetupForm({
               : ["Lectura 1"],
           numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
           condicionesIniciales: {
-            testigo: [],
+            testigo: [] as (number | null)[],
             pruebas: {},
           },
         };
@@ -126,7 +123,10 @@ export function MontageSetupForm({
           }
         }
 
-        setFormData(baseFormData);
+        setFormData({
+          ...baseFormData,
+          variedad: "", // Include required variedad property
+        });
       } catch (error) {
         console.error("Error al cargar pruebas del montaje:", error);
         alert("Error al cargar las pruebas del montaje");
@@ -160,24 +160,6 @@ export function MontageSetupForm({
   };
 
   // Inicializar condiciones iniciales
-  const initializeCondicionesIniciales = (
-    numeroRepeticiones: number
-  ): CondicionesIniciales => {
-    const testigo = Array(numeroRepeticiones).fill(null);
-    const pruebas: { [key: string]: any } = {};
-
-    pruebasMontaje.forEach((test) => {
-      const pruebaKey = `${test.id}`;
-      pruebas[pruebaKey] = {
-        numeroIndividuos: Array(numeroRepeticiones).fill(null),
-        producto: test.producto,
-        dosis: test.dosis,
-        unidades: test.unidades,
-      };
-    });
-
-    return { testigo, pruebas };
-  };
 
   // Inicializar formData para montaje existente
   const [formData, setFormData] = useState<MontageData>(() => ({
@@ -406,11 +388,7 @@ export function MontageSetupForm({
           condicionesIniciales: newCondiciones,
         };
       });
-    } else if (
-      !sobrescribirTodos ||
-      valorSobrescribir === 0 ||
-      valorSobrescribir === ""
-    ) {
+    } else if (!sobrescribirTodos || valorSobrescribir === 0) {
       // Cuando se desactiva o el valor es 0/vacío, limpiar todos los campos
       setFormData((prev) => {
         const newCondiciones = { ...prev.condicionesIniciales };
@@ -489,7 +467,8 @@ export function MontageSetupForm({
   // Calcular promedio
   const calculateAverage = (values: (number | null)[]) => {
     const validValues = values.filter(
-      (val) => val !== null && val !== undefined && !isNaN(val)
+      (val): val is number =>
+        val !== null && val !== undefined && !isNaN(val as number)
     );
     if (validValues.length === 0) return "-";
     const sum = validValues.reduce((acc, val) => acc + val, 0);
@@ -620,7 +599,9 @@ export function MontageSetupForm({
                 <Input
                   id="variedad"
                   value={formData.variedad}
-                  onChange={(e) => setFormData({ ...formData, variedad: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, variedad: e.target.value })
+                  }
                   placeholder="Ingrese la variedad"
                 />
               </div>
@@ -843,7 +824,7 @@ export function MontageSetupForm({
                                   placeholder={
                                     !sobrescribirTodos ||
                                     valorSobrescribir === 0 ||
-                                    valorSobrescribir === ""
+                                    valorSobrescribir === null
                                       ? "0.0"
                                       : ""
                                   }
@@ -862,18 +843,18 @@ export function MontageSetupForm({
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    value={
+                                    value={String(
                                       formData.condicionesIniciales.pruebas[
                                         test.id
                                       ]?.numeroIndividuos[index] === null ||
-                                      formData.condicionesIniciales.pruebas[
-                                        test.id
-                                      ]?.numeroIndividuos[index] === undefined
+                                        formData.condicionesIniciales.pruebas[
+                                          test.id
+                                        ]?.numeroIndividuos[index] === undefined
                                         ? ""
                                         : formData.condicionesIniciales.pruebas[
                                             test.id
                                           ]?.numeroIndividuos[index]
-                                    }
+                                    )}
                                     onChange={(e) =>
                                       handlePruebaChange(
                                         test.id.toString(),
@@ -888,8 +869,7 @@ export function MontageSetupForm({
                                     className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                     placeholder={
                                       !sobrescribirTodos ||
-                                      valorSobrescribir === 0 ||
-                                      valorSobrescribir === ""
+                                      valorSobrescribir === 0
                                         ? "0.0"
                                         : ""
                                     }
