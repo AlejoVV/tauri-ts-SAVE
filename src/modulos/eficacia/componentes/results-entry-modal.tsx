@@ -498,6 +498,7 @@ export function ResultsEntryModal({
                                     className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                     step="0.1"
                                     placeholder="0.0"
+                                    tabIndex={index + 1}
                                   />
                                 </div>
                               )}
@@ -537,6 +538,7 @@ export function ResultsEntryModal({
                                         className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                         step="0.1"
                                         placeholder="0.0"
+                                        tabIndex={montage.numeroRepeticiones + (montage.pruebas.indexOf(prueba) * montage.numeroRepeticiones) + index + 1}
                                       />
                                     </div>
                                   )}
@@ -558,13 +560,15 @@ export function ResultsEntryModal({
                         <div className="text-center font-semibold text-gray-700">
                           {showInitial
                             ? calculateAverage(
-                                montage.condicionesIniciales?.testigo || []
+                                (
+                                  montage.condicionesIniciales?.testigo || []
+                                ).filter((val): val is number => val !== null)
                               )
                             : calculateTestigoAverage()}
                         </div>
                       </td>
                       {montage.pruebas.map((prueba) => {
-                        const pruebaResults = showInitial
+                        const pruebaResults: (number | null)[] = showInitial
                           ? montage.condicionesIniciales?.pruebas?.[prueba]
                               ?.numeroIndividuos || []
                           : getResultsForPrueba(prueba);
@@ -575,7 +579,11 @@ export function ResultsEntryModal({
                             className="px-4 py-2 border-r border-gray-200"
                           >
                             <div className="text-center font-semibold text-gray-700">
-                              {calculateAverage(pruebaResults)}
+                              {calculateAverage(
+                                pruebaResults.filter(
+                                  (val) => val !== null
+                                ) as number[]
+                              )}
                             </div>
                           </td>
                         );
