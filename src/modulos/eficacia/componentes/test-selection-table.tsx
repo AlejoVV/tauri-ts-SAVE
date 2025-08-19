@@ -230,7 +230,7 @@ export function TestSelectionTable({
     [uniqueOTs, uniqueObjetivos, uniqueEspecies]
   );
 
-  // Validar selección: mismo objetivo y especie vegetal (sin restricción de OT)
+  // Validar selección: mismo objetivo, especie vegetal y finca (sin restricción de OT)
   const validateSelection = (selectedRows: EfficacyTestData[]) => {
     if (selectedRows.length === 0) return true;
 
@@ -238,7 +238,8 @@ export function TestSelectionTable({
     return selectedRows.every(
       (row) =>
         row.objetivo === firstRow.objetivo &&
-        row.especieVegetal === firstRow.especieVegetal
+        row.especieVegetal === firstRow.especieVegetal &&
+        row.finca === firstRow.finca
     );
   };
 
@@ -317,8 +318,8 @@ export function TestSelectionTable({
           <div className="space-y-2">
             <CardDescription>
               Seleccione las pruebas que desea incluir en el montaje de
-              eficacia. Las pruebas deben ser del mismo objetivo y especie
-              vegetal.
+              eficacia. Las pruebas deben ser del mismo objetivo, especie
+              vegetal y finca.
             </CardDescription>
 
             {/* Estadísticas de pruebas */}
@@ -398,7 +399,7 @@ export function TestSelectionTable({
                   <h4 className="text-sm font-semibold text-blue-800 mb-2">
                     Criterios de Agrupación del Montaje
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
                     <div>
                       <span className="font-medium text-blue-700">OT:</span>{" "}
                       <span className="text-blue-600">
@@ -421,6 +422,14 @@ export function TestSelectionTable({
                       </span>{" "}
                       <span className="text-blue-600">
                         {selectedTests[0]?.especieVegetal}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-blue-700">
+                        Finca:
+                      </span>{" "}
+                      <span className="text-blue-600">
+                        {selectedTests[0]?.finca}
                       </span>
                     </div>
                   </div>
@@ -462,8 +471,8 @@ export function TestSelectionTable({
                 </p>
                 {!isValidSelection && (
                   <p className="text-sm text-red-600">
-                    Error: Las pruebas deben ser del mismo objetivo y
-                    especie vegetal
+                    Error: Las pruebas deben ser del mismo objetivo,
+                    especie vegetal y finca
                   </p>
                 )}
               </div>
