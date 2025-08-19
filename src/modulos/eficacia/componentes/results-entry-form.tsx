@@ -100,7 +100,6 @@ export function ResultsEntryForm({
   };
 
   const currentResults = getResults();
-  const currentLecturaName = montageData.nombresLecturas[currentLectura];
   const isCurrentLecturaSaved = savedLecturas.has(currentLectura);
 
   return (
