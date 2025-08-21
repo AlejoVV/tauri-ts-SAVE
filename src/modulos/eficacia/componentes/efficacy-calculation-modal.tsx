@@ -32,6 +32,12 @@ interface EfficacyCalculationModalProps {
   onOpenChange: (open: boolean) => void;
   montage: MontageInProgress;
   onCalculationComplete: () => void;
+  // Propiedades opcionales para modo de revisión
+  isReviewMode?: boolean;
+  initialEfficacies?: { [pruebaId: string]: number };
+  onEfficaciesUpdate?: (efficacies: { [pruebaId: string]: number }) => void;
+  currentMontageIndex?: number;
+  totalMontages?: number;
 }
 
 export function EfficacyCalculationModal({
@@ -39,6 +45,11 @@ export function EfficacyCalculationModal({
   onOpenChange,
   montage,
   onCalculationComplete,
+  isReviewMode = false,
+  initialEfficacies = {},
+  onEfficaciesUpdate,
+  currentMontageIndex,
+  totalMontages,
 }: EfficacyCalculationModalProps) {
   const [selectedLecturas, setSelectedLecturas] = useState<string[]>([]);
   const [calculationMethod, setCalculationMethod] = useState<string>("");
@@ -85,34 +96,77 @@ export function EfficacyCalculationModal({
       } else {
         setFormula(metodo);
       }
+
+      // En modo de revisión, cargar eficacias existentes
+      if (isReviewMode) {
+        // Si se proporcionaron eficacias iniciales, usarlas
+        if (Object.keys(initialEfficacies).length > 0) {
+          setEfficacyResults(initialEfficacies);
+          setHasSavedResults(true);
+        } else {
+          // Cargar eficacias guardadas desde la base de datos
+          const existingResults = await getEfficacyResults(Number(montage.id));
+          setEfficacyResults(existingResults);
+          setHasSavedResults(Object.keys(existingResults).length > 0);
+        }
+      }
       // Obtener resultados de lecturas
       const { testigoResults, pruebaResults } = await getLecturaResultados(
         Number(montage.id)
       );
-      // Determinar lecturas únicas
-      const allLecturas = new Set<string>();
+      // Generar lecturas con formato consistente "Lectura X (nombre)" igual que en results-entry-modal
+      const lecturas = Array.from(
+        { length: montage.numeroLecturas },
+        (_, i) => {
+          const nombrePersonalizado = montage.nombresLecturas?.[i];
+          return nombrePersonalizado
+            ? `Lectura ${i + 1} (${nombrePersonalizado})`
+            : `Lectura ${i + 1}`;
+        }
+      );
+
+      // También obtener lecturas desde resultados guardados para mantener compatibilidad
+      const lecturasDeResultados = new Set<string>();
       Object.keys(testigoResults).forEach((k) =>
-        allLecturas.add(k.replace(/^Testigo-/, ""))
+        lecturasDeResultados.add(k.replace(/^Testigo-/, ""))
       );
       Object.keys(pruebaResults).forEach((k) => {
         const parts = k.split("-");
         if (parts.length > 1)
-          allLecturas.add(parts.slice(1).join("-").toString());
+          lecturasDeResultados.add(parts.slice(1).join("-").toString());
       });
-      const lecturasArr = Array.from(allLecturas);
-      setSelectedLecturas(lecturasArr);
+
+      // Usar lecturas del montaje si están configuradas, sino usar las de resultados guardados
+      const allLecturas =
+        lecturas.length > 0 && montage.nombresLecturas?.length > 0
+          ? lecturas
+          : Array.from(lecturasDeResultados);
+
+      setSelectedLecturas(allLecturas);
       // Calcular promedios por lectura y prueba
       const promedios: any = {};
       // Testigo
-      promedios["testigo"] = lecturasArr.map((nombreLectura) => {
-        const arr = testigoResults[`Testigo-${nombreLectura}`] || [];
+      promedios["testigo"] = allLecturas.map((lecturaDisplay) => {
+        // Extraer el nombre real de la lectura del formato "Lectura X (nombre)" o usar tal como está
+        const nombreReal =
+          lecturaDisplay.includes("(") && lecturaDisplay.includes(")")
+            ? lecturaDisplay.match(/\((.+)\)$/)?.[1] || lecturaDisplay
+            : lecturaDisplay;
+
+        const arr = testigoResults[`Testigo-${nombreReal}`] || [];
         if (arr.length === 0) return "-";
         return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
       });
       // Pruebas
       montage.pruebas.forEach((pruebaId: string) => {
-        promedios[pruebaId] = lecturasArr.map((nombreLectura) => {
-          const arr = pruebaResults[`${pruebaId}-${nombreLectura}`] || [];
+        promedios[pruebaId] = allLecturas.map((lecturaDisplay) => {
+          // Extraer el nombre real de la lectura del formato "Lectura X (nombre)" o usar tal como está
+          const nombreReal =
+            lecturaDisplay.includes("(") && lecturaDisplay.includes(")")
+              ? lecturaDisplay.match(/\((.+)\)$/)?.[1] || lecturaDisplay
+              : lecturaDisplay;
+
+          const arr = pruebaResults[`${pruebaId}-${nombreReal}`] || [];
           if (arr.length === 0) return "-";
           return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
         });
@@ -134,7 +188,7 @@ export function EfficacyCalculationModal({
         let lecturaMaxEficacia = "";
 
         // Calcular eficacia para cada lectura
-        lecturasArr.forEach((lectura, lecturaIdx) => {
+        allLecturas.forEach((lecturaDisplay, lecturaIdx) => {
           const tratado = Number(promedios[pruebaId][lecturaIdx]);
           const testigo = Number(promedios["testigo"][lecturaIdx]);
           const inicial = Number(promedios[pruebaId][0]);
@@ -153,12 +207,12 @@ export function EfficacyCalculationModal({
           const eficaciaCalculada = Number.isFinite(valor)
             ? Number(valor.toFixed(2))
             : 0;
-          eficaciaPorLectura[pruebaId][lectura] = eficaciaCalculada;
+          eficaciaPorLectura[pruebaId][lecturaDisplay] = eficaciaCalculada;
 
           // Encontrar la eficacia máxima
           if (eficaciaCalculada > maxEficacia) {
             maxEficacia = eficaciaCalculada;
-            lecturaMaxEficacia = lectura;
+            lecturaMaxEficacia = lecturaDisplay;
           }
         });
 
@@ -206,20 +260,33 @@ export function EfficacyCalculationModal({
     return montage.pruebas.every((pruebaId) => {
       const value = efficacyResults[pruebaId];
       return (
-        value !== undefined && value !== null && !isNaN(value) && value !== ""
+        value !== undefined &&
+        value !== null &&
+        !isNaN(value) &&
+        typeof value === "number"
       );
     });
   };
 
-  // Handler para guardar
+  // Handler para guardar o actualizar (según el modo)
   const handleComplete = async () => {
     if (!isValidForSaving()) {
       alert(
-        "Por favor, complete todos los valores de eficacia antes de guardar."
+        "Por favor, complete todos los valores de eficacia antes de continuar."
       );
       return;
     }
 
+    if (isReviewMode) {
+      // Modo de revisión: actualizar estado externo sin guardar en BD
+      if (onEfficaciesUpdate) {
+        onEfficaciesUpdate(efficacyResults);
+      }
+      onCalculationComplete();
+      return;
+    }
+
+    // Modo normal: guardar en base de datos
     setSaving(true);
     try {
       const result = await saveEfficacyResults(
@@ -305,15 +372,33 @@ export function EfficacyCalculationModal({
           {/* Header mejorado */}
           <div className="bg-white border-b border-gray-200 px-8 py-4 flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Cálculo de Eficacia
-              </h1>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {isReviewMode
+                    ? "Revisión de Eficacia"
+                    : "Cálculo de Eficacia"}
+                </h1>
+                {isReviewMode &&
+                  currentMontageIndex &&
+                  totalMontages &&
+                  totalMontages > 1 && (
+                    <p className="text-sm text-blue-600 font-medium mt-1">
+                      Montaje {currentMontageIndex} de {totalMontages}
+                    </p>
+                  )}
+              </div>
               {hasSavedResults && (
                 <Badge
                   variant="outline"
-                  className="bg-gray-50 text-gray-700 border-gray-200 px-3 py-1"
+                  className={
+                    isReviewMode
+                      ? "bg-blue-50 text-blue-700 border-blue-200 px-3 py-1"
+                      : "bg-gray-50 text-gray-700 border-gray-200 px-3 py-1"
+                  }
                 >
-                  Resultados guardados
+                  {isReviewMode
+                    ? "Revisando eficacias"
+                    : "Resultados guardados"}
                 </Badge>
               )}
             </div>
@@ -632,7 +717,15 @@ export function EfficacyCalculationModal({
                       ) : (
                         <>
                           <TrendingUp className="h-6 w-6" />
-                          <span>Guardar Resultados Definitivos</span>
+                          <span>
+                            {isReviewMode
+                              ? currentMontageIndex &&
+                                totalMontages &&
+                                totalMontages > 1
+                                ? `Confirmar Revisión (${currentMontageIndex}/${totalMontages})`
+                                : "Confirmar Revisión"
+                              : "Guardar Resultados Definitivos"}
+                          </span>
                         </>
                       )}
                     </Button>

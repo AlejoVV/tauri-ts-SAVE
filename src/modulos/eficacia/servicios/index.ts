@@ -2,6 +2,8 @@
 
 import { supabase } from "../../nucleo/lib/supabaseClient";
 import type { VistaMaestraTotalRow, EfficacyTestData, MontageData, MontajeBasico } from "../tipos/index";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType } from "docx";
+import { saveAs } from "file-saver";
 
 /**
  * Obtiene las pruebas disponibles para montajes de eficacia
@@ -404,7 +406,7 @@ export const getMontajes = async () => {
         // Obtener información de todas las OTs únicas
         const otsUnicas = [...new Set(pruebasRelaciones?.map(rel => 
           rel.pruebas_ordenes_trabajo?.prueba_orden_id?.toString()
-        ).filter(Boolean))] || [];
+        ).filter(Boolean))];
         const ot = otsUnicas.length > 0 ? otsUnicas.join(", ") : "Sin OT";
         
         // Obtener información del primer OT para contexto
@@ -443,6 +445,7 @@ export const getMontajes = async () => {
           objetivo,
           finca,
           especie,
+          variedad: (montajeConTiposCompletos as any).variedad || null, // Incluir campo variedad
           fechaCreacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
           numeroLecturas: montaje.cantidad_lecturas || 0,
           nombresLecturas: montajeConTiposCompletos.nombres_lecturas || [],
@@ -461,8 +464,10 @@ export const getMontajes = async () => {
       })
     );
 
-    // Filtrar montajes que fallaron al cargar
-    return montajesConPruebas.filter(montaje => montaje !== null);
+    // Filtrar montajes que fallaron al cargar y excluir los que tienen eficacia guardada
+    return montajesConPruebas.filter(montaje => 
+      montaje !== null && montaje.estado !== "Eficacia guardada"
+    );
 
   } catch (error) {
     console.error("Error al obtener montajes:", error);
@@ -1057,6 +1062,213 @@ export const getEfficacyResults = async (
 };
 
 /**
+ * Obtiene todas las pruebas individuales de montajes completados (con estado "Eficacia guardada")
+ */
+export const getPruebasCompletadas = async () => {
+  try {
+    // Obtener todos los resultados de eficacia guardados con información completa
+    const { data: eficaciaResultados, error: eficaciaError } = await supabase
+      .from("eficacia_de_pruebas")
+      .select(`
+        *,
+        montajes_de_laboratorio (
+          id,
+          nombre,
+          fecha_creacion,
+          cantidad_lecturas,
+          cantidad_repeticiones
+        ),
+        pruebas_ordenes_trabajo (
+          prueba_id,
+          prueba_orden_id,
+          prueba_dosis_producto,
+          prueba_producto_unid,
+          prueba_compania,
+          prueba_contacto,
+          productos (producto_nombre),
+          objetivos (objetivo_nombre),
+          especie_vegetal (especie_nombre),
+          fincas (finca_nombre)
+        )
+      `)
+      .order("fecha_calculo", { ascending: false });
+
+    if (eficaciaError) {
+      console.error("Error al obtener pruebas completadas:", eficaciaError);
+      throw eficaciaError;
+    }
+
+    if (!eficaciaResultados || eficaciaResultados.length === 0) {
+      return [];
+    }
+
+    // Transformar los datos para el formato requerido
+    const pruebasCompletadas = eficaciaResultados.map((resultado) => {
+      const montaje = resultado.montajes_de_laboratorio;
+      const pruebaInfo = resultado.pruebas_ordenes_trabajo;
+
+      return {
+        id: `${resultado.prueba_id}-${resultado.montaje_id}`, // ID único combinando prueba y montaje
+        pruebaId: resultado.prueba_id?.toString() || "Sin ID",
+        montajeId: resultado.montaje_id?.toString() || "Sin montaje",
+        nombreMontaje: montaje?.nombre || "Sin nombre",
+        ot: pruebaInfo?.prueba_orden_id?.toString() || "Sin OT",
+        objetivo: pruebaInfo?.objetivos?.objetivo_nombre || "Sin objetivo",
+        finca: pruebaInfo?.fincas?.finca_nombre || "Sin finca",
+        especie: pruebaInfo?.especie_vegetal?.especie_nombre || "Sin especie",
+        producto: pruebaInfo?.productos?.producto_nombre || "Sin producto",
+        dosis: pruebaInfo?.prueba_dosis_producto || "Sin dosis",
+        unidades: pruebaInfo?.prueba_producto_unid || "",
+        compania: pruebaInfo?.prueba_compania || "Sin compañía",
+        contacto: pruebaInfo?.prueba_contacto || "Sin contacto",
+        fechaCreacionMontaje: montaje?.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
+        fechaCompletado: new Date(resultado.fecha_calculo || '').toLocaleDateString(),
+        numeroLecturas: montaje?.cantidad_lecturas || 0,
+        numeroRepeticiones: montaje?.cantidad_repeticiones || 0,
+        eficacia: resultado.eficacia || 0,
+        estado: "Eficacia guardada" as const
+      };
+    });
+
+    return pruebasCompletadas;
+
+  } catch (error) {
+    console.error("Error al obtener pruebas completadas:", error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene todos los montajes completados (con estado "Eficacia guardada")
+ */
+export const getMontajesCompletados = async () => {
+  try {
+    // Primero obtener todos los montajes que tienen resultados de eficacia guardados
+    const { data: montajesConEficacia, error: eficaciaError } = await supabase
+      .from("eficacia_de_pruebas")
+      .select("montaje_id")
+      .order("fecha_calculo", { ascending: false });
+
+    if (eficaciaError) {
+      console.error("Error al obtener montajes con eficacia:", eficaciaError);
+      throw eficaciaError;
+    }
+
+    // Obtener IDs únicos de montajes con eficacia
+    const montajeIds = [...new Set(montajesConEficacia?.map(e => e.montaje_id).filter(id => id !== null) || [])] as number[];
+
+    if (montajeIds.length === 0) {
+      return [];
+    }
+
+    // Obtener detalles de los montajes
+    const { data: montajes, error: montajesError } = await supabase
+      .from("montajes_de_laboratorio")
+      .select("*")
+      .in("id", montajeIds)
+      .order("fecha_creacion", { ascending: false });
+
+    if (montajesError) {
+      console.error("Error al obtener montajes completados:", montajesError);
+      throw montajesError;
+    }
+
+    // Para cada montaje, obtener información completa incluyendo eficacia
+    const montajesCompletosConInfo = await Promise.all(
+      (montajes || []).map(async (montaje) => {
+        // Obtener las pruebas del montaje con información completa
+        const { data: pruebasRelaciones, error: pruebasError } = await supabase
+          .from("pruebas_en_montajes")
+          .select(`
+            prueba_id,
+            pruebas_ordenes_trabajo (
+              prueba_id,
+              prueba_orden_id,
+              prueba_dosis_producto,
+              prueba_producto_unid,
+              productos (producto_nombre),
+              objetivos (objetivo_nombre),
+              especie_vegetal (especie_nombre),
+              fincas (finca_nombre)
+            )
+          `)
+          .eq("montaje_id", montaje.id);
+
+        if (pruebasError) {
+          console.error("Error al obtener pruebas del montaje:", pruebasError);
+          return null;
+        }
+
+        // Obtener resultados de eficacia
+        const { data: eficaciaResultados, error: eficaciaError } = await supabase
+          .from("eficacia_de_pruebas")
+          .select("*")
+          .eq("montaje_id", montaje.id);
+
+        if (eficaciaError) {
+          console.error("Error al obtener eficacia del montaje:", eficaciaError);
+          return null;
+        }
+
+        // Calcular eficacia promedio
+        const eficaciaPromedio = eficaciaResultados && eficaciaResultados.length > 0
+          ? eficaciaResultados.reduce((sum, r) => sum + (r.eficacia || 0), 0) / eficaciaResultados.length
+          : 0;
+
+        // Extraer información para el formato requerido
+        const pruebas = pruebasRelaciones?.map(rel => (rel.prueba_id || 0).toString()) || [];
+        const productos = pruebasRelaciones?.map(rel => 
+          rel.pruebas_ordenes_trabajo?.productos?.producto_nombre || "Sin producto"
+        ) || [];
+
+        // Obtener información de OTs únicas
+        const otsUnicas = [...new Set(pruebasRelaciones?.map(rel => 
+          rel.pruebas_ordenes_trabajo?.prueba_orden_id?.toString()
+        ).filter(Boolean))];
+        const ot = otsUnicas.length > 0 ? otsUnicas.join(", ") : "Sin OT";
+        
+        // Obtener información del primer OT para contexto
+        const primeraPrueba = pruebasRelaciones?.[0]?.pruebas_ordenes_trabajo;
+        const objetivo = primeraPrueba?.objetivos?.objetivo_nombre || "Sin objetivo";
+        const finca = primeraPrueba?.fincas?.finca_nombre || "Sin finca";
+        const especie = primeraPrueba?.especie_vegetal?.especie_nombre || "Sin especie";
+
+        // Fecha de completado (última fecha de cálculo)
+        const fechaCompletado = eficaciaResultados && eficaciaResultados.length > 0
+          ? Math.max(...eficaciaResultados.map(r => new Date(r.fecha_calculo || '').getTime()).filter(t => !isNaN(t)))
+          : null;
+
+        return {
+          id: montaje.id.toString(),
+          nombreMontaje: montaje.nombre || "Sin nombre",
+          ot,
+          objetivo,
+          finca,
+          especie,
+          fechaCreacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
+          fechaCompletado: fechaCompletado ? new Date(fechaCompletado).toLocaleDateString() : "Sin fecha",
+          numeroLecturas: montaje.cantidad_lecturas || 0,
+          lecturasCompletadas: montaje.cantidad_lecturas || 0, // Si tiene eficacia guardada, todas las lecturas están completas
+          numeroRepeticiones: montaje.cantidad_repeticiones || 0,
+          pruebas,
+          productos,
+          eficaciaPromedio,
+          eficaciaResultados: eficaciaResultados || [],
+          estado: "Eficacia guardada" as const
+        };
+      })
+    );
+
+    // Filtrar montajes que fallaron al cargar
+    return montajesCompletosConInfo.filter(montaje => montaje !== null);
+
+  } catch (error) {
+    console.error("Error al obtener montajes completados:", error);
+    throw error;
+  }
+};
+
+/**
  * Actualiza la asignación de un montaje a una persona específica
  */
 export const updateMontajeAssignment = async (
@@ -1078,5 +1290,869 @@ export const updateMontajeAssignment = async (
   } catch (error) {
     console.error("Error al actualizar asignación del montaje:", error);
     return { success: false, error: "Error inesperado al actualizar la asignación" };
+  }
+};
+
+/**
+ * Genera y descarga un informe DOCX con las pruebas completadas seleccionadas
+ */
+export const generatePruebasCompletadasReport = async (pruebasCompletadas: any[]) => {
+  try {
+    // Agrupar pruebas por montaje para organizar mejor el informe
+    const pruebasPorMontaje = pruebasCompletadas.reduce((acc, prueba) => {
+      const montajeId = prueba.montajeId;
+      if (!acc[montajeId]) {
+        acc[montajeId] = {
+          nombreMontaje: prueba.nombreMontaje,
+          fechaCreacionMontaje: prueba.fechaCreacionMontaje,
+          numeroLecturas: prueba.numeroLecturas,
+          numeroRepeticiones: prueba.numeroRepeticiones,
+          pruebas: []
+        };
+      }
+      acc[montajeId].pruebas.push(prueba);
+      return acc;
+    }, {} as any);
+
+    // Crear el documento
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            // Título principal
+            new Paragraph({
+              text: "INFORME DE PRUEBAS COMPLETADAS",
+              heading: HeadingLevel.TITLE,
+              alignment: "center",
+              spacing: {
+                after: 400,
+              },
+            }),
+
+            // Información general
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Fecha de generación: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: new Date().toLocaleDateString("es-ES", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }),
+                }),
+              ],
+              spacing: {
+                after: 200,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Total de pruebas incluidas: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: pruebasCompletadas.length.toString(),
+                }),
+              ],
+              spacing: {
+                after: 200,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Pruebas con eficacia revisada: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: pruebasCompletadas.filter((p: any) => p.eficaciaModificada).length.toString(),
+                  color: pruebasCompletadas.filter((p: any) => p.eficaciaModificada).length > 0 ? "0066CC" : "000000",
+                }),
+              ],
+              spacing: {
+                after: 200,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Montajes involucrados: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: Object.keys(pruebasPorMontaje).length.toString(),
+                }),
+              ],
+              spacing: {
+                after: 400,
+              },
+            }),
+
+            // Tabla resumen de pruebas
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                // Encabezado
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Prueba ID", bold: true })] })],
+                      width: { size: 8, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Montaje", bold: true })] })],
+                      width: { size: 14, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "OT", bold: true })] })],
+                      width: { size: 7, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Producto", bold: true })] })],
+                      width: { size: 13, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Dosis", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Finca", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Especie", bold: true })] })],
+                      width: { size: 8, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Compañía", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Contacto", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Fecha Completado", bold: true })] })],
+                      width: { size: 8, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Eficacia (%)", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Estado", bold: true })] })],
+                      width: { size: 8, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                // Filas de datos
+                ...pruebasCompletadas.map(
+                  (prueba) =>
+                    new TableRow({
+                      children: [
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.pruebaId || "Sin ID" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.nombreMontaje || "Sin montaje" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.ot || "Sin OT" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.producto || "Sin producto" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: `${prueba.dosis || "Sin dosis"} ${prueba.unidades || ""}`.trim() })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.finca || "Sin finca" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.especie || "Sin especie" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.compania || "Sin compañía" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.contacto || "Sin contacto" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: prueba.fechaCompletado || "Sin fecha" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ 
+                            children: [
+                              new TextRun({ 
+                                text: `${(prueba.eficacia || 0).toFixed(1)}%`,
+                                color: (prueba.eficacia || 0) >= 80 ? "00B050" : (prueba.eficacia || 0) >= 60 ? "FF9900" : "FF0000",
+                                bold: true 
+                              }),
+                              ...(prueba.eficaciaModificada && prueba.eficaciaOriginal !== undefined 
+                                ? [new TextRun({ text: ` (Original: ${prueba.eficaciaOriginal.toFixed(1)}%)`, size: 16 })]
+                                : []
+                              )
+                            ]
+                          })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ 
+                            children: [new TextRun({ 
+                              text: prueba.eficaciaModificada ? "Revisada" : "Original",
+                              color: prueba.eficaciaModificada ? "0066CC" : "000000",
+                              bold: prueba.eficaciaModificada 
+                            })] 
+                          })],
+                        }),
+                      ],
+                    })
+                ),
+              ],
+            }),
+
+            // Detalles por montaje
+            new Paragraph({
+              text: "DETALLES POR MONTAJE",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 600,
+                after: 300,
+              },
+            }),
+
+            // Generar detalles para cada montaje
+            ...Object.entries(pruebasPorMontaje).flatMap(([montajeId, montajeInfo]: [string, any], index) => [
+              new Paragraph({
+                text: `${index + 1}. ${montajeInfo.nombreMontaje}`,
+                heading: HeadingLevel.HEADING_2,
+                spacing: {
+                  before: 400,
+                  after: 200,
+                },
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "ID del Montaje: ", bold: true }),
+                  new TextRun({ text: montajeId }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Fecha de creación: ", bold: true }),
+                  new TextRun({ text: montajeInfo.fechaCreacionMontaje || "Sin fecha" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Número de lecturas: ", bold: true }),
+                  new TextRun({ text: montajeInfo.numeroLecturas?.toString() || "0" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Número de repeticiones: ", bold: true }),
+                  new TextRun({ text: montajeInfo.numeroRepeticiones?.toString() || "0" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Pruebas incluidas: ", bold: true }),
+                  new TextRun({ text: montajeInfo.pruebas.length.toString() }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Eficacia promedio del montaje: ", bold: true }),
+                  new TextRun({
+                    text: `${(montajeInfo.pruebas.reduce((sum: number, p: any) => sum + (p.eficacia || 0), 0) / montajeInfo.pruebas.length).toFixed(1)}%`,
+                    color: (montajeInfo.pruebas.reduce((sum: number, p: any) => sum + (p.eficacia || 0), 0) / montajeInfo.pruebas.length) >= 80 ? "00B050" : 
+                           (montajeInfo.pruebas.reduce((sum: number, p: any) => sum + (p.eficacia || 0), 0) / montajeInfo.pruebas.length) >= 60 ? "FF9900" : "FF0000",
+                    bold: true,
+                  }),
+                ],
+              }),
+
+              // Tabla de pruebas de este montaje
+              new Paragraph({
+                children: [new TextRun({ text: "Detalle de pruebas:", bold: true })],
+                spacing: { before: 200, after: 100 },
+              }),
+              new Table({
+                width: { size: 90, type: WidthType.PERCENTAGE },
+                rows: [
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: "Prueba ID", bold: true })] })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: "OT", bold: true })] })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: "Producto", bold: true })] })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: "Objetivo", bold: true })] })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: "Eficacia (%)", bold: true })] })],
+                      }),
+                    ],
+                  }),
+                  ...montajeInfo.pruebas.map(
+                    (prueba: any) =>
+                      new TableRow({
+                        children: [
+                          new TableCell({
+                            children: [new Paragraph({ text: prueba.pruebaId || "N/A" })],
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({ text: prueba.ot || "N/A" })],
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({ text: prueba.producto || "N/A" })],
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({ text: prueba.objetivo || "N/A" })],
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({ text: `${(prueba.eficacia || 0).toFixed(1)}%` })],
+                          }),
+                        ],
+                      })
+                  ),
+                ],
+              }),
+
+              new Paragraph({ text: "" }), // Línea en blanco
+            ]),
+
+            // Pie de página con estadísticas
+            new Paragraph({
+              text: "RESUMEN ESTADÍSTICO",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 600,
+                after: 300,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Eficacia promedio general: ", bold: true }),
+                new TextRun({
+                  text: `${(
+                    pruebasCompletadas.reduce((sum, p) => sum + (p.eficacia || 0), 0) /
+                    pruebasCompletadas.length
+                  ).toFixed(1)}%`,
+                  bold: true,
+                }),
+              ],
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Pruebas con eficacia alta (≥80%): ", bold: true }),
+                new TextRun({
+                  text: pruebasCompletadas.filter((p) => (p.eficacia || 0) >= 80).length.toString(),
+                }),
+              ],
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Pruebas con eficacia media (60-79%): ", bold: true }),
+                new TextRun({
+                  text: pruebasCompletadas.filter((p) => (p.eficacia || 0) >= 60 && (p.eficacia || 0) < 80).length.toString(),
+                }),
+              ],
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Pruebas con eficacia baja (<60%): ", bold: true }),
+                new TextRun({
+                  text: pruebasCompletadas.filter((p) => (p.eficacia || 0) < 60).length.toString(),
+                }),
+              ],
+            }),
+          ],
+        },
+      ],
+    });
+
+    // Generar el blob y descargar el archivo
+    const blob = await Packer.toBlob(doc);
+    const fecha = new Date().toISOString().split("T")[0];
+    const tieneRevisadas = pruebasCompletadas.some((p: any) => p.eficaciaModificada);
+    const nombreArchivo = tieneRevisadas 
+      ? `Informe_Pruebas_Revisadas_${fecha}.docx`
+      : `Informe_Pruebas_Completadas_${fecha}.docx`;
+    
+    saveAs(blob, nombreArchivo);
+    
+    return { success: true, fileName: nombreArchivo };
+  } catch (error) {
+    console.error("Error al generar informe DOCX:", error);
+    return { success: false, error: "Error al generar el informe" };
+  }
+};
+
+/**
+ * Genera y descarga un informe DOCX con los montajes completados seleccionados
+ * @deprecated Usar generatePruebasCompletadasReport en su lugar
+ */
+/**
+ * Actualiza los detalles editables de un montaje (nombre, variedad, nombres de lecturas)
+ */
+export const updateMontajeDetails = async (
+  montajeId: number,
+  details: {
+    nombre?: string;
+    variedad?: string;
+    nombres_lecturas?: string[];
+  }
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const updates: any = {};
+    
+    if (details.nombre !== undefined) {
+      updates.nombre = details.nombre;
+    }
+    
+    if (details.variedad !== undefined) {
+      updates.variedad = details.variedad;
+    }
+    
+    if (details.nombres_lecturas !== undefined) {
+      // Obtener los nombres de lecturas actuales para saber qué actualizar
+      const { data: montajeActual, error: montajeError } = await supabase
+        .from("montajes_de_laboratorio")
+        .select("nombres_lecturas")
+        .eq("id", montajeId)
+        .single();
+
+      if (montajeError) {
+        console.error("Error al obtener montaje actual:", montajeError);
+        return { success: false, error: montajeError.message };
+      }
+
+      const nombresAnteriores: string[] = Array.isArray(montajeActual?.nombres_lecturas) 
+        ? montajeActual.nombres_lecturas as string[]
+        : [];
+      const nuevosNombres = details.nombres_lecturas;
+
+      // Actualizar nombres en resultados_lecturas si hay cambios
+      if (nombresAnteriores.length > 0) {
+        for (let i = 0; i < Math.min(nombresAnteriores.length, nuevosNombres.length); i++) {
+          const nombreAnterior = nombresAnteriores[i];
+          const nuevoNombre = nuevosNombres[i];
+          
+          if (nombreAnterior && nuevoNombre && nombreAnterior !== nuevoNombre) {
+            // Actualizar resultados_lecturas con el nuevo nombre
+            const { error: updateResultsError } = await supabase
+              .from("resultados_lecturas")
+              .update({ nombre_lectura: nuevoNombre })
+              .eq("montaje_id", montajeId)
+              .eq("nombre_lectura", nombreAnterior);
+
+            if (updateResultsError) {
+              console.error("Error al actualizar nombres en resultados_lecturas:", updateResultsError);
+              // Continuar con otras actualizaciones aunque esta falle
+            } else {
+              console.log(`Nombre de lectura actualizado: "${nombreAnterior}" → "${nuevoNombre}"`);
+            }
+          }
+        }
+      }
+
+      updates.nombres_lecturas = details.nombres_lecturas;
+      // CRÍTICO: Actualizar también cantidad_lecturas para mantener sincronización
+      updates.cantidad_lecturas = details.nombres_lecturas.length;
+    }
+
+    const { error } = await supabase
+      .from("montajes_de_laboratorio")
+      .update(updates)
+      .eq("id", montajeId);
+
+    if (error) {
+      console.error("Error al actualizar detalles del montaje:", error);
+      return { success: false, error: error.message };
+    }
+
+    console.log("Detalles del montaje actualizados exitosamente:", {
+      montajeId,
+      updates
+    });
+
+    return { success: true };
+
+  } catch (error) {
+    console.error("Error inesperado al actualizar detalles del montaje:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error desconocido" 
+    };
+  }
+};
+
+export const generateMontajesCompletadosReport = async (montajesCompletados: any[]) => {
+  try {
+    // Crear el documento
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            // Título principal
+            new Paragraph({
+              text: "INFORME DE MONTAJES COMPLETADOS",
+              heading: HeadingLevel.TITLE,
+              alignment: "center",
+              spacing: {
+                after: 400,
+              },
+            }),
+
+            // Información general
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Fecha de generación: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: new Date().toLocaleDateString("es-ES", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }),
+                }),
+              ],
+              spacing: {
+                after: 200,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Total de montajes incluidos: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: montajesCompletados.length.toString(),
+                }),
+              ],
+              spacing: {
+                after: 400,
+              },
+            }),
+
+            // Tabla resumen
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                // Encabezado
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Montaje", bold: true })] })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "OT", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Objetivo", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Finca", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Especie", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Fecha Completado", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Eficacia (%)", bold: true })] })],
+                      width: { size: 10, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                // Filas de datos
+                ...montajesCompletados.map(
+                  (montaje) =>
+                    new TableRow({
+                      children: [
+                        new TableCell({
+                          children: [new Paragraph({ text: montaje.nombreMontaje || "Sin nombre" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: montaje.ot || "Sin OT" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: montaje.objetivo || "Sin objetivo" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: montaje.finca || "Sin finca" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: montaje.especie || "Sin especie" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: montaje.fechaCompletado || "Sin fecha" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: `${(montaje.eficaciaPromedio || 0).toFixed(1)}%` })],
+                        }),
+                      ],
+                    })
+                ),
+              ],
+            }),
+
+            // Detalles por montaje
+            new Paragraph({
+              text: "DETALLES POR MONTAJE",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 600,
+                after: 300,
+              },
+            }),
+
+            // Generar detalles para cada montaje
+            ...montajesCompletados.flatMap((montaje, index) => [
+              new Paragraph({
+                text: `${index + 1}. ${montaje.nombreMontaje || "Sin nombre"}`,
+                heading: HeadingLevel.HEADING_2,
+                spacing: {
+                  before: 400,
+                  after: 200,
+                },
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Orden de Trabajo: ", bold: true }),
+                  new TextRun({ text: montaje.ot || "Sin OT" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Objetivo: ", bold: true }),
+                  new TextRun({ text: montaje.objetivo || "Sin objetivo" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Finca: ", bold: true }),
+                  new TextRun({ text: montaje.finca || "Sin finca" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Especie: ", bold: true }),
+                  new TextRun({ text: montaje.especie || "Sin especie" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Productos utilizados: ", bold: true }),
+                  new TextRun({ text: (montaje.productos || []).join(", ") || "Sin productos" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Compañías involucradas: ", bold: true }),
+                  new TextRun({ text: [...new Set(montaje.pruebas.map((p: any) => p.compania).filter(Boolean))].join(", ") || "Sin compañías" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Contactos: ", bold: true }),
+                  new TextRun({ text: [...new Set(montaje.pruebas.map((p: any) => p.contacto).filter(Boolean))].join(", ") || "Sin contactos" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Número de lecturas: ", bold: true }),
+                  new TextRun({ text: (montaje.numeroLecturas || 0).toString() }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Número de repeticiones: ", bold: true }),
+                  new TextRun({ text: (montaje.numeroRepeticiones || 0).toString() }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Fecha de creación: ", bold: true }),
+                  new TextRun({ text: montaje.fechaCreacion || "Sin fecha" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Fecha de completado: ", bold: true }),
+                  new TextRun({ text: montaje.fechaCompletado || "Sin fecha" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Eficacia promedio: ", bold: true }),
+                  new TextRun({
+                    text: `${(montaje.eficaciaPromedio || 0).toFixed(1)}%`,
+                    color: montaje.eficaciaPromedio >= 80 ? "00B050" : montaje.eficaciaPromedio >= 60 ? "FF9900" : "FF0000",
+                    bold: true,
+                  }),
+                ],
+              }),
+
+              // Tabla de resultados de eficacia por prueba (si está disponible)
+              ...(montaje.eficaciaResultados && montaje.eficaciaResultados.length > 0
+                ? [
+                    new Paragraph({
+                      children: [new TextRun({ text: "Resultados por prueba:", bold: true })],
+                      spacing: { before: 200, after: 100 },
+                    }),
+                    new Table({
+                      width: { size: 80, type: WidthType.PERCENTAGE },
+                      rows: [
+                        new TableRow({
+                          children: [
+                            new TableCell({
+                              children: [new Paragraph({ children: [new TextRun({ text: "Prueba ID", bold: true })] })],
+                            }),
+                            new TableCell({
+                              children: [new Paragraph({ children: [new TextRun({ text: "Eficacia (%)", bold: true })] })],
+                            }),
+                          ],
+                        }),
+                        ...montaje.eficaciaResultados.map(
+                          (resultado: any) =>
+                            new TableRow({
+                              children: [
+                                new TableCell({
+                                  children: [new Paragraph({ text: resultado.prueba_id?.toString() || "N/A" })],
+                                }),
+                                new TableCell({
+                                  children: [new Paragraph({ text: `${(resultado.eficacia || 0).toFixed(1)}%` })],
+                                }),
+                              ],
+                            })
+                        ),
+                      ],
+                    }),
+                  ]
+                : []),
+
+              new Paragraph({ text: "" }), // Línea en blanco
+            ]),
+
+            // Pie de página con estadísticas
+            new Paragraph({
+              text: "RESUMEN ESTADÍSTICO",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 600,
+                after: 300,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Eficacia promedio general: ", bold: true }),
+                new TextRun({
+                  text: `${(
+                    montajesCompletados.reduce((sum, m) => sum + (m.eficaciaPromedio || 0), 0) /
+                    montajesCompletados.length
+                  ).toFixed(1)}%`,
+                  bold: true,
+                }),
+              ],
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Montajes con eficacia alta (≥80%): ", bold: true }),
+                new TextRun({
+                  text: montajesCompletados.filter((m) => (m.eficaciaPromedio || 0) >= 80).length.toString(),
+                }),
+              ],
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Montajes con eficacia media (60-79%): ", bold: true }),
+                new TextRun({
+                  text: montajesCompletados.filter((m) => (m.eficaciaPromedio || 0) >= 60 && (m.eficaciaPromedio || 0) < 80).length.toString(),
+                }),
+              ],
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Montajes con eficacia baja (<60%): ", bold: true }),
+                new TextRun({
+                  text: montajesCompletados.filter((m) => (m.eficaciaPromedio || 0) < 60).length.toString(),
+                }),
+              ],
+            }),
+          ],
+        },
+      ],
+    });
+
+    // Generar el blob y descargar el archivo
+    const blob = await Packer.toBlob(doc);
+    const fecha = new Date().toISOString().split("T")[0];
+    const nombreArchivo = `Informe_Montajes_Completados_${fecha}.docx`;
+    
+    saveAs(blob, nombreArchivo);
+    
+    return { success: true, fileName: nombreArchivo };
+  } catch (error) {
+    console.error("Error al generar informe DOCX:", error);
+    return { success: false, error: "Error al generar el informe" };
   }
 };

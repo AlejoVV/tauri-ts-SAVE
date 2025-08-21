@@ -57,6 +57,7 @@ export interface MontageInProgress {
   objetivo: string;
   finca: string;
   especie: string;
+  variedad: string | null; // Campo para la variedad
   fechaCreacion: string;
   numeroLecturas: number;
   nombresLecturas: string[];
@@ -73,18 +74,27 @@ export interface MontageInProgress {
   asignadoA: string | null; // Campo para asignar el montaje a una persona
 }
 
-// Tipo para pruebas completadas
+// Tipo para pruebas completadas individuales
 export interface CompletedTest {
   id: string;
+  pruebaId: string;
+  montajeId: string;
   nombreMontaje: string;
   ot: string;
   objetivo: string;
-  fechaCreacion: string;
+  finca: string;
+  especie: string;
+  producto: string;
+  dosis: string;
+  unidades: string;
+  compania: string;
+  contacto: string;
+  fechaCreacionMontaje: string;
+  fechaCompletado: string;
   numeroLecturas: number;
-  lecturasCompletadas: number;
-  eficaciaPromedio: number;
-  estado: "Completado" | "En Proceso";
-  pruebas: string[];
+  numeroRepeticiones: number;
+  eficacia: number;
+  estado: "Eficacia guardada";
 } 
 
 export interface ResultadoLectura {
