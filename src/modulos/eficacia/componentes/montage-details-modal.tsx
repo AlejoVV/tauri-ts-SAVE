@@ -144,12 +144,12 @@ export function MontageDetailsModal({
 
           {/* Información de control del montaje */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-base">
               <div className="flex flex-col">
                 <span className="font-medium text-blue-700 mb-1">
                   Orden de Trabajo:
                 </span>
-                <span className="font-bold text-gray-900 text-base">
+                <span className="font-bold text-gray-900 text-lg">
                   {montage.ot}
                 </span>
               </div>
@@ -157,19 +157,19 @@ export function MontageDetailsModal({
                 <span className="font-medium text-blue-700 mb-1">
                   Objetivo:
                 </span>
-                <span className="font-bold text-gray-900 text-base">
+                <span className="font-bold text-gray-900 text-lg">
                   {montage.objetivo}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="font-medium text-blue-700 mb-1">Finca:</span>
-                <span className="font-bold text-gray-900 text-base">
+                <span className="font-bold text-gray-900 text-lg">
                   {montage.finca}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="font-medium text-blue-700 mb-1">Especie:</span>
-                <span className="font-bold text-gray-900 text-base">
+                <span className="font-bold text-gray-900 text-lg">
                   {montage.especie}
                 </span>
               </div>
@@ -178,7 +178,7 @@ export function MontageDetailsModal({
 
           {/* Estado y progreso */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-base">
               <div className="flex flex-col">
                 <span className="font-medium text-green-700 mb-1">Estado:</span>
                 <div>
@@ -194,12 +194,12 @@ export function MontageDetailsModal({
                     }
                     className={
                       montage.estado === "Listo para Cálculo"
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-green-100 text-green-800 text-sm"
                         : montage.estado === "Sin Configurar"
-                        ? "bg-orange-100 text-orange-800"
+                        ? "bg-orange-100 text-orange-800 text-sm"
                         : montage.estado === "Eficacia guardada"
-                        ? "bg-blue-100 text-blue-800"
-                        : ""
+                        ? "bg-blue-100 text-blue-800 text-sm"
+                        : "text-sm"
                     }
                   >
                     {montage.estado}
@@ -210,7 +210,7 @@ export function MontageDetailsModal({
                 <span className="font-medium text-green-700 mb-1">
                   Progreso:
                 </span>
-                <span className="font-bold text-gray-900 text-base">
+                <span className="font-bold text-gray-900 text-lg">
                   {montage.lecturasCompletadas} / {montage.numeroLecturas}{" "}
                   lecturas
                 </span>
@@ -219,7 +219,7 @@ export function MontageDetailsModal({
                 <span className="font-medium text-green-700 mb-1">
                   Asignado a:
                 </span>
-                <span className="font-bold text-gray-900 text-base">
+                <span className="font-bold text-gray-900 text-lg">
                   {montage.asignadoA || "Sin asignar"}
                 </span>
               </div>
@@ -231,7 +231,7 @@ export function MontageDetailsModal({
       {/* Configuración del montaje */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Configuración del Montaje</CardTitle>
+          <CardTitle className="text-xl">Configuración del Montaje</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
@@ -249,7 +249,7 @@ export function MontageDetailsModal({
                     placeholder="Ingrese el nombre del montaje"
                   />
                 ) : (
-                  <div className="p-2 border rounded-md bg-gray-50 text-sm">
+                  <div className="p-2 border rounded-md bg-gray-50 text-base">
                     {montage.nombreMontaje}
                   </div>
                 )}
@@ -265,7 +265,7 @@ export function MontageDetailsModal({
                     placeholder="Ingrese la variedad"
                   />
                 ) : (
-                  <div className="p-2 border rounded-md bg-gray-50 text-sm">
+                  <div className="p-2 border rounded-md bg-gray-50 text-base">
                     {variedad || "No especificada"}
                   </div>
                 )}
@@ -273,11 +273,11 @@ export function MontageDetailsModal({
 
               <div className="space-y-2">
                 <Label>Número de Lecturas</Label>
-                <div className="p-2 border rounded-md bg-gray-50 text-sm">
+                <div className="p-2 border rounded-md bg-gray-50 text-base">
                   {isEditing ? nombresLecturas.length : montage.numeroLecturas}
                   {isEditing &&
                     nombresLecturas.length !== montage.numeroLecturas && (
-                      <span className="text-orange-600 text-xs ml-2">
+                      <span className="text-orange-600 text-sm ml-2">
                         (actualizado)
                       </span>
                     )}
@@ -286,7 +286,7 @@ export function MontageDetailsModal({
 
               <div className="space-y-2">
                 <Label>Número de Repeticiones</Label>
-                <div className="p-2 border rounded-md bg-gray-50 text-sm">
+                <div className="p-2 border rounded-md bg-gray-50 text-base">
                   {montage.numeroRepeticiones}
                 </div>
               </div>
@@ -329,14 +329,14 @@ export function MontageDetailsModal({
                   {nombresLecturas.map((nombre, index) => (
                     <div key={index} className="flex gap-2">
                       <div className="flex-1 space-y-1">
-                        <Label className="text-xs text-gray-600">
+                        <Label className="text-sm text-gray-600">
                           Lectura {index + 1}
                         </Label>
                         <Input
                           value={nombre}
                           onChange={(e) => updateLectura(index, e.target.value)}
                           placeholder={`Nombre de la lectura ${index + 1}`}
-                          className="text-sm"
+                          className="text-base"
                         />
                       </div>
                       <Button
@@ -351,7 +351,7 @@ export function MontageDetailsModal({
                     </div>
                   ))}
                   {nombresLecturas.length === 0 && (
-                    <div className="col-span-full text-muted-foreground text-sm italic bg-gray-50 border border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <div className="col-span-full text-muted-foreground text-base italic bg-gray-50 border border-dashed border-gray-300 rounded-lg p-4 text-center">
                       No hay lecturas configuradas. Haga clic en "Agregar
                       Lectura" para crear una.
                     </div>
@@ -366,16 +366,16 @@ export function MontageDetailsModal({
                         key={index}
                         className="p-3 border rounded-lg bg-white shadow-sm"
                       >
-                        <div className="text-xs font-medium text-blue-600 mb-1">
+                        <div className="text-sm font-medium text-blue-600 mb-1">
                           Lectura {index + 1}
                         </div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-base font-medium text-gray-900">
                           {nombre}
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="col-span-full text-muted-foreground text-sm italic bg-gray-50 border border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <div className="col-span-full text-muted-foreground text-base italic bg-gray-50 border border-dashed border-gray-300 rounded-lg p-4 text-center">
                       No hay lecturas configuradas
                     </div>
                   )}
@@ -398,7 +398,7 @@ export function MontageDetailsModal({
                       <Badge
                         key={index}
                         variant="secondary"
-                        className="text-xs"
+                        className="text-sm"
                       >
                         {producto}
                       </Badge>
@@ -407,7 +407,7 @@ export function MontageDetailsModal({
                 </div>
                 <div className="space-y-2">
                   <Label>Fechas</Label>
-                  <div className="text-sm text-gray-600 space-y-1">
+                  <div className="text-base text-gray-600 space-y-1">
                     <div>
                       <strong>Creación:</strong> {montage.fechaCreacion}
                     </div>

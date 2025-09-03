@@ -195,6 +195,7 @@ export function CompletedTestsTable({
       ultimaActualizacion: primeraSeleccionada.fechaCompletado,
       configurado: true,
       asignadoA: null,
+      variedad: "",
     };
 
     setMontajeParaRevisar(montageData);
@@ -340,7 +341,7 @@ export function CompletedTestsTable({
           const dosis = (row.original as CompletedTest).dosis;
           const unidades = (row.original as CompletedTest).unidades;
           return (
-            <span className="text-sm">
+            <span className="text-base">
               {dosis} {unidades}
             </span>
           );
@@ -395,7 +396,7 @@ export function CompletedTestsTable({
                 {eficaciaFinal.toFixed(1)}%
               </span>
               {esEditada && (
-                <Badge variant="secondary" className="text-xs px-1 py-0">
+                <Badge variant="secondary" className="text-sm px-1 py-0">
                   Editada
                 </Badge>
               )}
@@ -440,12 +441,12 @@ export function CompletedTestsTable({
           return (
             <div className="flex flex-wrap gap-1">
               {ots.slice(0, 2).map((ot, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+                <Badge key={index} variant="outline" className="text-sm">
                   {ot}
                 </Badge>
               ))}
               {ots.length > 2 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-sm">
                   +{ots.length - 2}
                 </Badge>
               )}
@@ -467,7 +468,7 @@ export function CompletedTestsTable({
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="text-xs bg-blue-100 text-blue-800"
+                  className="text-sm bg-blue-100 text-blue-800"
                 >
                   {pruebaId}
                 </Badge>
@@ -490,12 +491,12 @@ export function CompletedTestsTable({
           return (
             <div className="flex flex-wrap gap-1">
               {fincas.slice(0, 2).map((finca, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+                <Badge key={index} variant="outline" className="text-sm">
                   {finca}
                 </Badge>
               ))}
               {fincas.length > 2 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-sm">
                   +{fincas.length - 2}
                 </Badge>
               )}
@@ -512,12 +513,12 @@ export function CompletedTestsTable({
           return (
             <div className="flex flex-wrap gap-1">
               {especies.slice(0, 2).map((especie, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
+                <Badge key={index} variant="secondary" className="text-sm">
                   {especie}
                 </Badge>
               ))}
               {especies.length > 2 && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-sm">
                   +{especies.length - 2}
                 </Badge>
               )}
@@ -544,14 +545,14 @@ export function CompletedTestsTable({
                 <Badge
                   key={index}
                   variant="default"
-                  className="text-xs break-words max-w-full"
+                  className="text-sm break-words max-w-full"
                   style={{ whiteSpace: "normal", wordBreak: "break-word" }}
                 >
                   {compania}
                 </Badge>
               ))}
               {companias.length > 2 && (
-                <Badge variant="default" className="text-xs">
+                <Badge variant="default" className="text-sm">
                   +{companias.length - 2}
                 </Badge>
               )}
@@ -568,12 +569,12 @@ export function CompletedTestsTable({
           return (
             <div className="flex flex-wrap gap-1">
               {contactos.slice(0, 2).map((contacto, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+                <Badge key={index} variant="outline" className="text-sm">
                   {contacto}
                 </Badge>
               ))}
               {contactos.length > 2 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-sm">
                   +{contactos.length - 2}
                 </Badge>
               )}
@@ -611,12 +612,12 @@ export function CompletedTestsTable({
               >
                 {eficaciaPromedio.toFixed(1)}%
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground">
                 {montaje.eficaciaMinima.toFixed(1)}% -{" "}
                 {montaje.eficaciaMaxima.toFixed(1)}%
               </span>
               {tieneEditadas && (
-                <Badge variant="secondary" className="text-xs px-1 py-0">
+                <Badge variant="secondary" className="text-sm px-1 py-0">
                   Revisada
                 </Badge>
               )}
@@ -664,12 +665,12 @@ export function CompletedTestsTable({
     muiTableHeadCellProps: {
       sx: {
         fontWeight: "bold",
-        fontSize: "0.875rem",
+        fontSize: "1rem",
       },
     },
     muiTableBodyCellProps: {
       sx: {
-        fontSize: "0.8125rem",
+        fontSize: "0.95rem",
       },
     },
     initialState: {
@@ -703,12 +704,12 @@ export function CompletedTestsTable({
     muiTableHeadCellProps: {
       sx: {
         fontWeight: "bold",
-        fontSize: "0.875rem",
+        fontSize: "1rem",
       },
     },
     muiTableBodyCellProps: {
       sx: {
-        fontSize: "0.8125rem",
+        fontSize: "0.95rem",
       },
     },
     initialState: {
@@ -831,20 +832,20 @@ export function CompletedTestsTable({
                 <div>
                   {vistaAgrupada ? (
                     <>
-                      <p className="text-sm font-medium">
+                      <p className="text-base font-medium">
                         {Object.keys(rowSelection).length} montaje(s)
                         seleccionado(s)
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         {selectedTests.length} prueba(s) incluida(s) en total
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-sm font-medium">
+                      <p className="text-base font-medium">
                         {selectedTests.length} prueba(s) seleccionada(s)
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         {
                           Object.keys(
                             selectedTests.reduce(
@@ -858,7 +859,7 @@ export function CompletedTestsTable({
                     </>
                   )}
                   {Object.keys(eficaciasEditadas).length > 0 && (
-                    <p className="text-xs text-blue-600 font-medium">
+                    <p className="text-sm text-blue-600 font-medium">
                       ✓ Eficacias revisadas disponibles
                     </p>
                   )}
@@ -892,7 +893,7 @@ export function CompletedTestsTable({
           )}
 
           {pruebasCompletadas.length > 0 && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground bg-gray-50 p-3 rounded">
+            <div className="flex items-center justify-between text-base text-muted-foreground bg-gray-50 p-3 rounded">
               <span>
                 {vistaAgrupada
                   ? `${montajesAgrupados.length} montaje(s) • ${pruebasCompletadas.length} prueba(s) total`

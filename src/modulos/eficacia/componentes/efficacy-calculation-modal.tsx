@@ -373,7 +373,7 @@ export function EfficacyCalculationModal({
           <div className="bg-white border-b border-gray-200 px-8 py-4 flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-4xl font-bold text-gray-900">
                   {isReviewMode
                     ? "Revisión de Eficacia"
                     : "Cálculo de Eficacia"}
@@ -382,7 +382,7 @@ export function EfficacyCalculationModal({
                   currentMontageIndex &&
                   totalMontages &&
                   totalMontages > 1 && (
-                    <p className="text-sm text-blue-600 font-medium mt-1">
+                    <p className="text-base text-blue-600 font-medium mt-1">
                       Montaje {currentMontageIndex} de {totalMontages}
                     </p>
                   )}
@@ -403,7 +403,7 @@ export function EfficacyCalculationModal({
               )}
             </div>
             <div className="bg-gray-50 rounded p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-base">
                 <div className="flex flex-col">
                   <span className="font-semibold text-gray-700">Montaje:</span>
                   <span className="text-gray-900 font-medium">
@@ -428,14 +428,14 @@ export function EfficacyCalculationModal({
                 </div>
               </div>
             </div>
-            <div className="mt-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
+            <div className="mt-3 text-base text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
               <p className="font-medium text-gray-800 mb-1">Instrucciones:</p>
               <p className="mb-2">
                 El sistema calcula automáticamente la eficacia para cada lectura
                 de cada prueba. La eficacia máxima (resaltada en verde) se
                 selecciona como valor final, pero puede ajustarse manualmente.
               </p>
-              <p className="text-xs text-blue-600">
+              <p className="text-sm text-blue-600">
                 • <strong>Azul:</strong> Eficacias calculadas por lectura •{" "}
                 <strong>Verde:</strong> Eficacia máxima encontrada •{" "}
                 <strong>Final:</strong> Valor ajustable basado en la máxima
@@ -450,10 +450,10 @@ export function EfficacyCalculationModal({
               <div className="bg-white rounded border border-gray-200 overflow-hidden">
                 {/* Título de la sección */}
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-bold text-gray-800">
+                  <h2 className="text-2xl font-bold text-gray-800">
                     Datos de Lecturas y Cálculo de Eficacia
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-base text-gray-600 mt-1">
                     Valores promedio por lectura y porcentajes de eficacia
                     calculados
                   </p>
@@ -463,13 +463,13 @@ export function EfficacyCalculationModal({
                   <table className="min-w-full border-collapse">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-8 py-5 text-left text-xl font-bold text-gray-900 border-r border-gray-300 bg-gray-100 sticky left-0 z-10">
+                        <th className="px-8 py-5 text-left text-2xl font-bold text-gray-900 border-r border-gray-300 bg-gray-100 sticky left-0 z-10">
                           Período de Lectura
                         </th>
                         {columns.map((col) => (
                           <th
                             key={col.key}
-                            className="px-6 py-5 text-center text-lg font-bold text-gray-900 border-r border-gray-300 bg-gray-100 min-w-[220px] whitespace-normal break-words"
+                            className="px-6 py-5 text-center text-xl font-bold text-gray-900 border-r border-gray-300 bg-gray-100 min-w-[220px] whitespace-normal break-words"
                             style={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
@@ -481,16 +481,16 @@ export function EfficacyCalculationModal({
                               </div>
                               {col.key !== "testigo" && (
                                 <>
-                                  <div className="text-xs text-gray-700 font-medium">
+                                  <div className="text-sm text-gray-700 font-medium">
                                     {col.finca}
                                   </div>
-                                  <div className="text-xs text-green-600 font-medium">
+                                  <div className="text-sm text-green-600 font-medium">
                                     {col.especie}
                                   </div>
-                                  <div className="text-xs text-gray-800 font-semibold">
+                                  <div className="text-sm text-gray-800 font-semibold">
                                     {col.producto}
                                   </div>
-                                  <div className="text-xs text-purple-600 font-medium">
+                                  <div className="text-sm text-purple-600 font-medium">
                                     {col.dosis}{" "}
                                     {col.unidades
                                       ? col.unidades.toLowerCase()
@@ -511,13 +511,13 @@ export function EfficacyCalculationModal({
                             idx % 2 === 0 ? "bg-gray-25" : "bg-white"
                           }`}
                         >
-                          <td className="px-8 py-2 text-lg font-semibold text-gray-900 border-r border-gray-300 bg-gray-50 sticky left-0 z-10">
+                          <td className="px-8 py-2 text-xl font-semibold text-gray-900 border-r border-gray-300 bg-gray-50 sticky left-0 z-10">
                             {lectura}
                           </td>
                           {columns.map((col) => (
                             <td
                               key={col.key}
-                              className="px-6 py-2 border-r border-gray-300 text-center text-lg font-medium"
+                              className="px-6 py-2 border-r border-gray-300 text-center text-xl font-medium"
                             >
                               <div className="bg-gray-50 rounded-lg px-3 py-2 inline-block min-w-[60px]">
                                 {lecturaPromedios[col.key] &&
@@ -542,10 +542,10 @@ export function EfficacyCalculationModal({
                           key={`eficacia-${lectura}`}
                           className="border-t border-blue-200 bg-blue-50"
                         >
-                          <td className="px-8 py-2 text-lg font-semibold text-blue-900 border-r border-gray-300 bg-blue-100 sticky left-0 z-10">
+                          <td className="px-8 py-2 text-xl font-semibold text-blue-900 border-r border-gray-300 bg-blue-100 sticky left-0 z-10">
                             <div className="flex flex-col">
                               <span>Eficacia {lectura}</span>
-                              <span className="text-sm font-normal text-blue-600">
+                              <span className="text-base font-normal text-blue-600">
                                 Calculada (%)
                               </span>
                             </div>
@@ -557,8 +557,8 @@ export function EfficacyCalculationModal({
                                 className="px-6 py-2 border-r border-gray-300 text-center"
                               >
                                 <div className="bg-gray-100 rounded-lg px-3 py-2 text-gray-500 font-medium">
-                                  <div className="text-base">N/A</div>
-                                  <div className="text-xs">Control</div>
+                                  <div className="text-lg">N/A</div>
+                                  <div className="text-sm">Control</div>
                                 </div>
                               </td>
                             ) : (
@@ -567,7 +567,7 @@ export function EfficacyCalculationModal({
                                 className="px-6 py-2 border-r border-gray-300 text-center"
                               >
                                 <div
-                                  className={`rounded-lg px-3 py-2 font-bold text-base ${
+                                  className={`rounded-lg px-3 py-2 font-bold text-lg ${
                                     maxEfficacyByPrueba[col.key]?.lectura ===
                                     lectura
                                       ? "bg-green-100 text-green-800 border-2 border-green-300"
@@ -580,7 +580,7 @@ export function EfficacyCalculationModal({
                                   %
                                   {maxEfficacyByPrueba[col.key]?.lectura ===
                                     lectura && (
-                                    <div className="text-xs text-green-600 mt-1 font-medium">
+                                    <div className="text-sm text-green-600 mt-1 font-medium">
                                       MÁXIMA
                                     </div>
                                   )}
@@ -593,13 +593,13 @@ export function EfficacyCalculationModal({
 
                       {/* Fila de Eficacia Final - Destacada */}
                       <tr className="border-t-4 border-gray-300 bg-gray-50">
-                        <td className="px-8 py-3 text-xl font-bold text-gray-900 border-r border-gray-300 bg-gray-100 sticky left-0 z-10">
+                        <td className="px-8 py-3 text-2xl font-bold text-gray-900 border-r border-gray-300 bg-gray-100 sticky left-0 z-10">
                           <div className="flex flex-col">
                             <span>Eficacia Final</span>
-                            <span className="text-sm font-normal text-gray-600">
+                            <span className="text-base font-normal text-gray-600">
                               Ajustable (%)
                             </span>
-                            <span className="text-xs font-normal text-green-600 mt-1">
+                            <span className="text-sm font-normal text-green-600 mt-1">
                               Basada en máxima
                             </span>
                           </div>
@@ -611,8 +611,8 @@ export function EfficacyCalculationModal({
                               className="px-6 py-3 border-r border-gray-300 text-center"
                             >
                               <div className="bg-gray-100 rounded-lg px-4 py-3 text-gray-500 font-medium">
-                                <div className="text-lg">N/A</div>
-                                <div className="text-xs">Control</div>
+                                <div className="text-xl">N/A</div>
+                                <div className="text-sm">Control</div>
                               </div>
                             </td>
                           ) : (
@@ -621,7 +621,7 @@ export function EfficacyCalculationModal({
                               className="px-6 py-3 border-r border-gray-300 text-center"
                             >
                               <div className="flex flex-col items-center gap-2">
-                                <div className="text-xs text-green-600 font-medium mb-1">
+                                <div className="text-sm text-green-600 font-medium mb-1">
                                   Máx:{" "}
                                   {maxEfficacyByPrueba[col.key]?.lectura ||
                                     "N/A"}
@@ -641,7 +641,7 @@ export function EfficacyCalculationModal({
                                       )
                                     }
                                     onWheel={(e) => e.currentTarget.blur()}
-                                    className="w-32 text-center text-xl font-bold border-2 border-green-300 bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-500 rounded p-3"
+                                    className="w-32 text-center text-2xl font-bold border-2 border-green-300 bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-500 rounded p-3"
                                     step="0.01"
                                     min="0"
                                     max="100"
@@ -665,7 +665,7 @@ export function EfficacyCalculationModal({
                                     <RotateCcw size={16} />
                                   </button>
                                 </div>
-                                <span className="text-xs text-gray-600 font-medium">
+                                <span className="text-sm text-gray-600 font-medium">
                                   % Eficacia Final
                                 </span>
                               </div>
@@ -685,10 +685,10 @@ export function EfficacyCalculationModal({
                       <h3 className="font-semibold text-gray-800 mb-1">
                         Fórmula de Cálculo:
                       </h3>
-                      <code className="text-sm bg-white border border-gray-300 rounded px-3 py-2 font-mono text-gray-700 block">
+                      <code className="text-base bg-white border border-gray-300 rounded px-3 py-2 font-mono text-gray-700 block">
                         {formula}
                       </code>
-                      <p className="text-xs text-gray-600 mt-2">
+                      <p className="text-sm text-gray-600 mt-2">
                         Esta fórmula se aplica automáticamente según el método
                         de cálculo seleccionado para el objetivo de eficacia.
                       </p>
@@ -697,7 +697,7 @@ export function EfficacyCalculationModal({
 
                   {/* Botón de acción */}
                   <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-base text-gray-600">
                       <p>
                         Asegúrese de completar todos los valores de eficacia
                         antes de guardar
@@ -706,7 +706,7 @@ export function EfficacyCalculationModal({
                     <Button
                       onClick={handleComplete}
                       disabled={saving || !isValidForSaving()}
-                      className="flex items-center gap-3 px-10 py-4 text-lg font-semibold"
+                      className="flex items-center gap-3 px-10 py-4 text-xl font-semibold"
                       size="lg"
                     >
                       {saving ? (

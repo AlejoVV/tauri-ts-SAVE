@@ -131,7 +131,9 @@ export function EficaciaMain() {
                     className="flex items-center gap-2"
                   >
                     {tab.icon && <tab.icon className="h-4 w-4" />}
-                    <span className="hidden sm:inline">{tab.title}</span>
+                    <span className="hidden sm:inline text-base">
+                      {tab.title}
+                    </span>
                   </TabsTrigger>
                 ))}
               </TabsList>

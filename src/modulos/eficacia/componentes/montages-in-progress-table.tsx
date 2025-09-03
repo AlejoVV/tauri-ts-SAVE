@@ -187,7 +187,7 @@ export function MontagesInProgressTable({
           return (
             <div className="flex flex-wrap gap-1">
               {pruebas.map((prueba, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+                <Badge key={index} variant="outline" className="text-sm">
                   {prueba}
                 </Badge>
               ))}
@@ -208,7 +208,7 @@ export function MontagesInProgressTable({
 
           return (
             <div className="space-y-1">
-              <div className="flex justify-between text-xs">
+              <div className="flex justify-between text-sm">
                 <span>
                   {lecturasCompletadas}/{totalLecturas} lecturas
                 </span>
@@ -226,7 +226,7 @@ export function MontagesInProgressTable({
         Cell: ({ cell }) => {
           const ultimaLectura = cell.getValue<string | null>();
           return (
-            <div className="text-sm">
+            <div className="text-base">
               {ultimaLectura || (
                 <span className="text-muted-foreground italic">
                   Sin lecturas
@@ -290,11 +290,11 @@ export function MontagesInProgressTable({
                   handleAssignmentChange(montage.id, persona);
                 }}
               >
-                <SelectTrigger className="w-full h-8 text-xs">
+                <SelectTrigger className="w-full h-8 text-sm">
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sin-asignar" className="text-xs">
+                  <SelectItem value="sin-asignar" className="text-sm">
                     <span className="text-muted-foreground italic">
                       Sin asignar
                     </span>
@@ -303,7 +303,7 @@ export function MontagesInProgressTable({
                     <SelectItem
                       key={persona}
                       value={persona}
-                      className="text-xs"
+                      className="text-sm"
                     >
                       {persona}
                     </SelectItem>
@@ -410,12 +410,12 @@ export function MontagesInProgressTable({
     muiTableHeadCellProps: {
       sx: {
         fontWeight: "bold",
-        fontSize: "0.875rem",
+        fontSize: "1rem",
       },
     },
     muiTableBodyCellProps: {
       sx: {
-        fontSize: "0.8125rem",
+        fontSize: "0.95rem",
       },
     },
     initialState: {

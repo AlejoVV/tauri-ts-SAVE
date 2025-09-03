@@ -287,10 +287,10 @@ export function ResultsEntryModal({
         <div className="bg-gradient-to-br from-slate-50 to-gray-100 h-full w-full overflow-y-auto">
           {/* Header simplificado y elegante */}
           <div className="bg-white border-b border-gray-200 px-8 py-3">
-            <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            <h1 className="text-3xl font-semibold text-gray-900 mb-2">
               Registro de Resultados - {montage.nombreMontaje}
             </h1>
-            <div className="flex flex-wrap gap-6 text-sm text-gray-600">
+            <div className="flex flex-wrap gap-6 text-base text-gray-600">
               <span>
                 <strong>Montaje:</strong> {montage.nombreMontaje}
               </span>
@@ -320,7 +320,7 @@ export function ResultsEntryModal({
                     setShowInitial(true);
                     setCurrentLectura(0);
                   }}
-                  className={`px-4 py-2 text-sm font-medium transition-all ${
+                  className={`px-4 py-2 text-base font-medium transition-all ${
                     showInitial
                       ? "bg-green-600 hover:bg-green-700 text-white"
                       : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -342,7 +342,7 @@ export function ResultsEntryModal({
                         setShowInitial(false);
                         setCurrentLectura(index);
                       }}
-                      className={`px-4 py-2 text-sm font-medium transition-all relative ${
+                      className={`px-4 py-2 text-base font-medium transition-all relative ${
                         isSelected
                           ? isGuardada
                             ? "bg-green-600 hover:bg-green-700 text-white"
@@ -367,13 +367,13 @@ export function ResultsEntryModal({
               <div className="px-4 py-3 border-b border-gray-200">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">
+                    <h3 className="text-xl font-medium text-gray-900">
                       {showInitial
                         ? "Condiciones Iniciales"
                         : `Resultados - ${currentLecturaName}`}
                     </h3>
                     {showInitial && (
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-base text-gray-600 mt-1">
                         Número inicial de individuos por réplica establecido al
                         crear el montaje
                       </p>
@@ -383,10 +383,10 @@ export function ResultsEntryModal({
                   {/* Mostrar fecha de lectura si está guardada */}
                   {!showInitial && isLecturaGuardada(currentLecturaName) && (
                     <div className="text-right">
-                      <div className="text-sm font-medium text-green-700">
+                      <div className="text-base font-medium text-green-700">
                         ✓ Lectura guardada
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-sm text-gray-500">
                         {getFechaLectura(currentLecturaName)}
                       </div>
                     </div>
@@ -398,10 +398,10 @@ export function ResultsEntryModal({
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                         Réplica
                       </th>
-                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
+                      <th className="px-4 py-2 text-center text-sm font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                         Testigo
                       </th>
                       {montage.pruebas.map((prueba, index) => {
@@ -419,7 +419,7 @@ export function ResultsEntryModal({
                         return (
                           <th
                             key={prueba}
-                            className="px-3 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[150px]"
+                            className="px-3 py-2 text-center text-base font-medium text-gray-900 border-r border-gray-200 min-w-[150px]"
                           >
                             <div className="space-y-1">
                               <div className="font-semibold text-blue-700">
@@ -440,16 +440,16 @@ export function ResultsEntryModal({
                                   return `Prueba: ${otDePrueba}-${prueba}`;
                                 })()}
                               </div>
-                              <div className="text-xs text-gray-700 font-medium">
+                              <div className="text-sm text-gray-700 font-medium">
                                 {montage.finca}
                               </div>
-                              <div className="text-xs text-green-600 font-medium">
+                              <div className="text-sm text-green-600 font-medium">
                                 {montage.especie}
                               </div>
-                              <div className="text-xs text-gray-800 font-semibold">
+                              <div className="text-sm text-gray-800 font-semibold">
                                 {productInfo.nombre}
                               </div>
-                              <div className="text-xs text-purple-600 font-medium">
+                              <div className="text-sm text-purple-600 font-medium">
                                 {productInfo.dosis}{" "}
                                 {productInfo.unidades
                                   ? productInfo.unidades.toLowerCase()
@@ -472,14 +472,14 @@ export function ResultsEntryModal({
                         return (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-4 py-2 whitespace-nowrap border-r border-gray-200">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-base font-medium text-gray-900">
                                 Réplica {index + 1}
                               </div>
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap border-r border-gray-200">
                               {showInitial ? (
                                 <div className="flex justify-center">
-                                  <div className="w-16 text-center bg-green-50 border border-green-200 rounded px-3 py-1 text-sm font-medium text-green-800">
+                                  <div className="w-16 text-center bg-green-50 border border-green-200 rounded px-3 py-1 text-base font-medium text-green-800">
                                     {testigoValues[index] || 0}
                                   </div>
                                 </div>
@@ -495,7 +495,7 @@ export function ResultsEntryModal({
                                       )
                                     }
                                     onWheel={(e) => e.currentTarget.blur()}
-                                    className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-base"
                                     step="0.1"
                                     placeholder="0.0"
                                     tabIndex={index + 1}
@@ -517,7 +517,7 @@ export function ResultsEntryModal({
                                 >
                                   {showInitial ? (
                                     <div className="flex justify-center items-center">
-                                      <div className="w-16 h-8 text-center bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm font-medium text-blue-800 flex items-center justify-center ">
+                                      <div className="w-16 h-8 text-center bg-blue-50 border border-blue-200 rounded px-3 py-2 text-base font-medium text-blue-800 flex items-center justify-center ">
                                         {pruebaResults[index] || 0}
                                       </div>
                                     </div>
@@ -535,10 +535,16 @@ export function ResultsEntryModal({
                                           )
                                         }
                                         onWheel={(e) => e.currentTarget.blur()}
-                                        className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-base"
                                         step="0.1"
                                         placeholder="0.0"
-                                        tabIndex={montage.numeroRepeticiones + (montage.pruebas.indexOf(prueba) * montage.numeroRepeticiones) + index + 1}
+                                        tabIndex={
+                                          montage.numeroRepeticiones +
+                                          montage.pruebas.indexOf(prueba) *
+                                            montage.numeroRepeticiones +
+                                          index +
+                                          1
+                                        }
                                       />
                                     </div>
                                   )}
@@ -552,12 +558,12 @@ export function ResultsEntryModal({
                     {/* Fila de promedios */}
                     <tr className="bg-blue-50 border-t-2 border-blue-200">
                       <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm font-semibold text-blue-900">
+                        <div className="text-base font-semibold text-blue-900">
                           Promedio
                         </div>
                       </td>
                       <td className="px-4 py-2 border-r border-gray-200 bg-gray-100">
-                        <div className="text-center font-semibold text-gray-700">
+                        <div className="text-center font-semibold text-gray-700 text-base">
                           {showInitial
                             ? calculateAverage(
                                 (
@@ -578,7 +584,7 @@ export function ResultsEntryModal({
                             key={prueba}
                             className="px-4 py-2 border-r border-gray-200"
                           >
-                            <div className="text-center font-semibold text-gray-700">
+                            <div className="text-center font-semibold text-gray-700 text-base">
                               {calculateAverage(
                                 pruebaResults.filter(
                                   (val) => val !== null
@@ -594,7 +600,7 @@ export function ResultsEntryModal({
                     {!showInitial && (
                       <tr className="bg-green-50 border-t-2 border-green-200">
                         <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
-                          <div className="text-sm font-semibold text-green-900">
+                          <div className="text-base font-semibold text-green-900">
                             Fotos
                           </div>
                         </td>
@@ -770,7 +776,7 @@ export function ResultsEntryModal({
                   <Button
                     onClick={handleSaveLectura}
                     disabled={loading}
-                    className="flex items-center gap-2 px-8 py-3"
+                    className="flex items-center gap-2 px-8 py-3 text-lg"
                   >
                     <Save className="h-5 w-5" />
                     {loading ? "Guardando..." : "Guardar Lectura"}
@@ -791,7 +797,7 @@ export function ResultsEntryModal({
               {/* Header del modal de foto */}
               <div className="absolute top-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4 z-10">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">{selectedPhoto.title}</h3>
+                  <h3 className="text-xl font-medium">{selectedPhoto.title}</h3>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <Button
@@ -805,7 +811,7 @@ export function ResultsEntryModal({
                       >
                         -
                       </Button>
-                      <span className="text-sm min-w-[4rem] text-center">
+                      <span className="text-base min-w-[4rem] text-center">
                         {Math.round(zoomLevel * 100)}%
                       </span>
                       <Button
@@ -864,7 +870,7 @@ export function ResultsEntryModal({
 
               {/* Footer con instrucciones */}
               <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center">
-                <div className="text-sm opacity-75">
+                <div className="text-base opacity-75">
                   Scroll para zoom • Arrastra para desplazar • Click fuera para
                   cerrar
                 </div>

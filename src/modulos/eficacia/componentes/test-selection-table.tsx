@@ -220,7 +220,7 @@ export function TestSelectionTable({
         Cell: ({ cell }) => {
           const estado = cell.getValue<string>();
           return (
-            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <span className="px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
               {estado}
             </span>
           );
@@ -278,12 +278,12 @@ export function TestSelectionTable({
     muiTableHeadCellProps: {
       sx: {
         fontWeight: "bold",
-        fontSize: "0.875rem",
+        fontSize: "1rem",
       },
     },
     muiTableBodyCellProps: {
       sx: {
-        fontSize: "0.8125rem",
+        fontSize: "0.95rem",
       },
     },
     initialState: {
@@ -399,13 +399,21 @@ export function TestSelectionTable({
                   <h4 className="text-sm font-semibold text-blue-800 mb-2">
                     Criterios de Agrupación del Montaje
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
                     <div>
                       <span className="font-medium text-blue-700">OT:</span>{" "}
                       <span className="text-blue-600">
-                        {selectedTests.length > 1 && selectedTests.every(test => test.ot === selectedTests[0].ot) 
-                          ? selectedTests[0]?.ot 
-                          : selectedTests.map(test => test.ot).filter((ot, index, self) => self.indexOf(ot) === index).join(", ")}
+                        {selectedTests.length > 1 &&
+                        selectedTests.every(
+                          (test) => test.ot === selectedTests[0].ot
+                        )
+                          ? selectedTests[0]?.ot
+                          : selectedTests
+                              .map((test) => test.ot)
+                              .filter(
+                                (ot, index, self) => self.indexOf(ot) === index
+                              )
+                              .join(", ")}
                       </span>
                     </div>
                     <div>
@@ -425,9 +433,7 @@ export function TestSelectionTable({
                       </span>
                     </div>
                     <div>
-                      <span className="font-medium text-blue-700">
-                        Finca:
-                      </span>{" "}
+                      <span className="font-medium text-blue-700">Finca:</span>{" "}
                       <span className="text-blue-600">
                         {selectedTests[0]?.finca}
                       </span>
@@ -437,24 +443,24 @@ export function TestSelectionTable({
 
                 {/* Resumen de pruebas seleccionadas */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-2">
+                  <h4 className="text-base font-semibold text-gray-800 mb-2">
                     Pruebas Seleccionadas ({selectedTests.length})
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {selectedTests.map((test, index) => (
+                    {selectedTests.map((test) => (
                       <div
                         key={test.id}
                         className="flex items-center justify-between bg-white rounded border p-2"
                       >
                         <div className="flex-1">
-                          <div className="font-medium text-sm">
+                          <div className="font-medium text-base">
                             Prueba {test.ot}-{test.prueba}
                           </div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-sm text-gray-600">
                             {test.producto} - {test.dosis} {test.unidades}
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-sm">
                           Finca: {test.finca}
                         </Badge>
                       </div>
@@ -466,13 +472,13 @@ export function TestSelectionTable({
 
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
               <div>
-                <p className="text-sm font-medium">
+                <p className="text-base font-medium">
                   {selectedTests.length} prueba(s) seleccionada(s)
                 </p>
                 {!isValidSelection && (
-                  <p className="text-sm text-red-600">
-                    Error: Las pruebas deben ser del mismo objetivo,
-                    especie vegetal y finca
+                  <p className="text-base text-red-600">
+                    Error: Las pruebas deben ser del mismo objetivo, especie
+                    vegetal y finca
                   </p>
                 )}
               </div>
