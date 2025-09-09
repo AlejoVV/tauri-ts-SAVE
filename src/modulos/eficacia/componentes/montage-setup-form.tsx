@@ -3,12 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import type {
@@ -23,7 +24,17 @@ import {
   contarMontajesPorOT,
   updateMontajeSetup,
   getMontajeById,
+  getCatalogoEficaciaPorObjetivo,
 } from "../servicios/index";
+
+// Constantes para objetivos especiales
+const OBJETIVOS_ESPECIALES = ["ácaros", "thrips"];
+const OPCIONES_TIEMPO = ["24h", "48h", "72h", "5 dias", "7 dias", "10 dias"];
+const OPCIONES_TIPO_EVALUACION = [
+  "por contacto e ingestión",
+  "por contacto",
+  "por ingestión",
+];
 
 interface MontageSetupFormProps {
   onMontageCreated: (montageData: MontageData) => void;
@@ -126,6 +137,8 @@ export function MontageSetupForm({
         setFormData({
           ...baseFormData,
           variedad: "", // Include required variedad property
+          tipoEvaluacion:
+            montajeExistente.tipoEvaluacion || "por contacto e ingestión", // Cargar tipo de evaluación existente
         });
       } catch (error) {
         console.error("Error al cargar pruebas del montaje:", error);
@@ -175,6 +188,8 @@ export function MontageSetupForm({
       testigo: [],
       pruebas: {},
     },
+    tipoEvaluacion:
+      montajeExistente.tipoEvaluacion || "por contacto e ingestión",
   }));
 
   const [sobrescribirTodos, setSobrescribirTodos] = useState(false);
@@ -182,6 +197,63 @@ export function MontageSetupForm({
   const [valorEncontradoDB, setValorEncontradoDB] = useState<number | null>(
     null
   );
+  const [tipoEvaluacion, setTipoEvaluacion] = useState<string>(
+    "por contacto e ingestión"
+  );
+  const [esPlaga, setEsPlaga] = useState<boolean>(false);
+
+  // Función helper para verificar si es objetivo especial
+  const isObjetivoEspecial = (objetivo: string) => {
+    return OBJETIVOS_ESPECIALES.some((obj) =>
+      objetivo.toLowerCase().includes(obj.toLowerCase())
+    );
+  };
+
+  // Función helper para verificar y cargar información de plaga
+  const checkAndLoadPlagaInfo = async (objetivo: string) => {
+    try {
+      const catalogoData = await getCatalogoEficaciaPorObjetivo(objetivo);
+      if (catalogoData && catalogoData.plaga_enfermedad) {
+        const plagaEnfermedad = catalogoData.plaga_enfermedad.toLowerCase();
+        const isPlaga = plagaEnfermedad.includes("plaga");
+        setEsPlaga(isPlaga);
+
+        // Si es plaga y hay tipo de evaluación guardado, usarlo
+        if (isPlaga && catalogoData.tipo_de_evaluacion) {
+          const tipoEval = catalogoData.tipo_de_evaluacion;
+          setTipoEvaluacion(tipoEval);
+          setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
+        } else if (isPlaga) {
+          // Si es plaga pero no hay tipo guardado, mantener el valor por defecto
+          const tipoEval = "por contacto e ingestión";
+          setTipoEvaluacion(tipoEval);
+          setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
+        } else {
+          // Si no es plaga, mantener el valor por defecto pero no mostrar la sección
+          setTipoEvaluacion("por contacto e ingestión");
+          setFormData((prev) => ({
+            ...prev,
+            tipoEvaluacion: "por contacto e ingestión",
+          }));
+        }
+      } else {
+        setEsPlaga(false);
+        setTipoEvaluacion("por contacto e ingestión");
+        setFormData((prev) => ({
+          ...prev,
+          tipoEvaluacion: "por contacto e ingestión",
+        }));
+      }
+    } catch (error) {
+      console.error("Error al verificar información de plaga:", error);
+      setEsPlaga(false);
+      setTipoEvaluacion("por contacto e ingestión");
+      setFormData((prev) => ({
+        ...prev,
+        tipoEvaluacion: "por contacto e ingestión",
+      }));
+    }
+  };
 
   // Función para ajustar condiciones iniciales preservando valores existentes
   const adjustCondicionesIniciales = (
@@ -230,20 +302,33 @@ export function MontageSetupForm({
     return { testigo: newTestigo, pruebas: newPruebas };
   };
 
-  // Actualizar condiciones iniciales y número de repeticiones según el objetivo de la primera prueba seleccionada
+  // Actualizar condiciones iniciales, número de repeticiones y lecturas según el objetivo
   useEffect(() => {
     const setRepeticionesPorObjetivo = async () => {
       if (pruebasMontaje.length > 0) {
         const objetivo = pruebasMontaje[0].objetivo;
         const repeticiones = await getNumeroRepeticionesPorObjetivo(objetivo);
+
+        // Si es objetivo especial, forzar una sola lectura
+        const esObjetivoEspecial = isObjetivoEspecial(objetivo);
+        const numeroLecturas = esObjetivoEspecial ? 1 : formData.numeroLecturas;
+        const nombresLecturas = esObjetivoEspecial
+          ? ["24h"] // valor por defecto
+          : formData.nombresLecturas;
+
         setFormData((prev) => ({
           ...prev,
+          numeroLecturas,
+          nombresLecturas,
           numeroRepeticiones: repeticiones,
           condicionesIniciales: adjustCondicionesIniciales(
             prev.condicionesIniciales,
             repeticiones
           ),
         }));
+
+        // Verificar si es plaga y cargar información relacionada
+        await checkAndLoadPlagaInfo(objetivo);
       }
     };
     setRepeticionesPorObjetivo();
@@ -408,6 +493,14 @@ export function MontageSetupForm({
   }, [sobrescribirTodos, valorSobrescribir, formData.numeroRepeticiones]);
 
   const handleNumeroLecturasChange = (value: number) => {
+    // Prevenir cambios para objetivos especiales
+    if (
+      pruebasMontaje.length > 0 &&
+      isObjetivoEspecial(pruebasMontaje[0].objetivo)
+    ) {
+      return;
+    }
+
     const newNombresLecturas = Array.from(
       { length: value },
       (_, i) => formData.nombresLecturas[i] || `Lectura ${i + 1}`
@@ -426,6 +519,23 @@ export function MontageSetupForm({
     setFormData({
       ...formData,
       nombresLecturas: newNombresLecturas,
+    });
+  };
+
+  // Nueva función para manejar cambios en el select de tiempo
+  const handleTiempoLecturaChange = (value: string) => {
+    setFormData({
+      ...formData,
+      nombresLecturas: [value],
+    });
+  };
+
+  // Función para manejar cambios en el tipo de evaluación
+  const handleTipoEvaluacionChange = (value: string) => {
+    setTipoEvaluacion(value);
+    setFormData({
+      ...formData,
+      tipoEvaluacion: value,
     });
   };
 
@@ -618,8 +728,25 @@ export function MontageSetupForm({
                     handleNumeroLecturasChange(Number.parseInt(e.target.value))
                   }
                   onWheel={(e) => e.currentTarget.blur()}
+                  readOnly={
+                    pruebasMontaje.length > 0 &&
+                    isObjetivoEspecial(pruebasMontaje[0].objetivo)
+                  }
+                  className={
+                    pruebasMontaje.length > 0 &&
+                    isObjetivoEspecial(pruebasMontaje[0].objetivo)
+                      ? "bg-gray-100 cursor-not-allowed"
+                      : ""
+                  }
                   required
                 />
+                {pruebasMontaje.length > 0 &&
+                  isObjetivoEspecial(pruebasMontaje[0].objetivo) && (
+                    <p className="text-xs text-gray-500">
+                      Para objetivos de {pruebasMontaje[0].objetivo} solo se
+                      permite una lectura
+                    </p>
+                  )}
               </div>
 
               <div className="space-y-2">
@@ -646,28 +773,92 @@ export function MontageSetupForm({
 
             <Separator />
 
-            {/* Configuración de nombres de lecturas */}
+            {/* Configuración de nombres de lecturas y tipo de evaluación */}
             <div className="space-y-4">
-              <Label className="text-base font-medium">
-                Nombres de las Lecturas
-              </Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {formData.nombresLecturas.map((nombre, index) => (
-                  <div key={index} className="space-y-2">
-                    <Label htmlFor={`lectura-${index}`}>
-                      Lectura {index + 1}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Sección de Lecturas */}
+                <div className="space-y-4">
+                  <Label className="text-base font-medium">
+                    {pruebasMontaje.length > 0 &&
+                    isObjetivoEspecial(pruebasMontaje[0].objetivo)
+                      ? "Tiempo de Lectura"
+                      : "Nombres de las Lecturas"}
+                  </Label>
+
+                  {pruebasMontaje.length > 0 &&
+                  isObjetivoEspecial(pruebasMontaje[0].objetivo) ? (
+                    // Mostrar select para objetivos especiales
+                    <div className="space-y-2">
+                      <Label htmlFor="tiempo-lectura">
+                        Seleccionar tiempo de lectura
+                      </Label>
+                      <Select
+                        value={formData.nombresLecturas[0] || ""}
+                        onValueChange={handleTiempoLecturaChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Seleccionar tiempo de lectura" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {OPCIONES_TIEMPO.map((opcion) => (
+                            <SelectItem key={opcion} value={opcion}>
+                              {opcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    // Mostrar inputs normales para otros objetivos
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {formData.nombresLecturas.map((nombre, index) => (
+                        <div key={index} className="space-y-2">
+                          <Label htmlFor={`lectura-${index}`}>
+                            Lectura {index + 1}
+                          </Label>
+                          <Input
+                            id={`lectura-${index}`}
+                            value={nombre}
+                            onChange={(e) =>
+                              handleNombreLecturaChange(index, e.target.value)
+                            }
+                            placeholder={`Nombre de la lectura ${index + 1}`}
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sección de Tipo de Evaluación - Solo para plagas */}
+                {esPlaga && (
+                  <div className="space-y-4">
+                    <Label className="text-base font-medium">
+                      Tipo de Evaluación
                     </Label>
-                    <Input
-                      id={`lectura-${index}`}
-                      value={nombre}
-                      onChange={(e) =>
-                        handleNombreLecturaChange(index, e.target.value)
-                      }
-                      placeholder={`Nombre de la lectura ${index + 1}`}
-                      required
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="tipo-evaluacion">
+                        Seleccionar tipo de evaluación
+                      </Label>
+                      <Select
+                        value={tipoEvaluacion}
+                        onValueChange={handleTipoEvaluacionChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Seleccionar tipo de evaluación" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {OPCIONES_TIPO_EVALUACION.map((opcion) => (
+                            <SelectItem key={opcion} value={opcion}>
+                              {opcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 

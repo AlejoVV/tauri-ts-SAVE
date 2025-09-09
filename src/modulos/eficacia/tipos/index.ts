@@ -47,6 +47,7 @@ export interface MontageData {
   nombresLecturas: string[];
   numeroRepeticiones: number;
   condicionesIniciales: CondicionesIniciales;
+  tipoEvaluacion?: string; // Tipo de evaluación para plagas (opcional)
 }
 
 // Tipo para montajes en progreso  
@@ -72,6 +73,7 @@ export interface MontageInProgress {
   ultimaActualizacion: string;
   configurado: boolean; // Nuevo campo para indicar si el montaje está configurado
   asignadoA: string | null; // Campo para asignar el montaje a una persona
+  tipoEvaluacion?: string | null; // Tipo de evaluación para plagas (opcional)
 }
 
 // Tipo para pruebas completadas individuales
