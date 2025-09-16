@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown, X } from "lucide-react";
 import type {
   EfficacyTestData,
   MontageData,
@@ -40,6 +42,110 @@ interface MontageSetupFormProps {
   onMontageCreated: (montageData: MontageData) => void;
   onBack?: () => void; // Opcional - el modal se puede cerrar desde fuera
   montajeExistente: MontageInProgress; // Requerido - siempre configurando montajes existentes
+}
+
+// Componente MultiSelect personalizado para tiempo de lectura
+interface MultiSelectTiempoProps {
+  selectedValues: string[];
+  onSelectionChange: (values: string[]) => void;
+  options: string[];
+}
+
+function MultiSelectTiempo({ selectedValues, onSelectionChange, options }: MultiSelectTiempoProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.multi-select-container')) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const toggleSelection = useCallback((value: string) => {
+    let newSelections;
+    if (selectedValues.includes(value)) {
+      newSelections = selectedValues.filter(item => item !== value);
+    } else {
+      newSelections = [...selectedValues, value];
+    }
+    onSelectionChange(newSelections);
+  }, [selectedValues, onSelectionChange]);
+
+  const clearAll = useCallback(() => {
+    onSelectionChange([]);
+    setIsOpen(false);
+  }, [onSelectionChange]);
+
+  return (
+    <div className="relative multi-select-container">
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 text-sm w-full justify-between font-normal"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate">
+          {selectedValues.length > 0
+            ? selectedValues.join(" - ")
+            : "Seleccione los tiempos"}
+        </span>
+        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+      
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+          <div className="p-2">
+            {options.map((opcion) => {
+              const isSelected = selectedValues.includes(opcion);
+              return (
+                <div
+                  key={opcion}
+                  className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded"
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleSelection(opcion)}
+                    className="h-4 w-4"
+                  />
+                  <label 
+                    className="text-sm cursor-pointer flex-1"
+                    onClick={() => toggleSelection(opcion)}
+                  >
+                    {opcion}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          {selectedValues.length > 0 && (
+            <div className="border-t p-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clearAll}
+                className="w-full text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Limpiar selección
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function MontageSetupForm({
@@ -197,9 +303,6 @@ export function MontageSetupForm({
   const [valorEncontradoDB, setValorEncontradoDB] = useState<number | null>(
     null
   );
-  const [tipoEvaluacion, setTipoEvaluacion] = useState<string>(
-    "por contacto e ingestión"
-  );
   const [esPlaga, setEsPlaga] = useState<boolean>(false);
 
   // Función helper para verificar si es objetivo especial
@@ -221,16 +324,13 @@ export function MontageSetupForm({
         // Si es plaga y hay tipo de evaluación guardado, usarlo
         if (isPlaga && catalogoData.tipo_de_evaluacion) {
           const tipoEval = catalogoData.tipo_de_evaluacion;
-          setTipoEvaluacion(tipoEval);
           setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
         } else if (isPlaga) {
           // Si es plaga pero no hay tipo guardado, mantener el valor por defecto
           const tipoEval = "por contacto e ingestión";
-          setTipoEvaluacion(tipoEval);
           setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
         } else {
           // Si no es plaga, mantener el valor por defecto pero no mostrar la sección
-          setTipoEvaluacion("por contacto e ingestión");
           setFormData((prev) => ({
             ...prev,
             tipoEvaluacion: "por contacto e ingestión",
@@ -238,7 +338,6 @@ export function MontageSetupForm({
         }
       } else {
         setEsPlaga(false);
-        setTipoEvaluacion("por contacto e ingestión");
         setFormData((prev) => ({
           ...prev,
           tipoEvaluacion: "por contacto e ingestión",
@@ -247,7 +346,6 @@ export function MontageSetupForm({
     } catch (error) {
       console.error("Error al verificar información de plaga:", error);
       setEsPlaga(false);
-      setTipoEvaluacion("por contacto e ingestión");
       setFormData((prev) => ({
         ...prev,
         tipoEvaluacion: "por contacto e ingestión",
@@ -311,29 +409,33 @@ export function MontageSetupForm({
 
         // Si es objetivo especial, forzar una sola lectura
         const esObjetivoEspecial = isObjetivoEspecial(objetivo);
-        const numeroLecturas = esObjetivoEspecial ? 1 : formData.numeroLecturas;
-        const nombresLecturas = esObjetivoEspecial
-          ? ["24h"] // valor por defecto
-          : formData.nombresLecturas;
+        
+        setFormData((prev) => {
+          // Para objetivos especiales, usar valores por defecto
+          // Para objetivos normales, mantener los valores actuales
+          const numeroLecturas = esObjetivoEspecial ? 1 : prev.numeroLecturas;
+          const nombresLecturas = esObjetivoEspecial
+            ? ["24h"] // valor por defecto
+            : prev.nombresLecturas;
 
-        setFormData((prev) => ({
-          ...prev,
-          numeroLecturas,
-          nombresLecturas,
-          numeroRepeticiones: repeticiones,
-          condicionesIniciales: adjustCondicionesIniciales(
-            prev.condicionesIniciales,
-            repeticiones
-          ),
-        }));
+          return {
+            ...prev,
+            numeroLecturas,
+            nombresLecturas,
+            numeroRepeticiones: repeticiones,
+            condicionesIniciales: adjustCondicionesIniciales(
+              prev.condicionesIniciales,
+              repeticiones
+            ),
+          };
+        });
 
         // Verificar si es plaga y cargar información relacionada
         await checkAndLoadPlagaInfo(objetivo);
       }
     };
     setRepeticionesPorObjetivo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pruebasMontaje]);
+  }, [pruebasMontaje.length, montajeExistente.id]);
 
   // Generar nombre automático del montaje (solo para montajes nuevos)
   useEffect(() => {
@@ -375,8 +477,7 @@ export function MontageSetupForm({
       }
     };
     generarNombreMontaje();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pruebasMontaje, montajeExistente.nombreMontaje]);
+  }, [pruebasMontaje.length, montajeExistente.id, montajeExistente.nombreMontaje]);
 
   // Rellenar condiciones iniciales automáticamente por objetivo
   useEffect(() => {
@@ -389,59 +490,63 @@ export function MontageSetupForm({
 
         // Buscar el primer valor válido encontrado en la BD
         let valorEncontrado: number | null = null;
+        let newValorEncontradoDB: number | null = null;
+        let newValorSobrescribir = 25;
 
-        setFormData((prev) => {
-          const newCondiciones = { ...prev.condicionesIniciales };
-          pruebasMontaje.forEach((test) => {
-            const pruebaKey = `${test.id}`;
-            let valor = unidadesPorObjetivo[test.objetivo];
-            // Extraer número de string tipo "Cinco (5)" o "25 individuos"
-            let num = 0;
-            if (valor) {
-              const match = valor.match(/(\d+)/);
-              if (match) {
-                num = parseInt(match[1], 10);
-                // Guardar el primer valor válido encontrado
-                if (valorEncontrado === null && num > 0) {
-                  valorEncontrado = num;
-                  // Establecer valorEncontradoDB aquí donde tenemos acceso al valor
-                  setValorEncontradoDB(valorEncontrado);
-                  setValorSobrescribir(valorEncontrado);
-                }
+        const newCondiciones = { ...formData.condicionesIniciales };
+        pruebasMontaje.forEach((test) => {
+          const pruebaKey = `${test.id}`;
+          let valor = unidadesPorObjetivo[test.objetivo];
+          // Extraer número de string tipo "Cinco (5)" o "25 individuos"
+          let num = 0;
+          if (valor) {
+            const match = valor.match(/(\d+)/);
+            if (match) {
+              num = parseInt(match[1], 10);
+              // Guardar el primer valor válido encontrado
+              if (valorEncontrado === null && num > 0) {
+                valorEncontrado = num;
+                newValorEncontradoDB = valorEncontrado;
+                newValorSobrescribir = valorEncontrado;
               }
             }
-            // Si no se pudo extraer, dejar en 0
-            newCondiciones.pruebas[pruebaKey] = {
-              ...newCondiciones.pruebas[pruebaKey],
-              numeroIndividuos: Array(prev.numeroRepeticiones).fill(num),
-              producto: test.producto,
-              dosis: test.dosis,
-              unidades: test.unidades,
-            };
-          });
-
-          // Aplicar el valor encontrado también al testigo si existe
-          const valorTestigo = valorEncontrado || 0;
-          newCondiciones.testigo = Array(prev.numeroRepeticiones).fill(
-            valorTestigo
-          );
-
-          return {
-            ...prev,
-            condicionesIniciales: newCondiciones,
+          }
+          // Si no se pudo extraer, dejar en 0
+          newCondiciones.pruebas[pruebaKey] = {
+            ...newCondiciones.pruebas[pruebaKey],
+            numeroIndividuos: Array(formData.numeroRepeticiones).fill(num),
+            producto: test.producto,
+            dosis: test.dosis,
+            unidades: test.unidades,
           };
         });
 
-        // Si no se encontró ningún valor, establecer valores por defecto
-        if (valorEncontrado === null) {
-          setValorEncontradoDB(null);
-          setValorSobrescribir(25); // Valor por defecto
+        // Aplicar el valor encontrado también al testigo si existe
+        const valorTestigo = valorEncontrado || 0;
+        newCondiciones.testigo = Array(formData.numeroRepeticiones).fill(
+          valorTestigo
+        );
+
+        // Actualizar todos los estados en una sola operación
+        setFormData((prev) => ({
+          ...prev,
+          condicionesIniciales: newCondiciones,
+        }));
+
+        // Actualizar los valores encontrados solo si cambiaron
+        if (newValorEncontradoDB !== valorEncontradoDB) {
+          setValorEncontradoDB(newValorEncontradoDB);
+        }
+        if (newValorSobrescribir !== valorSobrescribir) {
+          setValorSobrescribir(newValorSobrescribir);
         }
       }
     };
+    
     // Solo rellenar automáticamente si no hay condiciones iniciales guardadas válidas y no está activado sobrescribir todos
     if (
       !sobrescribirTodos &&
+      pruebasMontaje.length > 0 &&
       (!montajeExistente.condicionesIniciales ||
         !montajeExistente.condicionesIniciales.testigo ||
         !Array.isArray(montajeExistente.condicionesIniciales.testigo) ||
@@ -452,12 +557,11 @@ export function MontageSetupForm({
     ) {
       rellenarCondicionesPorObjetivo();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pruebasMontaje, sobrescribirTodos]);
+  }, [pruebasMontaje.length, sobrescribirTodos, montajeExistente.id]);
 
   // Si el usuario activa el checkbox, rellenar todos los inputs con el valor indicado
   useEffect(() => {
-    if (sobrescribirTodos && valorSobrescribir > 0) {
+    if (sobrescribirTodos && valorSobrescribir > 0 && formData.numeroRepeticiones > 0) {
       setFormData((prev) => {
         const newCondiciones = { ...prev.condicionesIniciales };
         newCondiciones.testigo = Array(prev.numeroRepeticiones).fill(
@@ -473,7 +577,7 @@ export function MontageSetupForm({
           condicionesIniciales: newCondiciones,
         };
       });
-    } else if (!sobrescribirTodos || valorSobrescribir === 0) {
+    } else if (!sobrescribirTodos && valorSobrescribir === 0) {
       // Cuando se desactiva o el valor es 0/vacío, limpiar todos los campos
       setFormData((prev) => {
         const newCondiciones = { ...prev.condicionesIniciales };
@@ -501,42 +605,51 @@ export function MontageSetupForm({
       return;
     }
 
-    const newNombresLecturas = Array.from(
-      { length: value },
-      (_, i) => formData.nombresLecturas[i] || `Lectura ${i + 1}`
-    );
+    setFormData(prev => {
+      const newNombresLecturas = Array.from(
+        { length: value },
+        (_, i) => prev.nombresLecturas[i] || `Lectura ${i + 1}`
+      );
 
-    setFormData({
-      ...formData,
-      numeroLecturas: value,
-      nombresLecturas: newNombresLecturas,
+      return {
+        ...prev,
+        numeroLecturas: value,
+        nombresLecturas: newNombresLecturas,
+      };
     });
   };
 
   const handleNombreLecturaChange = (index: number, value: string) => {
-    const newNombresLecturas = [...formData.nombresLecturas];
-    newNombresLecturas[index] = value;
-    setFormData({
-      ...formData,
-      nombresLecturas: newNombresLecturas,
+    setFormData(prev => {
+      const newNombresLecturas = [...prev.nombresLecturas];
+      newNombresLecturas[index] = value;
+      return {
+        ...prev,
+        nombresLecturas: newNombresLecturas,
+      };
     });
   };
 
-  // Nueva función para manejar cambios en el select de tiempo
-  const handleTiempoLecturaChange = (value: string) => {
-    setFormData({
-      ...formData,
-      nombresLecturas: [value],
-    });
+  // Nueva función para manejar cambios en el multi-select de tiempo
+  const handleTiempoLecturaChange = (selectedValues: string[]) => {
+    // Solo actualizar para objetivos especiales
+    if (pruebasMontaje.length > 0 && isObjetivoEspecial(pruebasMontaje[0].objetivo)) {
+      setFormData(prev => ({
+        ...prev,
+        nombresLecturas: selectedValues,
+        numeroLecturas: selectedValues.length,
+      }));
+    }
   };
+
+
 
   // Función para manejar cambios en el tipo de evaluación
   const handleTipoEvaluacionChange = (value: string) => {
-    setTipoEvaluacion(value);
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       tipoEvaluacion: value,
-    });
+    }));
   };
 
   const handleNumeroRepeticionesChange = (value: string) => {
@@ -553,11 +666,13 @@ export function MontageSetupForm({
 
   // Manejar cambios en la matriz de condiciones iniciales
   const handleTestigoChange = (replicaIndex: number, value: number | null) => {
-    const newCondiciones = { ...formData.condicionesIniciales };
-    newCondiciones.testigo[replicaIndex] = value;
-    setFormData({
-      ...formData,
-      condicionesIniciales: newCondiciones,
+    setFormData(prev => {
+      const newCondiciones = { ...prev.condicionesIniciales };
+      newCondiciones.testigo[replicaIndex] = value;
+      return {
+        ...prev,
+        condicionesIniciales: newCondiciones,
+      };
     });
   };
 
@@ -566,11 +681,13 @@ export function MontageSetupForm({
     replicaIndex: number,
     value: number | null
   ) => {
-    const newCondiciones = { ...formData.condicionesIniciales };
-    newCondiciones.pruebas[pruebaId].numeroIndividuos[replicaIndex] = value;
-    setFormData({
-      ...formData,
-      condicionesIniciales: newCondiciones,
+    setFormData(prev => {
+      const newCondiciones = { ...prev.condicionesIniciales };
+      newCondiciones.pruebas[pruebaId].numeroIndividuos[replicaIndex] = value;
+      return {
+        ...prev,
+        condicionesIniciales: newCondiciones,
+      };
     });
   };
 
@@ -718,7 +835,7 @@ export function MontageSetupForm({
                   id="variedad"
                   value={formData.variedad}
                   onChange={(e) =>
-                    setFormData({ ...formData, variedad: e.target.value })
+                    setFormData(prev => ({ ...prev, variedad: e.target.value }))
                   }
                   placeholder="Ingrese la variedad"
                   className="h-9 text-sm"
@@ -781,28 +898,18 @@ export function MontageSetupForm({
 
             {/* Cuarta fila - Selects en grid */}
             <div className="grid grid-cols-1 gap-4">
-              {/* Tiempo de lectura para objetivos especiales */}
+              {/* Tiempo de lectura para objetivos especiales - Multi-select */}
               {pruebasMontaje.length > 0 &&
               isObjetivoEspecial(pruebasMontaje[0].objetivo) && (
                 <div className="space-y-1">
                   <Label htmlFor="tiempo-lectura" className="text-sm font-medium">
                     Tiempo Lectura
                   </Label>
-                  <Select
-                    value={formData.nombresLecturas[0] || ""}
-                    onValueChange={handleTiempoLecturaChange}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Seleccione el tiempo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OPCIONES_TIEMPO.map((opcion) => (
-                        <SelectItem key={opcion} value={opcion}>
-                          {opcion}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSelectTiempo
+                    selectedValues={formData.nombresLecturas || []}
+                    onSelectionChange={handleTiempoLecturaChange}
+                    options={OPCIONES_TIEMPO}
+                  />
                 </div>
               )}
 
@@ -813,7 +920,7 @@ export function MontageSetupForm({
                     Tipo Aplicación
                   </Label>
                   <Select
-                    value={tipoEvaluacion}
+                    value={formData.tipoEvaluacion}
                     onValueChange={handleTipoEvaluacionChange}
                   >
                     <SelectTrigger className="h-9 text-sm w-full">
