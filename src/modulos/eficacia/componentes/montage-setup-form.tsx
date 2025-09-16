@@ -620,92 +620,100 @@ export function MontageSetupForm({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Pruebas del montaje */}
-      <Card>
-        <CardHeader className="bg-white">
-          <CardTitle className="text-gray-900">Pruebas del Montaje</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Información de control del montaje */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="flex flex-col">
-                <span className="font-medium text-blue-700 mb-1">
-                  Orden de Trabajo:
-                </span>
-                <span className="font-bold text-gray-900 text-base">
-                  {(() => {
-                    if (pruebasMontaje.length === 0) return "";
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Columna izquierda - Información del montaje */}
+      <div>
+        <Card>
+          <CardHeader className="bg-white">
+            <CardTitle className="text-gray-900">Pruebas del Montaje</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Información de control del montaje */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="space-y-3">
+                <div className="flex flex-col">
+                  <span className="font-medium text-blue-700 mb-1">
+                    Orden de Trabajo:
+                  </span>
+                  <span className="font-bold text-gray-900 text-base">
+                    {(() => {
+                      if (pruebasMontaje.length === 0) return "";
 
-                    // Obtener todas las OTs únicas
-                    const otsUnicas = [
-                      ...new Set(pruebasMontaje.map((prueba) => prueba.ot)),
-                    ];
+                      // Obtener todas las OTs únicas
+                      const otsUnicas = [
+                        ...new Set(pruebasMontaje.map((prueba) => prueba.ot)),
+                      ];
 
-                    // Si hay solo una OT única, mostrarla sola
-                    if (otsUnicas.length === 1) {
-                      return otsUnicas[0];
-                    }
+                      // Si hay solo una OT única, mostrarla sola
+                      if (otsUnicas.length === 1) {
+                        return otsUnicas[0];
+                      }
 
-                    // Si hay múltiples OTs, mostrarlas separadas por guiones
-                    return otsUnicas.join(", ");
-                  })()}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-medium text-blue-700 mb-1">
-                  Objetivo:
-                </span>
-                <span className="font-bold text-gray-900 text-base">
-                  {pruebasMontaje[0]?.objetivo}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-medium text-blue-700 mb-1">
-                  Especie Vegetal:
-                </span>
-                <span className="font-bold text-gray-900 text-base">
-                  {pruebasMontaje[0]?.especieVegetal}
-                </span>
+                      // Si hay múltiples OTs, mostrarlas separadas por guiones
+                      return otsUnicas.join(", ");
+                    })()} 
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-blue-700 mb-1">
+                    Objetivo:
+                  </span>
+                  <span className="font-bold text-gray-900 text-base">
+                    {pruebasMontaje[0]?.objetivo}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-blue-700 mb-1">
+                    Especie Vegetal:
+                  </span>
+                  <span className="font-bold text-gray-900 text-base">
+                    {pruebasMontaje[0]?.especieVegetal}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Lista de pruebas compacta */}
-          <div>
-            <span className="text-sm font-medium text-gray-700">
-              {pruebasMontaje.length} prueba(s):
-            </span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {pruebasMontaje.map((test) => (
-                <Badge key={test.id} variant="secondary" className="text-xs">
-                  {test.ot}-{test.prueba} - {test.producto}
-                </Badge>
-              ))}
+            {/* Lista de pruebas compacta */}
+            <div>
+              <span className="text-sm font-medium text-gray-700">
+                {pruebasMontaje.length} prueba(s):
+              </span>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {pruebasMontaje.map((test) => (
+                  <Badge key={test.id} variant="secondary" className="text-xs">
+                    {test.ot}-{test.prueba} - {test.producto}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Formulario de configuración del montaje */}
-      <Card>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nombre-montaje">Nombre del Montaje</Label>
+      {/* Columna derecha - Formulario de configuración */}
+      <div>
+        <Card>
+        <CardContent className="p-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Primera fila - Nombre del Montaje y Variedad */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="nombre-montaje" className="text-sm font-medium">
+                  Nombre del Montaje
+                </Label>
                 <Input
                   id="nombre-montaje"
                   value={formData.nombreMontaje}
                   readOnly
-                  className="bg-gray-100 cursor-not-allowed"
+                  className="bg-gray-100 cursor-not-allowed h-9 text-sm"
                   placeholder="Se genera automáticamente"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="variedad">Variedad</Label>
+              <div className="space-y-1">
+                <Label htmlFor="variedad" className="text-sm font-medium">
+                  Variedad
+                </Label>
                 <Input
                   id="variedad"
                   value={formData.variedad}
@@ -713,11 +721,17 @@ export function MontageSetupForm({
                     setFormData({ ...formData, variedad: e.target.value })
                   }
                   placeholder="Ingrese la variedad"
+                  className="h-9 text-sm"
                 />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="numero-lecturas">Número de Lecturas</Label>
+            {/* Segunda fila - Números en grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="numero-lecturas" className="text-sm font-medium">
+                  N° Lecturas
+                </Label>
                 <Input
                   id="numero-lecturas"
                   type="number"
@@ -732,26 +746,19 @@ export function MontageSetupForm({
                     pruebasMontaje.length > 0 &&
                     isObjetivoEspecial(pruebasMontaje[0].objetivo)
                   }
-                  className={
+                  className={`h-9 text-sm ${
                     pruebasMontaje.length > 0 &&
                     isObjetivoEspecial(pruebasMontaje[0].objetivo)
                       ? "bg-gray-100 cursor-not-allowed"
                       : ""
-                  }
+                  }`}
                   required
                 />
-                {pruebasMontaje.length > 0 &&
-                  isObjetivoEspecial(pruebasMontaje[0].objetivo) && (
-                    <p className="text-xs text-gray-500">
-                      Para objetivos de {pruebasMontaje[0].objetivo} solo se
-                      permite una lectura
-                    </p>
-                  )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="numero-repeticiones">
-                  Número de Repeticiones
+              <div className="space-y-1">
+                <Label htmlFor="numero-repeticiones" className="text-sm font-medium">
+                  N° Repeticiones
                 </Label>
                 <Input
                   id="numero-repeticiones"
@@ -766,351 +773,351 @@ export function MontageSetupForm({
                     handleNumeroRepeticionesChange(e.target.value)
                   }
                   onWheel={(e) => e.currentTarget.blur()}
+                  className="h-9 text-sm"
                   required
                 />
               </div>
             </div>
 
-            <Separator />
-
-            {/* Configuración de nombres de lecturas y tipo de evaluación */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Sección de Lecturas */}
-                <div className="space-y-4">
-                  <Label className="text-base font-medium">
-                    {pruebasMontaje.length > 0 &&
-                    isObjetivoEspecial(pruebasMontaje[0].objetivo)
-                      ? "Tiempo de Lectura"
-                      : "Nombres de las Lecturas"}
+            {/* Cuarta fila - Selects en grid */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Tiempo de lectura para objetivos especiales */}
+              {pruebasMontaje.length > 0 &&
+              isObjetivoEspecial(pruebasMontaje[0].objetivo) && (
+                <div className="space-y-1">
+                  <Label htmlFor="tiempo-lectura" className="text-sm font-medium">
+                    Tiempo Lectura
                   </Label>
-
-                  {pruebasMontaje.length > 0 &&
-                  isObjetivoEspecial(pruebasMontaje[0].objetivo) ? (
-                    // Mostrar select para objetivos especiales
-                    <div className="space-y-2">
-                      <Label htmlFor="tiempo-lectura">
-                        Seleccionar tiempo de lectura
-                      </Label>
-                      <Select
-                        value={formData.nombresLecturas[0] || ""}
-                        onValueChange={handleTiempoLecturaChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Seleccionar tiempo de lectura" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {OPCIONES_TIEMPO.map((opcion) => (
-                            <SelectItem key={opcion} value={opcion}>
-                              {opcion}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : (
-                    // Mostrar inputs normales para otros objetivos
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {formData.nombresLecturas.map((nombre, index) => (
-                        <div key={index} className="space-y-2">
-                          <Label htmlFor={`lectura-${index}`}>
-                            Lectura {index + 1}
-                          </Label>
-                          <Input
-                            id={`lectura-${index}`}
-                            value={nombre}
-                            onChange={(e) =>
-                              handleNombreLecturaChange(index, e.target.value)
-                            }
-                            placeholder={`Nombre de la lectura ${index + 1}`}
-                            required
-                          />
-                        </div>
+                  <Select
+                    value={formData.nombresLecturas[0] || ""}
+                    onValueChange={handleTiempoLecturaChange}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Seleccione el tiempo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OPCIONES_TIEMPO.map((opcion) => (
+                        <SelectItem key={opcion} value={opcion}>
+                          {opcion}
+                        </SelectItem>
                       ))}
-                    </div>
-                  )}
+                    </SelectContent>
+                  </Select>
                 </div>
+              )}
 
-                {/* Sección de Tipo de Evaluación - Solo para plagas */}
-                {esPlaga && (
-                  <div className="space-y-4">
-                    <Label className="text-base font-medium">
-                      Tipo de Evaluación
-                    </Label>
-                    <div className="space-y-2">
-                      <Label htmlFor="tipo-evaluacion">
-                        Seleccionar tipo de evaluación
-                      </Label>
-                      <Select
-                        value={tipoEvaluacion}
-                        onValueChange={handleTipoEvaluacionChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Seleccionar tipo de evaluación" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {OPCIONES_TIPO_EVALUACION.map((opcion) => (
-                            <SelectItem key={opcion} value={opcion}>
-                              {opcion}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Tipo de evaluación para plagas */}
+              {esPlaga && (
+                <div className="space-y-1">
+                  <Label htmlFor="tipo-evaluacion" className="text-sm font-medium">
+                    Tipo Aplicación
+                  </Label>
+                  <Select
+                    value={tipoEvaluacion}
+                    onValueChange={handleTipoEvaluacionChange}
+                  >
+                    <SelectTrigger className="h-9 text-sm w-full">
+                      <SelectValue placeholder="Seleccione el tipo" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full">
+                      {OPCIONES_TIPO_EVALUACION.map((opcion) => (
+                        <SelectItem key={opcion} value={opcion} className="text-sm">
+                          {opcion}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
-            <Separator />
-
-            {/* Condiciones Iniciales - Matriz */}
-            <div className="space-y-4">
-              <div>
-                <Label className="text-base font-medium">
-                  Condiciones Iniciales por Repetición
+            {/* Nombres de lecturas - Solo para objetivos no especiales */}
+            {!(
+              pruebasMontaje.length > 0 &&
+              isObjetivoEspecial(pruebasMontaje[0].objetivo)
+            ) && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Nombres de las Lecturas
                 </Label>
-                <p className="text-sm text-gray-600 mt-1">
-                  Ingrese el número inicial de individuos para cada réplica
-                </p>
-
-                {valorEncontradoDB !== null && valorEncontradoDB > 0 && (
-                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-600 font-semibold">✓</span>
-                      <span className="text-sm text-green-800">
-                        Se encontró configuración automática en la base de
-                        datos:
-                        <strong> {valorEncontradoDB} individuos</strong>{" "}
-                        aplicados a todas las pruebas y testigo
-                      </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {formData.nombresLecturas.map((nombre, index) => (
+                    <div key={index} className="space-y-1">
+                      <Label htmlFor={`lectura-${index}`} className="text-xs">
+                        Lectura {index + 1}
+                      </Label>
+                      <Input
+                        id={`lectura-${index}`}
+                        value={nombre}
+                        onChange={(e) =>
+                          handleNombreLecturaChange(index, e.target.value)
+                        }
+                        placeholder={`Lectura ${index + 1}`}
+                        className="h-8 text-xs"
+                        required
+                      />
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
+            )}
 
-              <div className="flex items-center gap-4 mb-2">
+          </form>
+        </CardContent>
+      </Card>
+      </div>
+
+      {/* Condiciones Iniciales - Card de ancho completo */}
+      <div className="col-span-1 lg:col-span-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              Condiciones Iniciales por Repetición
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Número inicial de individuos por réplica
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {valorEncontradoDB !== null && valorEncontradoDB > 0 && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600 font-semibold">✓</span>
+                  <span className="text-green-800">
+                    Configuración automática:{" "}
+                    <strong>{valorEncontradoDB} individuos</strong>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="sobrescribir-todos"
                   checked={sobrescribirTodos}
                   onChange={(e) => setSobrescribirTodos(e.target.checked)}
-                  className="mr-2"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <Label htmlFor="sobrescribir-todos" className="mr-2">
-                  Numero de individuos igual para todas las pruebas
+                <Label htmlFor="sobrescribir-todos" className="text-sm font-medium text-gray-700">
+                  Mismo número para todas las pruebas
                 </Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    value={valorSobrescribir === 0 ? "" : valorSobrescribir}
-                    onChange={(e) =>
-                      setValorSobrescribir(
-                        e.target.value === "" ? 0 : Number(e.target.value)
-                      )
-                    }
-                    onWheel={(e) => e.currentTarget.blur()}
-                    disabled={!sobrescribirTodos}
-                    className={`w-32 ${
-                      valorEncontradoDB !== null
-                        ? "border-green-500 bg-green-50"
-                        : ""
-                    }`}
-                    placeholder="Valor para todos"
-                  />
-                </div>
               </div>
+              <Input
+                type="number"
+                value={valorSobrescribir === 0 ? "" : valorSobrescribir}
+                onChange={(e) =>
+                  setValorSobrescribir(
+                    e.target.value === "" ? 0 : Number(e.target.value)
+                  )
+                }
+                onWheel={(e) => e.currentTarget.blur()}
+                disabled={!sobrescribirTodos}
+                className={`w-20 h-8 text-xs ${
+                  valorEncontradoDB !== null
+                    ? "border-green-500 bg-green-50"
+                    : ""
+                }`}
+                placeholder="Valor"
+              />
+            </div>
 
-              <div className="overflow-x-auto">
-                <div className="inline-block min-w-full border border-gray-200 rounded-lg">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 border-r border-gray-200">
-                          Réplica
-                        </th>
-                        <th className="px-4 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-100">
-                          Testigo
-                        </th>
-                        {pruebasMontaje.map((test) => (
-                          <th
-                            key={test.id}
-                            className="px-3 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[150px]"
-                          >
-                            <div className="space-y-1">
-                              <div className="font-semibold text-blue-700">
-                                {(() => {
-                                  // Obtener todas las OTs únicas
-                                  const otsUnicas = [
-                                    ...new Set(
-                                      pruebasMontaje.map((prueba) => prueba.ot)
-                                    ),
-                                  ];
+            <div className="overflow-x-auto">
+              <div className="inline-block min-w-full border border-gray-200 rounded-lg">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 border-r border-gray-200">
+                        Réplica
+                      </th>
+                      <th className="px-4 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-100">
+                        Testigo
+                      </th>
+                      {pruebasMontaje.map((test) => (
+                        <th
+                          key={test.id}
+                          className="px-3 py-2 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[150px]"
+                        >
+                          <div className="space-y-1">
+                            <div className="font-semibold text-blue-700">
+                              {(() => {
+                                // Obtener todas las OTs únicas
+                                const otsUnicas = [
+                                  ...new Set(
+                                    pruebasMontaje.map((prueba) => prueba.ot)
+                                  ),
+                                ];
 
-                                  // Si hay solo una OT única, mostrar formato actual
-                                  if (otsUnicas.length === 1) {
-                                    return `Prueba: ${test.prueba}`;
-                                  }
+                                // Si hay solo una OT única, mostrar formato actual
+                                if (otsUnicas.length === 1) {
+                                  return `Prueba: ${test.prueba}`;
+                                }
 
-                                  // Si hay múltiples OTs, mostrar formato OT-Prueba
-                                  return `Prueba: ${test.ot}-${test.prueba}`;
-                                })()}
-                              </div>
-                              <div className="text-xs text-gray-700 font-medium">
-                                {test.finca}
-                              </div>
-                              <div className="text-xs text-green-600 font-medium">
-                                {test.especieVegetal}
-                              </div>
-                              <div className="text-xs text-gray-800 font-semibold">
-                                {test.producto}
-                              </div>
-                              <div className="text-xs text-purple-600 font-medium">
-                                {test.dosis} {test.unidades}
-                              </div>
+                                // Si hay múltiples OTs, mostrar formato OT-Prueba
+                                return `Prueba: ${test.ot}-${test.prueba}`;
+                              })()}
                             </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {/* Filas de réplicas */}
-                      {Array.from(
-                        { length: formData.numeroRepeticiones },
-                        (_, index) => (
-                          <tr key={index} className="border-t border-gray-200">
-                            <td className="px-4 py-2 text-sm font-medium text-gray-900 border-r border-gray-200 bg-green-50">
-                              Réplica {index + 1}
-                            </td>
-                            {/* Columna Testigo */}
-                            <td className="px-4 py-2 border-r border-gray-200 bg-gray-50 text-center">
+                            <div className="text-xs text-gray-700 font-medium">
+                              {test.finca}
+                            </div>
+                            <div className="text-xs text-green-600 font-medium">
+                              {test.especieVegetal}
+                            </div>
+                            <div className="text-xs text-gray-800 font-semibold">
+                              {test.producto}
+                            </div>
+                            <div className="text-xs text-purple-600 font-medium">
+                              {test.dosis} {test.unidades}
+                            </div>
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    {/* Filas de réplicas */}
+                    {Array.from(
+                      { length: formData.numeroRepeticiones },
+                      (_, index) => (
+                        <tr key={index} className="border-t border-gray-200">
+                          <td className="px-4 py-2 text-sm font-medium text-gray-900 border-r border-gray-200 bg-green-50">
+                            Réplica {index + 1}
+                          </td>
+                          {/* Columna Testigo */}
+                          <td className="px-4 py-2 border-r border-gray-200 bg-gray-50 text-center">
+                            <div className="flex justify-center">
+                              <Input
+                                key={`testigo-${montajeExistente.id}-${index}`}
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={
+                                  formData.condicionesIniciales.testigo[
+                                    index
+                                  ] === null ||
+                                  formData.condicionesIniciales.testigo[
+                                    index
+                                  ] === undefined
+                                    ? ""
+                                    : formData.condicionesIniciales.testigo[
+                                        index
+                                      ]
+                                }
+                                onChange={(e) =>
+                                  handleTestigoChange(
+                                    index,
+                                    e.target.value === ""
+                                      ? null
+                                      : Number.parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                onWheel={(e) => e.currentTarget.blur()}
+                                className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                placeholder={
+                                  !sobrescribirTodos ||
+                                  valorSobrescribir === 0 ||
+                                  valorSobrescribir === null
+                                    ? "0.0"
+                                    : ""
+                                }
+                              />
+                            </div>
+                          </td>
+                          {/* Columnas de pruebas */}
+                          {pruebasMontaje.map((test) => (
+                            <td
+                              key={test.id}
+                              className="px-4 py-2 border-r border-gray-200 text-center"
+                            >
                               <div className="flex justify-center">
                                 <Input
-                                  key={`testigo-${montajeExistente.id}-${index}`}
+                                  key={`prueba-${montajeExistente.id}-${test.id}-${index}`}
                                   type="number"
                                   min="0"
                                   step="0.01"
-                                  value={
-                                    formData.condicionesIniciales.testigo[
-                                      index
-                                    ] === null ||
-                                    formData.condicionesIniciales.testigo[
-                                      index
-                                    ] === undefined
+                                  value={String(
+                                    formData.condicionesIniciales.pruebas[
+                                      test.id
+                                    ]?.numeroIndividuos[index] === null ||
+                                      formData.condicionesIniciales.pruebas[
+                                        test.id
+                                      ]?.numeroIndividuos[index] === undefined
                                       ? ""
-                                      : formData.condicionesIniciales.testigo[
-                                          index
-                                        ]
-                                  }
+                                      : formData.condicionesIniciales.pruebas[
+                                          test.id
+                                        ]?.numeroIndividuos[index]
+                                  )}
                                   onChange={(e) =>
-                                    handleTestigoChange(
+                                    handlePruebaChange(
+                                      test.id.toString(),
                                       index,
                                       e.target.value === ""
                                         ? null
-                                        : Number.parseFloat(e.target.value) || 0
+                                        : Number.parseFloat(e.target.value) ||
+                                            0
                                     )
                                   }
                                   onWheel={(e) => e.currentTarget.blur()}
                                   className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                   placeholder={
                                     !sobrescribirTodos ||
-                                    valorSobrescribir === 0 ||
-                                    valorSobrescribir === null
+                                    valorSobrescribir === 0
                                       ? "0.0"
                                       : ""
                                   }
                                 />
                               </div>
                             </td>
-                            {/* Columnas de pruebas */}
-                            {pruebasMontaje.map((test) => (
-                              <td
-                                key={test.id}
-                                className="px-4 py-2 border-r border-gray-200 text-center"
-                              >
-                                <div className="flex justify-center">
-                                  <Input
-                                    key={`prueba-${montajeExistente.id}-${test.id}-${index}`}
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={String(
-                                      formData.condicionesIniciales.pruebas[
-                                        test.id
-                                      ]?.numeroIndividuos[index] === null ||
-                                        formData.condicionesIniciales.pruebas[
-                                          test.id
-                                        ]?.numeroIndividuos[index] === undefined
-                                        ? ""
-                                        : formData.condicionesIniciales.pruebas[
-                                            test.id
-                                          ]?.numeroIndividuos[index]
-                                    )}
-                                    onChange={(e) =>
-                                      handlePruebaChange(
-                                        test.id.toString(),
-                                        index,
-                                        e.target.value === ""
-                                          ? null
-                                          : Number.parseFloat(e.target.value) ||
-                                              0
-                                      )
-                                    }
-                                    onWheel={(e) => e.currentTarget.blur()}
-                                    className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder={
-                                      !sobrescribirTodos ||
-                                      valorSobrescribir === 0
-                                        ? "0.0"
-                                        : ""
-                                    }
-                                  />
-                                </div>
-                              </td>
-                            ))}
-                          </tr>
-                        )
-                      )}
+                          ))}
+                        </tr>
+                      )
+                    )}
 
-                      {/* Fila de promedios */}
-                      <tr className="border-t-2 border-gray-300 bg-blue-50">
-                        <td className="px-4 py-2 text-sm font-bold text-gray-900 border-r border-gray-200">
-                          Promedio
-                        </td>
-                        <td className="px-4 py-2 border-r border-gray-200 bg-gray-100">
+                    {/* Fila de promedios */}
+                    <tr className="border-t-2 border-gray-300 bg-blue-50">
+                      <td className="px-4 py-2 text-sm font-bold text-gray-900 border-r border-gray-200">
+                        Promedio
+                      </td>
+                      <td className="px-4 py-2 border-r border-gray-200 bg-gray-100">
+                        <div className="text-center font-semibold text-gray-700">
+                          {calculateAverage(
+                            formData.condicionesIniciales.testigo
+                          )}
+                        </div>
+                      </td>
+                      {pruebasMontaje.map((test) => (
+                        <td
+                          key={test.id}
+                          className="px-4 py-2 border-r border-gray-200"
+                        >
                           <div className="text-center font-semibold text-gray-700">
                             {calculateAverage(
-                              formData.condicionesIniciales.testigo
+                              formData.condicionesIniciales.pruebas[test.id]
+                                ?.numeroIndividuos || []
                             )}
                           </div>
                         </td>
-                        {pruebasMontaje.map((test) => (
-                          <td
-                            key={test.id}
-                            className="px-4 py-2 border-r border-gray-200"
-                          >
-                            <div className="text-center font-semibold text-gray-700">
-                              {calculateAverage(
-                                formData.condicionesIniciales.pruebas[test.id]
-                                  ?.numeroIndividuos || []
-                              )}
-                            </div>
-                          </td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div className="flex justify-end pt-4">
-              <Button type="submit" disabled={isLoadingPruebas}>
-                {isLoadingPruebas ? "Cargando..." : "Configurar Montaje"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Botón de envío - Debajo de las condiciones iniciales */}
+      <div className="col-span-1 lg:col-span-2 flex justify-center pt-6">
+        <Button 
+          onClick={handleSubmit} 
+          disabled={isLoadingPruebas}
+          className="px-8 py-2 h-10"
+        >
+          {isLoadingPruebas ? "Cargando..." : "Configurar Montaje"}
+        </Button>
+      </div>
     </div>
   );
 }
