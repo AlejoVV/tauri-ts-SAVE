@@ -787,13 +787,19 @@ export const getLecturaResultados = async (
       };
     }
 
+    console.log("Datos obtenidos de la base de datos:", resultados);
+
     const testigoResults: Record<string, number[]> = {};
     const pruebaResults: Record<string, number[]> = {};
 
     (resultados || []).forEach(resultado => {
+      console.log("Procesando resultado:", resultado);
+      
       if (resultado.es_testigo) {
         // Es testigo
         const testigoKey = `Testigo-${resultado.nombre_lectura}`;
+        console.log("Creando clave de testigo:", testigoKey);
+        
         if (!testigoResults[testigoKey]) {
           testigoResults[testigoKey] = [];
         }
@@ -801,12 +807,17 @@ export const getLecturaResultados = async (
       } else if (resultado.prueba_id) {
         // Es prueba
         const pruebaKey = `${resultado.prueba_id}-${resultado.nombre_lectura}`;
+        console.log("Creando clave de prueba:", pruebaKey);
+        
         if (!pruebaResults[pruebaKey]) {
           pruebaResults[pruebaKey] = [];
         }
         pruebaResults[pruebaKey][resultado.replica_numero - 1] = resultado.valor_resultado || 0;
       }
     });
+
+    console.log("Resultados finales de testigo:", testigoResults);
+    console.log("Resultados finales de pruebas:", pruebaResults);
 
     return {
       testigoResults,
@@ -861,14 +872,14 @@ export const getMetodoCalculoPorObjetivo = async (objetivo: string): Promise<str
   try {
     const { data, error } = await supabase
       .from("catalogo_eficacia")
-      .select("calculo_de_eficacia")
+      .select("metodo_calculo_de_eficacia")
       .eq("objetivo_eficacia", objetivo)
       .limit(1)
       .single();
-    if (error || !data || typeof data.calculo_de_eficacia !== 'string') {
+    if (error || !data || typeof data.metodo_calculo_de_eficacia !== 'string') {
       return 'Fórmula de Abbott';
     }
-    return data.calculo_de_eficacia;
+    return data.metodo_calculo_de_eficacia;
   } catch (e) {
     return 'Fórmula de Abbott';
   }
@@ -878,9 +889,9 @@ export const getMetodoCalculoPorObjetivo = async (objetivo: string): Promise<str
  * Obtiene información completa del catálogo de eficacia para un objetivo específico
  */
 export const getCatalogoEficaciaPorObjetivo = async (objetivo: string): Promise<{
-  calculo_de_eficacia: string | null;
-  metodos_de_registro: string | null;
-  condiciones_de_aplicacion: string | null;
+  metodo_calculo_de_eficacia: string | null;
+  registro_de_datos: string | null;
+  aplicacion_de_tratamiento: string | null;
   condiciones_ambientales: string | null;
   tipo_de_evaluacion: string | null;
   numero_de_aplicaciones: string | null;
@@ -892,9 +903,9 @@ export const getCatalogoEficaciaPorObjetivo = async (objetivo: string): Promise<
     const { data, error } = await supabase
       .from("catalogo_eficacia")
       .select(`
-        calculo_de_eficacia,
-        metodos_de_registro,
-        condiciones_de_aplicacion,
+        metodo_calculo_de_eficacia,
+        registro_de_datos,
+        aplicacion_de_tratamiento,
         condiciones_ambientales,
         tipo_de_evaluacion,
         numero_de_aplicaciones,
@@ -920,7 +931,7 @@ export const getCatalogoEficaciaPorObjetivo = async (objetivo: string): Promise<
 
 /**
  * Obtiene las unidades por repetición para una lista de objetivos desde catalogo_eficacia
- * Devuelve un objeto { objetivo: unidades_por_repetición }
+ * Devuelve un objeto { objetivo: unidades_por_repeticion }
  */
 export const getUnidadesPorRepeticionPorObjetivo = async (objetivos: string[]): Promise<Record<string, string | null>> => {
   if (!objetivos.length) return {};
@@ -928,16 +939,16 @@ export const getUnidadesPorRepeticionPorObjetivo = async (objetivos: string[]): 
   try {
     const { data, error } = await supabase
       .from("catalogo_eficacia")
-      .select("objetivo_eficacia, unidades_por_repetición")
+      .select("objetivo_eficacia, unidades_por_repeticion")
       .in("objetivo_eficacia", objetivos);
     if (error) {
-      console.error("Error al obtener unidades_por_repetición:", error);
+      console.error("Error al obtener unidades_por_repeticion:", error);
       objetivos.forEach(obj => result[obj] = null);
       return result;
     }
     objetivos.forEach(obj => {
       const found = data?.find((row: any) => row.objetivo_eficacia === obj);
-      result[obj] = found ? (found as any)["unidades_por_repetición"] : null;
+      result[obj] = found ? (found as any)["unidades_por_repeticion"] : null;
     });
     return result;
   } catch (e) {
@@ -1004,13 +1015,18 @@ export const saveEfficacyResults = async (
       return { success: false, error: deleteError.message };
     }
 
-    // Preparar los datos para insertar
-    const dataToInsert = Object.entries(efficacyResults).map(([pruebaId, eficacia]) => ({
-      montaje_id: montajeId,
-      prueba_id: parseInt(pruebaId),
-      eficacia: eficacia,
-      fecha_calculo: new Date().toISOString()
-    }));
+    // Preparar los datos para insertar con validación
+    const dataToInsert = Object.entries(efficacyResults)
+      .filter(([pruebaId, eficacia]) => {
+        // Validar que la eficacia sea un número válido
+        return !isNaN(Number(eficacia)) && Number.isFinite(Number(eficacia));
+      })
+      .map(([pruebaId, eficacia]) => ({
+        montaje_id: montajeId,
+        prueba_id: parseInt(pruebaId),
+        eficacia: Number(Number(eficacia).toFixed(2)), // Redondear a 2 decimales
+        fecha_calculo: new Date().toISOString()
+      }));
 
     // Insertar los nuevos resultados
     const { error: insertError } = await supabase
@@ -1020,6 +1036,38 @@ export const saveEfficacyResults = async (
     if (insertError) {
       console.error("Error al insertar resultados de eficacia:", insertError);
       return { success: false, error: insertError.message };
+    }
+
+    // Obtener los IDs de las pruebas asociadas al montaje
+    const { data: pruebasEnMontaje, error: pruebasError } = await supabase
+      .from("pruebas_en_montajes")
+      .select("prueba_id")
+      .eq("montaje_id", montajeId);
+
+    if (pruebasError) {
+      console.error("Error al obtener pruebas del montaje:", pruebasError);
+      // No fallar completamente, solo registrar el error
+      console.warn("No se pudo actualizar el estado de las pruebas, pero los resultados de eficacia se guardaron correctamente");
+    } else if (pruebasEnMontaje && pruebasEnMontaje.length > 0) {
+      // Actualizar el estado de proceso de todas las pruebas del montaje
+      const pruebaIds = pruebasEnMontaje
+        .map(relacion => relacion.prueba_id)
+        .filter(id => id !== null);
+
+      if (pruebaIds.length > 0) {
+        const { error: updateError } = await supabase
+          .from("pruebas_ordenes_trabajo")
+          .update({ prueba_estado_proceso: "Completado" })
+          .in("prueba_id", pruebaIds);
+
+        if (updateError) {
+          console.error("Error al actualizar estado de las pruebas:", updateError);
+          // No fallar completamente, solo registrar el error
+          console.warn("No se pudo actualizar el estado de las pruebas, pero los resultados de eficacia se guardaron correctamente");
+        } else {
+          console.log(`Estado actualizado a 'Completado' para ${pruebaIds.length} pruebas del montaje ${montajeId}`);
+        }
+      }
     }
 
     return { success: true };

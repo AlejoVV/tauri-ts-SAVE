@@ -1,22 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+
 import { TrendingUp, RotateCcw } from "lucide-react";
 import type { MontageInProgress } from "../tipos/index";
 import {
@@ -65,7 +51,6 @@ export function EfficacyCalculationModal({
   const [lecturaPromedios, setLecturaPromedios] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [formula, setFormula] = useState("");
-  const [catalogoInfo, setCatalogoInfo] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [hasSavedResults, setHasSavedResults] = useState(false);
 
@@ -78,11 +63,10 @@ export function EfficacyCalculationModal({
       const catalogoData = await getCatalogoEficaciaPorObjetivo(
         montage.objetivo
       );
-      setCatalogoInfo(catalogoData);
 
       // Obtener método de cálculo recomendado
       const metodo =
-        catalogoData?.calculo_de_eficacia ||
+        catalogoData?.metodo_calculo_de_eficacia ||
         (await getMetodoCalculoPorObjetivo(montage.objetivo));
       setCalculationMethod(metodo);
 
@@ -141,34 +125,36 @@ export function EfficacyCalculationModal({
         lecturas.length > 0 && montage.nombresLecturas?.length > 0
           ? lecturas
           : Array.from(lecturasDeResultados);
-
       setSelectedLecturas(allLecturas);
       // Calcular promedios por lectura y prueba
       const promedios: any = {};
       // Testigo
       promedios["testigo"] = allLecturas.map((lecturaDisplay) => {
-        // Extraer el nombre real de la lectura del formato "Lectura X (nombre)" o usar tal como está
-        const nombreReal =
-          lecturaDisplay.includes("(") && lecturaDisplay.includes(")")
-            ? lecturaDisplay.match(/\((.+)\)$/)?.[1] || lecturaDisplay
-            : lecturaDisplay;
-
-        const arr = testigoResults[`Testigo-${nombreReal}`] || [];
+        console.log("Buscando clave testigo:", `Testigo-${lecturaDisplay}`);
+        const arr = testigoResults[`Testigo-${lecturaDisplay}`] || [];
+        console.log("Array encontrado para testigo:", arr);
         if (arr.length === 0) return "-";
-        return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
+        const promedio = (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(
+          2
+        );
+        console.log("Promedio calculado para testigo:", promedio);
+        return promedio;
       });
       // Pruebas
       montage.pruebas.forEach((pruebaId: string) => {
         promedios[pruebaId] = allLecturas.map((lecturaDisplay) => {
-          // Extraer el nombre real de la lectura del formato "Lectura X (nombre)" o usar tal como está
-          const nombreReal =
-            lecturaDisplay.includes("(") && lecturaDisplay.includes(")")
-              ? lecturaDisplay.match(/\((.+)\)$/)?.[1] || lecturaDisplay
-              : lecturaDisplay;
-
-          const arr = pruebaResults[`${pruebaId}-${nombreReal}`] || [];
+          console.log(
+            "Buscando clave prueba:",
+            `${pruebaId}-${lecturaDisplay}`
+          );
+          const arr = pruebaResults[`${pruebaId}-${lecturaDisplay}`] || [];
+          console.log("Array encontrado para prueba:", arr);
           if (arr.length === 0) return "-";
-          return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
+          const promedio = (
+            arr.reduce((a, b) => a + b, 0) / arr.length
+          ).toFixed(2);
+          console.log("Promedio calculado para prueba:", promedio);
+          return promedio;
         });
       });
       setLecturaPromedios(promedios);
@@ -537,7 +523,7 @@ export function EfficacyCalculationModal({
                       ))}
 
                       {/* Filas de Eficacia por Lectura */}
-                      {selectedLecturas.map((lectura, idx) => (
+                      {selectedLecturas.map((lectura, _) => (
                         <tr
                           key={`eficacia-${lectura}`}
                           className="border-t border-blue-200 bg-blue-50"

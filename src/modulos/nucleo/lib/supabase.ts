@@ -16,46 +16,46 @@ export type Database = {
     Tables: {
       catalogo_eficacia: {
         Row: {
-          calculo_de_eficacia: string | null
+          metodo_calculo_de_eficacia: string | null
           condicion_de_inoculacion: string | null
           condiciones_ambientales: string | null
-          condiciones_de_aplicacion: string | null
-          metodos_de_registro: string | null
+          aplicacion_de_tratamiento: string | null
+          registro_de_datos: string | null
           nombre_cientifico: string | null
           numero_de_aplicaciones: string | null
           numero_de_repeticiones: string | null
           objetivo_eficacia: string
           plaga_enfermedad: string | null
           tipo_de_evaluacion: string | null
-          unidades_por_repetición: string | null
+          unidades_por_repeticion: string | null
         }
         Insert: {
-          calculo_de_eficacia?: string | null
+          metodo_calculo_de_eficacia?: string | null
           condicion_de_inoculacion?: string | null
           condiciones_ambientales?: string | null
-          condiciones_de_aplicacion?: string | null
-          metodos_de_registro?: string | null
+          aplicacion_de_tratamiento?: string | null
+          registro_de_datos?: string | null
           nombre_cientifico?: string | null
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia: string
           plaga_enfermedad?: string | null
           tipo_de_evaluacion?: string | null
-          unidades_por_repetición?: string | null
+          unidades_por_repeticion?: string | null
         }
         Update: {
-          calculo_de_eficacia?: string | null
+          metodo_calculo_de_eficacia?: string | null
           condicion_de_inoculacion?: string | null
           condiciones_ambientales?: string | null
-          condiciones_de_aplicacion?: string | null
-          metodos_de_registro?: string | null
+          aplicacion_de_tratamiento?: string | null
+          registro_de_datos?: string | null
           nombre_cientifico?: string | null
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia?: string
           plaga_enfermedad?: string | null
           tipo_de_evaluacion?: string | null
-          unidades_por_repetición?: string | null
+          unidades_por_repeticion?: string | null
         }
         Relationships: []
       }
