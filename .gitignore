@@ -31,3 +31,4 @@ dist-ssr
 .env.test
 .env.production
 .cursor/mcp.json
+.vscode
