@@ -4,11 +4,12 @@
 import TableOrdenesMaestra from "./modulos/ordenes-trabajo/componentes/TableOrdenesMaestra";
 import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
 import { EficaciaMain } from "./modulos/eficacia/componentes/eficacia-main";
+import { Informes } from "./modulos/informes";
 import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
 function App() {
-  const [activeView, setActiveView] = useState<string>("objetivos");
+  const [activeView, setActiveView] = useState<string>("eficacia");
 
   const renderContent = () => {
     switch (activeView) {
@@ -18,6 +19,8 @@ function App() {
         return <TableOrdenesMaestra />;
       case "eficacia":
         return <EficaciaMain />;
+      case "informes":
+        return <Informes />;
       default:
         return <ObjetivosConPreciosTable />;
     }

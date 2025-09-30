@@ -3,6 +3,7 @@ import IconButton from "@mui/material/IconButton";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import ScienceIcon from "@mui/icons-material/Science";
+import { FileText } from "lucide-react";
 import Tooltip from "@mui/material/Tooltip";
 import { useState } from "react";
 
@@ -21,6 +22,11 @@ const itemsMenu = [
     id: "eficacia",
     label: "Eficacia",
     icon: <ScienceIcon fontSize="large" color="inherit" />,
+  },
+  {
+    id: "informes",
+    label: "Informes",
+    icon: <FileText size={32} className="text-current" />,
   },
 ];
 
