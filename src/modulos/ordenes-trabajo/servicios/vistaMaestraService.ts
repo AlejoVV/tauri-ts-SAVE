@@ -50,6 +50,7 @@ export const updatePruebaOrdenTrabajo = async (
     prueba_notas_varias?: string | null
     prueba_estado_lab?: string | null
     prueba_estado_facturacion?: string | null
+    prueba_estado_proceso?: string | null
   }
 ): Promise<void> => {
   const { error } = await supabase
@@ -89,6 +90,7 @@ export const updateVistaMaestraFields = async (
     prueba_estado_lab?: string | null
     estado_fact?: string | null
     estado_ot?: string | null
+    estado_proceso?: string | null
   }
 ): Promise<void> => {
   try {
@@ -101,6 +103,7 @@ export const updateVistaMaestraFields = async (
       prueba_notas_varias?: string | null
       prueba_estado_lab?: string | null
       prueba_estado_facturacion?: string | null
+      prueba_estado_proceso?: string | null
     } = {}
 
     // Mapear todos los campos que vengan en la actualización
@@ -115,6 +118,9 @@ export const updateVistaMaestraFields = async (
     }
     if (pruebaUpdates.estado_fact !== undefined) {
       mappedPruebaUpdates.prueba_estado_facturacion = pruebaUpdates.estado_fact
+    }
+    if (pruebaUpdates.estado_proceso !== undefined) {
+      mappedPruebaUpdates.prueba_estado_proceso = pruebaUpdates.estado_proceso
     }
 
     // Actualizar la tabla pruebas_ordenes_trabajo si hay cambios

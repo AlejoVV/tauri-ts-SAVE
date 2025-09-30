@@ -164,30 +164,60 @@ export function MontagesInProgressTable({
     () => [
       {
         accessorKey: "nombreMontaje",
-        header: "Nombre del Montaje",
-        size: 200,
+        header: "Montaje",
+        minSize: 80,
+        maxSize: 300,
+        size: 100,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => (
+          <div
+            className="font-medium text-sm truncate"
+            title={cell.getValue<string>()}
+          >
+            {cell.getValue<string>()}
+          </div>
+        ),
       },
       {
         accessorKey: "ot",
         header: "OT",
-        size: 100,
+        minSize: 60,
+        maxSize: 120,
+        size: 80,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => (
+          <div className="text-sm font-mono">{cell.getValue<string>()}</div>
+        ),
       },
       {
         accessorKey: "objetivo",
         header: "Objetivo",
+        minSize: 120,
+        maxSize: 200,
         size: 150,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => (
+          <div className="text-sm truncate" title={cell.getValue<string>()}>
+            {cell.getValue<string>()}
+          </div>
+        ),
       },
       {
         accessorKey: "pruebas",
         header: "Pruebas",
-        size: 120,
+        minSize: 80,
+        maxSize: 160,
+        size: 100,
         filterFn: "contains",
         Cell: ({ cell }) => {
           const pruebas = cell.getValue<string[]>();
           return (
             <div className="flex flex-wrap gap-1">
               {pruebas.map((prueba, index) => (
-                <Badge key={index} variant="outline" className="text-sm">
+                <Badge key={index} variant="outline" className="text-xs">
                   {prueba}
                 </Badge>
               ))}
@@ -198,7 +228,9 @@ export function MontagesInProgressTable({
       {
         accessorKey: "progreso",
         header: "Progreso",
-        size: 150,
+        minSize: 100,
+        maxSize: 180,
+        size: 120,
         enableColumnFilter: false,
         Cell: ({ row }) => {
           const lecturasCompletadas = row.original.lecturasCompletadas;
@@ -208,7 +240,7 @@ export function MontagesInProgressTable({
 
           return (
             <div className="space-y-1">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs">
                 <span>
                   {lecturasCompletadas}/{totalLecturas} lecturas
                 </span>
@@ -222,11 +254,14 @@ export function MontagesInProgressTable({
       {
         accessorKey: "ultimaLectura",
         header: "Última Lectura",
-        size: 150,
+        minSize: 100,
+        maxSize: 180,
+        size: 140,
+        enableColumnFilter: false,
         Cell: ({ cell }) => {
           const ultimaLectura = cell.getValue<string | null>();
           return (
-            <div className="text-base">
+            <div className="text-sm">
               {ultimaLectura || (
                 <span className="text-muted-foreground italic">
                   Sin lecturas
@@ -244,7 +279,11 @@ export function MontagesInProgressTable({
       {
         accessorKey: "estado",
         header: "Estado",
+        minSize: 120,
+        maxSize: 180,
         size: 150,
+        enableColumnFilter: true,
+        filterFn: "equals",
         Cell: ({ cell }) => {
           const estado = cell.getValue<string>();
           return (
@@ -276,13 +315,16 @@ export function MontagesInProgressTable({
       {
         accessorKey: "asignadoA",
         header: "Asignado a",
-        size: 180,
-        enableColumnFilter: false,
+        minSize: 140,
+        maxSize: 200,
+        size: 170,
+        enableColumnFilter: true,
+        filterFn: "contains",
         Cell: ({ row }) => {
           const montage = row.original;
           return (
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
+              <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <Select
                 value={montage.asignadoA || ""}
                 onValueChange={(value) => {
@@ -323,6 +365,18 @@ export function MontagesInProgressTable({
     data: montages,
     enableRowActions: true,
     positionActionsColumn: "last",
+    enableColumnFilters: true,
+    enableFilters: true,
+    enableGlobalFilter: true,
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    layoutMode: "semantic",
+    displayColumnDefOptions: {
+      "mrt-row-actions": {
+        minSize: 120,
+        size: 140,
+      },
+    },
     renderRowActions: ({ row }) => (
       <div className="flex gap-1">
         {/* Botón Configurar - Solo para montajes sin configurar */}
@@ -405,22 +459,32 @@ export function MontagesInProgressTable({
     muiTableContainerProps: {
       sx: {
         minHeight: "400px",
+        maxWidth: "100%",
+        overflowX: "auto",
       },
     },
     muiTableHeadCellProps: {
       sx: {
         fontWeight: "bold",
-        fontSize: "1rem",
+        fontSize: "0.875rem",
+        padding: "8px 12px",
       },
     },
     muiTableBodyCellProps: {
       sx: {
-        fontSize: "0.95rem",
+        fontSize: "0.875rem",
+        padding: "8px 12px",
+      },
+    },
+    muiTableProps: {
+      sx: {
+        tableLayout: "fixed",
+        width: "100%",
       },
     },
     initialState: {
       pagination: {
-        pageSize: 10,
+        pageSize: 50,
         pageIndex: 0,
       },
       density: "compact",
@@ -453,8 +517,8 @@ export function MontagesInProgressTable({
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-2">
+      <Card className="gap-2 py-2">
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardDescription>
@@ -484,8 +548,10 @@ export function MontagesInProgressTable({
               </p>
             </div>
           ) : (
-            <div className="rounded-lg border">
-              <MaterialReactTable table={table} />
+            <div className="rounded-lg border overflow-hidden">
+              <div className="overflow-x-auto">
+                <MaterialReactTable table={table} />
+              </div>
             </div>
           )}
         </CardContent>
@@ -497,11 +563,6 @@ export function MontagesInProgressTable({
           open={showResultsModal}
           onOpenChange={setShowResultsModal}
           montage={selectedMontage}
-          onResultsSaved={() => {
-            setShowResultsModal(false);
-            // Recargar montajes después de guardar resultados
-            loadMontages(true);
-          }}
         />
       )}
 
@@ -551,7 +612,7 @@ export function MontagesInProgressTable({
                   </Button>
                 </div>
               </div>
-              <div className="p-8">
+              <div className="p-8 py-2">
                 <MontageSetupForm
                   key={selectedMontage.id}
                   onMontageCreated={() => {
@@ -599,7 +660,7 @@ export function MontagesInProgressTable({
                   </Button>
                 </div>
               </div>
-              <div className="p-8">
+              <div className="p-8 py-2">
                 <MontageDetailsModal
                   key={selectedMontage.id}
                   montage={selectedMontage}
@@ -608,7 +669,6 @@ export function MontagesInProgressTable({
                     // No cerramos el modal para que el usuario vea los cambios aplicados
                     loadMontages(true);
                   }}
-                  onClose={() => setShowDetailsModal(false)}
                 />
               </div>
             </div>

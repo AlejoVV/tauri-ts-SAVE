@@ -12,13 +12,11 @@ import { updateMontajeDetails } from "../servicios/index";
 interface MontageDetailsModalProps {
   montage: MontageInProgress;
   onDetailsUpdated?: () => void;
-  onClose?: () => void;
 }
 
 export function MontageDetailsModal({
   montage,
   onDetailsUpdated,
-  onClose,
 }: MontageDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

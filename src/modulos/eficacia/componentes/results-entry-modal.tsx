@@ -2,14 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Camera, Plus, Save } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Camera, Save } from "lucide-react";
 import type { MontageInProgress } from "../tipos/index";
 import {
   saveLecturaResultados,
@@ -21,14 +15,12 @@ interface ResultsEntryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   montage: MontageInProgress;
-  onResultsSaved: () => void;
 }
 
 export function ResultsEntryModal({
   open,
   onOpenChange,
   montage,
-  onResultsSaved,
 }: ResultsEntryModalProps) {
   const [currentLectura, setCurrentLectura] = useState(0);
   const [showInitial, setShowInitial] = useState(false);

@@ -20,10 +20,23 @@ import { Label } from "@/components/ui/label";
 import { Calculator, TrendingUp } from "lucide-react";
 import type { EfficacyTestData, MontageData } from "../tipos/index";
 
+interface EfficacyData {
+  montageData: MontageData;
+  selectedTests: EfficacyTestData[];
+  selectedLecturas: string[];
+  calculationMethod: string;
+  results: Array<{
+    test: EfficacyTestData;
+    averages: number[];
+    efficacy: number;
+    reduction: number;
+  }>;
+}
+
 interface EfficacyCalculationProps {
   selectedTests: EfficacyTestData[];
   montageData: MontageData;
-  onCalculationComplete: (efficacyData: any) => void;
+  onCalculationComplete: (efficacyData: EfficacyData) => void;
   onBack: () => void;
 }
 
@@ -77,8 +90,11 @@ export function EfficacyCalculation({
 
       // Calcular promedios para las lecturas seleccionadas
       const averages = selectedLecturas.map((lectura) => {
-        const values = testResults[lectura] || [];
-        return values.reduce((sum, val) => sum + val, 0) / values.length;
+        const values = testResults?.[lectura as keyof typeof testResults] || [];
+        return (
+          values.reduce((sum: number, val: number) => sum + val, 0) /
+          values.length
+        );
       });
 
       // Cálculo de eficacia (fórmula simplificada)

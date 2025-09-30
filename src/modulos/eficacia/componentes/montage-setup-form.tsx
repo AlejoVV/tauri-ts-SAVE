@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, X } from "lucide-react";
@@ -79,17 +78,17 @@ function MultiSelectTiempo({
   // Función para convertir tiempo a horas para ordenamiento
   const convertToHours = (timeStr: string): number => {
     const lowerStr = timeStr.toLowerCase();
-    
-    if (lowerStr.includes('h')) {
+
+    if (lowerStr.includes("h")) {
       const match = lowerStr.match(/(\d+)h/);
       return match ? parseInt(match[1]) : 0;
     }
-    
-    if (lowerStr.includes('dia')) {
+
+    if (lowerStr.includes("dia")) {
       const match = lowerStr.match(/(\d+)\s*dia/);
       return match ? parseInt(match[1]) * 24 : 0;
     }
-    
+
     return 0;
   };
 
@@ -334,7 +333,7 @@ export function MontageSetupForm({
   }));
 
   const [sobrescribirTodos, setSobrescribirTodos] = useState(false);
-  const [valorSobrescribir, setValorSobrescribir] = useState(25);
+  const [valorSobrescribir, setValorSobrescribir] = useState<number | null>(25);
   const [valorEncontradoDB, setValorEncontradoDB] = useState<number | null>(
     null
   );
@@ -596,13 +595,19 @@ export function MontageSetupForm({
     ) {
       rellenarCondicionesPorObjetivo();
     }
-  }, [pruebasMontaje.length, sobrescribirTodos, montajeExistente.id]);
+  }, [
+    pruebasMontaje.length,
+    montajeExistente.id,
+    formData.numeroRepeticiones,
+    sobrescribirTodos,
+  ]);
 
   // Si el usuario activa el checkbox, rellenar todos los inputs con el valor indicado
   useEffect(() => {
     if (
       sobrescribirTodos &&
-      valorSobrescribir > 0 &&
+      valorSobrescribir !== null &&
+      valorSobrescribir >= 0 &&
       formData.numeroRepeticiones > 0
     ) {
       setFormData((prev) => {
@@ -620,8 +625,8 @@ export function MontageSetupForm({
           condicionesIniciales: newCondiciones,
         };
       });
-    } else if (!sobrescribirTodos && valorSobrescribir === 0) {
-      // Cuando se desactiva o el valor es 0/vacío, limpiar todos los campos
+    } else if (!sobrescribirTodos || valorSobrescribir === null) {
+      // Cuando se desactiva el checkbox o el campo está vacío, limpiar todos los campos
       setFormData((prev) => {
         const newCondiciones = { ...prev.condicionesIniciales };
         newCondiciones.testigo = Array(prev.numeroRepeticiones).fill(null);
@@ -635,6 +640,65 @@ export function MontageSetupForm({
           condicionesIniciales: newCondiciones,
         };
       });
+
+      // Después de limpiar, aplicar configuración automática si no está activado sobrescribir
+      if (!sobrescribirTodos && pruebasMontaje.length > 0) {
+        // Usar setTimeout para asegurar que se ejecute después del setState anterior
+        setTimeout(() => {
+          const rellenarCondicionesPorObjetivo = async () => {
+            const objetivos = pruebasMontaje.map((t) => t.objetivo);
+            const unidadesPorObjetivo =
+              await getUnidadesPorRepeticionPorObjetivo(objetivos);
+
+            // Buscar el primer valor válido encontrado en la BD
+            let valorEncontrado: number | null = null;
+            let newValorEncontradoDB: number | null = null;
+            let newValorSobrescribir = 25;
+
+            const newCondiciones = { ...formData.condicionesIniciales };
+            pruebasMontaje.forEach((test) => {
+              const pruebaKey = `${test.id}`;
+              let valor = unidadesPorObjetivo[test.objetivo];
+              // Extraer número de string tipo "Cinco (5)" o "25 individuos"
+              let num = 0;
+              if (valor) {
+                const match = valor.match(/(\d+)/);
+                if (match) {
+                  num = parseInt(match[1], 10);
+                  // Guardar el primer valor válido encontrado
+                  if (valorEncontrado === null && num > 0) {
+                    valorEncontrado = num;
+                    newValorEncontradoDB = valorEncontrado;
+                    newValorSobrescribir = valorEncontrado;
+                  }
+                }
+              }
+              // Si no se pudo extraer, dejar en 0
+              newCondiciones.pruebas[pruebaKey] = {
+                ...newCondiciones.pruebas[pruebaKey],
+                numeroIndividuos: Array(formData.numeroRepeticiones).fill(num),
+                producto: test.producto,
+              };
+            });
+
+            // Aplicar al testigo si se encontró un valor válido
+            if (valorEncontrado !== null) {
+              newCondiciones.testigo = Array(formData.numeroRepeticiones).fill(
+                valorEncontrado
+              );
+            }
+
+            setFormData((prev) => ({
+              ...prev,
+              condicionesIniciales: newCondiciones,
+            }));
+            setValorEncontradoDB(newValorEncontradoDB);
+            setValorSobrescribir(newValorSobrescribir);
+          };
+
+          rellenarCondicionesPorObjetivo();
+        }, 0);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sobrescribirTodos, valorSobrescribir, formData.numeroRepeticiones]);
@@ -776,19 +840,16 @@ export function MontageSetupForm({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 py-1">
       {/* Columna izquierda - Información del montaje */}
       <div>
-        <Card>
-          <CardHeader className="bg-white">
-            <CardTitle className="text-gray-900">Pruebas del Montaje</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Card className="py-3">
+          <CardContent className="space-y-3">
             {/* Información de control del montaje */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="space-y-3">
-                <div className="flex flex-col">
-                  <span className="font-medium text-blue-700 mb-1">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-blue-700">
                     Orden de Trabajo:
                   </span>
                   <span className="font-bold text-gray-900 text-base">
@@ -810,16 +871,14 @@ export function MontageSetupForm({
                     })()}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-blue-700 mb-1">
-                    Objetivo:
-                  </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-blue-700">Objetivo:</span>
                   <span className="font-bold text-gray-900 text-base">
                     {pruebasMontaje[0]?.objetivo}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-blue-700 mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-blue-700">
                     Especie Vegetal:
                   </span>
                   <span className="font-bold text-gray-900 text-base">
@@ -834,7 +893,7 @@ export function MontageSetupForm({
               <span className="text-sm font-medium text-gray-700">
                 {pruebasMontaje.length} prueba(s):
               </span>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {pruebasMontaje.map((test) => (
                   <Badge key={test.id} variant="secondary" className="text-xs">
                     {test.ot}-{test.prueba} - {test.producto}
@@ -848,11 +907,11 @@ export function MontageSetupForm({
 
       {/* Columna derecha - Formulario de configuración */}
       <div>
-        <Card>
-          <CardContent className="p-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <Card className="py-3">
+          <CardContent className="px-3">
+            <form onSubmit={handleSubmit} className="space-y-3">
               {/* Primera fila - Nombre del Montaje y Variedad */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label
                     htmlFor="nombre-montaje"
@@ -864,7 +923,7 @@ export function MontageSetupForm({
                     id="nombre-montaje"
                     value={formData.nombreMontaje}
                     readOnly
-                    className="bg-gray-100 cursor-not-allowed h-9 text-sm"
+                    className="bg-gray-100 cursor-not-allowed h-8 text-sm"
                     placeholder="Se genera automáticamente"
                   />
                 </div>
@@ -883,19 +942,20 @@ export function MontageSetupForm({
                       }))
                     }
                     placeholder="Ingrese la variedad"
-                    className="h-9 text-sm"
+                    className="h-8 text-sm"
+                    tabIndex={1}
                   />
                 </div>
               </div>
 
               {/* Segunda fila - Números en grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
                   <Label
                     htmlFor="numero-lecturas"
                     className="text-sm font-medium"
                   >
-                    N° Lecturas
+                    N° Lecturas:
                   </Label>
                   <Input
                     id="numero-lecturas"
@@ -913,22 +973,23 @@ export function MontageSetupForm({
                       pruebasMontaje.length > 0 &&
                       isObjetivoEspecial(pruebasMontaje[0].objetivo)
                     }
-                    className={`h-9 text-sm ${
+                    className={`h-8 text-sm flex-1 ${
                       pruebasMontaje.length > 0 &&
                       isObjetivoEspecial(pruebasMontaje[0].objetivo)
                         ? "bg-gray-100 cursor-not-allowed"
                         : ""
                     }`}
                     required
+                    tabIndex={2}
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="flex items-center gap-2">
                   <Label
                     htmlFor="numero-repeticiones"
                     className="text-sm font-medium"
                   >
-                    N° Repeticiones
+                    N° Repeticiones:
                   </Label>
                   <Input
                     id="numero-repeticiones"
@@ -943,70 +1004,69 @@ export function MontageSetupForm({
                       handleNumeroRepeticionesChange(e.target.value)
                     }
                     onWheel={(e) => e.currentTarget.blur()}
-                    className="h-9 text-sm"
+                    className="h-8 text-sm flex-1"
                     required
+                    tabIndex={3}
                   />
                 </div>
               </div>
 
               {/* Cuarta fila - Selects en grid */}
-              <div className="grid grid-cols-1 gap-4">
-                {/* Tiempo de lectura para objetivos especiales - Multi-select */}
-                {pruebasMontaje.length > 0 &&
-                  isObjetivoEspecial(pruebasMontaje[0].objetivo) && (
-                    <div className="space-y-1">
-                      <Label
-                        htmlFor="tiempo-lectura"
-                        className="text-sm font-medium"
-                      >
-                        Tiempo Lectura
-                      </Label>
-                      <MultiSelectTiempo
-                        selectedValues={formData.nombresLecturas || []}
-                        onSelectionChange={handleTiempoLecturaChange}
-                        options={OPCIONES_TIEMPO}
-                      />
-                    </div>
-                  )}
-
-                {/* Tipo de evaluación para plagas */}
-                {esPlaga && (
+              {/* Tiempo de lectura para objetivos especiales - Multi-select */}
+              {pruebasMontaje.length > 0 &&
+                isObjetivoEspecial(pruebasMontaje[0].objetivo) && (
                   <div className="space-y-1">
                     <Label
-                      htmlFor="tipo-evaluacion"
+                      htmlFor="tiempo-lectura"
                       className="text-sm font-medium"
                     >
-                      Tipo Aplicación
+                      Tiempo Lectura
                     </Label>
-                    <Select
-                      value={formData.tipoEvaluacion}
-                      onValueChange={handleTipoEvaluacionChange}
-                    >
-                      <SelectTrigger className="h-9 text-sm w-full">
-                        <SelectValue placeholder="Seleccione el tipo" />
-                      </SelectTrigger>
-                      <SelectContent className="w-full">
-                        {OPCIONES_TIPO_EVALUACION.map((opcion) => (
-                          <SelectItem
-                            key={opcion}
-                            value={opcion}
-                            className="text-sm"
-                          >
-                            {opcion}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <MultiSelectTiempo
+                      selectedValues={formData.nombresLecturas || []}
+                      onSelectionChange={handleTiempoLecturaChange}
+                      options={OPCIONES_TIEMPO}
+                    />
                   </div>
                 )}
-              </div>
+
+              {/* Tipo de evaluación para plagas */}
+              {esPlaga && (
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="tipo-evaluacion"
+                    className="text-sm font-medium"
+                  >
+                    Tipo Aplicación
+                  </Label>
+                  <Select
+                    value={formData.tipoEvaluacion}
+                    onValueChange={handleTipoEvaluacionChange}
+                  >
+                    <SelectTrigger className="h-9 text-sm w-full">
+                      <SelectValue placeholder="Seleccione el tipo" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full">
+                      {OPCIONES_TIPO_EVALUACION.map((opcion) => (
+                        <SelectItem
+                          key={opcion}
+                          value={opcion}
+                          className="text-sm"
+                        >
+                          {opcion}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Nombres de lecturas - Solo para objetivos no especiales */}
               {!(
                 pruebasMontaje.length > 0 &&
                 isObjetivoEspecial(pruebasMontaje[0].objetivo)
               ) && (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label className="text-sm font-medium">
                     Nombres de las Lecturas
                   </Label>
@@ -1025,6 +1085,7 @@ export function MontageSetupForm({
                           placeholder={`Lectura ${index + 1}`}
                           className="h-8 text-xs"
                           required
+                          tabIndex={4 + index}
                         />
                       </div>
                     ))}
@@ -1038,62 +1099,109 @@ export function MontageSetupForm({
 
       {/* Condiciones Iniciales - Card de ancho completo */}
       <div className="col-span-1 lg:col-span-2">
-        <Card>
+        <Card className="gap-1 py-2">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-gray-900">
               Condiciones Iniciales por Repetición
             </CardTitle>
-            <p className="text-sm text-gray-600">
-              Número inicial de individuos por réplica
-            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             {valorEncontradoDB !== null && valorEncontradoDB > 0 && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-600 font-semibold">✓</span>
-                  <span className="text-green-800">
-                    Configuración automática:{" "}
-                    <strong>{valorEncontradoDB} individuos</strong>
-                  </span>
+              <div>
+                <div className="flex items-center justify-left">
+                  <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <span className="text-green-600 font-semibold">✓</span>
+                    <span className="text-green-800">
+                      Configuración automática:{" "}
+                      <strong>{valorEncontradoDB} individuos</strong>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 px-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="sobrescribir-todos"
+                        checked={sobrescribirTodos}
+                        onChange={(e) => setSobrescribirTodos(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <Label
+                        htmlFor="sobrescribir-todos"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Mismo número para todas las pruebas
+                      </Label>
+                    </div>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={
+                        valorSobrescribir === null ? "" : valorSobrescribir
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          setValorSobrescribir(null);
+                        } else {
+                          const numValue = Number(value);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setValorSobrescribir(numValue);
+                          }
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      disabled={!sobrescribirTodos}
+                      className={`w-20 h-8 text-xs ${
+                        valorEncontradoDB !== null
+                          ? "border-green-500 bg-green-50"
+                          : ""
+                      }`}
+                      placeholder="Valor"
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="sobrescribir-todos"
-                  checked={sobrescribirTodos}
-                  onChange={(e) => setSobrescribirTodos(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            {!(valorEncontradoDB !== null && valorEncontradoDB > 0) && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="sobrescribir-todos-fallback"
+                    checked={sobrescribirTodos}
+                    onChange={(e) => setSobrescribirTodos(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <Label
+                    htmlFor="sobrescribir-todos-fallback"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Mismo número para todas las pruebas
+                  </Label>
+                </div>
+                <Input
+                  type="number"
+                  min="0"
+                  value={valorSobrescribir === null ? "" : valorSobrescribir}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "") {
+                      setValorSobrescribir(null);
+                    } else {
+                      const numValue = Number(value);
+                      if (!isNaN(numValue) && numValue >= 0) {
+                        setValorSobrescribir(numValue);
+                      }
+                    }
+                  }}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  disabled={!sobrescribirTodos}
+                  className="w-20 h-8 text-xs"
+                  placeholder="Valor"
                 />
-                <Label
-                  htmlFor="sobrescribir-todos"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Mismo número para todas las pruebas
-                </Label>
               </div>
-              <Input
-                type="number"
-                value={valorSobrescribir === 0 ? "" : valorSobrescribir}
-                onChange={(e) =>
-                  setValorSobrescribir(
-                    e.target.value === "" ? 0 : Number(e.target.value)
-                  )
-                }
-                onWheel={(e) => e.currentTarget.blur()}
-                disabled={!sobrescribirTodos}
-                className={`w-20 h-8 text-xs ${
-                  valorEncontradoDB !== null
-                    ? "border-green-500 bg-green-50"
-                    : ""
-                }`}
-                placeholder="Valor"
-              />
-            </div>
+            )}
 
             <div className="overflow-x-auto">
               <div className="inline-block min-w-full border border-gray-200 rounded-lg">
@@ -1188,11 +1296,12 @@ export function MontageSetupForm({
                                 className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                 placeholder={
                                   !sobrescribirTodos ||
-                                  valorSobrescribir === 0 ||
-                                  valorSobrescribir === null
+                                  valorSobrescribir === null ||
+                                  valorSobrescribir === 0
                                     ? "0.0"
                                     : ""
                                 }
+                                tabIndex={10 + index}
                               />
                             </div>
                           </td>
@@ -1233,10 +1342,12 @@ export function MontageSetupForm({
                                   className="w-16 h-8 text-center border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                   placeholder={
                                     !sobrescribirTodos ||
+                                    valorSobrescribir === null ||
                                     valorSobrescribir === 0
                                       ? "0.0"
                                       : ""
                                   }
+                                  tabIndex={20 + pruebasMontaje.indexOf(test) * formData.numeroRepeticiones + index}
                                 />
                               </div>
                             </td>
@@ -1280,11 +1391,11 @@ export function MontageSetupForm({
       </div>
 
       {/* Botón de envío - Debajo de las condiciones iniciales */}
-      <div className="col-span-1 lg:col-span-2 flex justify-center pt-6">
+      <div className="col-span-1 lg:col-span-2 flex justify-center pt-3">
         <Button
           onClick={handleSubmit}
           disabled={isLoadingPruebas}
-          className="px-8 py-2 h-10"
+          className="px-6 py-2 h-9"
         >
           {isLoadingPruebas ? "Cargando..." : "Configurar Montaje"}
         </Button>
