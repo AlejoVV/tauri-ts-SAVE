@@ -5,6 +5,7 @@ import TableOrdenesMaestra from "./modulos/ordenes-trabajo/componentes/TableOrde
 import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
 import { EficaciaMain } from "./modulos/eficacia/componentes/eficacia-main";
 import { Informes } from "./modulos/informes";
+import { RegisterWorkOrderPage } from "./modulos/registrar/register-work-order-page";
 import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
@@ -19,6 +20,8 @@ function App() {
         return <TableOrdenesMaestra />;
       case "eficacia":
         return <EficaciaMain />;
+      case "registrar":
+        return <RegisterWorkOrderPage />;
       case "informes":
         return <Informes />;
       default:
