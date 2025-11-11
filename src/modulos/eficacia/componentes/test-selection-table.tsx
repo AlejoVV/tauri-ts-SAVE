@@ -219,8 +219,13 @@ export function TestSelectionTable({
         size: 120,
         Cell: ({ cell }) => {
           const estado = cell.getValue<string>();
+          const isRepeticion = estado === "Repetición";
           return (
-            <span className="px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+              isRepeticion 
+                ? "bg-orange-100 text-orange-800" 
+                : "bg-blue-100 text-blue-800"
+            }`}>
               {estado}
             </span>
           );

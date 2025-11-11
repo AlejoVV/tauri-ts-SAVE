@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
-import { TrendingUp, RotateCcw } from "lucide-react";
+import { TrendingUp, RotateCcw, RefreshCw } from "lucide-react";
 import type { MontageInProgress } from "../tipos/index";
 import {
   getLecturaResultados,
@@ -12,6 +13,7 @@ import {
   saveEfficacyResults,
   getEfficacyResults,
 } from "../servicios/index";
+import { marcarPruebasParaRepeticion } from "../servicios/repeticion";
 
 interface EfficacyCalculationModalProps {
   open: boolean;
@@ -53,6 +55,7 @@ export function EfficacyCalculationModal({
   const [formula, setFormula] = useState("");
   const [saving, setSaving] = useState(false);
   const [hasSavedResults, setHasSavedResults] = useState(false);
+  const [pruebasParaRepetir, setPruebasParaRepetir] = useState<Set<string>>(new Set());
 
   // Cargar datos reales al abrir el modal
   useEffect(() => {
@@ -170,8 +173,8 @@ export function EfficacyCalculationModal({
 
       montage.pruebas.forEach((pruebaId: string) => {
         eficaciaPorLectura[pruebaId] = {};
-        let maxEficacia = -Infinity;
-        let lecturaMaxEficacia = "";
+        let ultimaEficacia = 0;
+        let ultimaLectura = "";
 
         // Calcular eficacia para cada lectura
         allLecturas.forEach((lecturaDisplay, lecturaIdx) => {
@@ -195,18 +198,16 @@ export function EfficacyCalculationModal({
             : 0;
           eficaciaPorLectura[pruebaId][lecturaDisplay] = eficaciaCalculada;
 
-          // Encontrar la eficacia máxima
-          if (eficaciaCalculada > maxEficacia) {
-            maxEficacia = eficaciaCalculada;
-            lecturaMaxEficacia = lecturaDisplay;
-          }
+          // Usar la última lectura (la más reciente)
+          ultimaEficacia = eficaciaCalculada;
+          ultimaLectura = lecturaDisplay;
         });
 
         maxEficaciaPorPrueba[pruebaId] = {
-          value: maxEficacia,
-          lectura: lecturaMaxEficacia,
+          value: ultimaEficacia,
+          lectura: ultimaLectura,
         };
-        eficaciaFinal[pruebaId] = maxEficacia;
+        eficaciaFinal[pruebaId] = ultimaEficacia;
       });
 
       setEfficacyByLectura(eficaciaPorLectura);
@@ -230,14 +231,14 @@ export function EfficacyCalculationModal({
   // Handler para editar eficacia manualmente
   const handleEfficacyEdit = (pruebaId: string, value: string) => {
     if (value === "") {
-      // Si el valor está vacío, eliminar la entrada del objeto
-      setEfficacyResults((prev) => {
-        const newResults = { ...prev };
-        delete newResults[pruebaId];
-        return newResults;
-      });
+      // Si el valor está vacío, establecer como 0.0
+      setEfficacyResults((prev) => ({ ...prev, [pruebaId]: 0.0 }));
     } else {
-      setEfficacyResults((prev) => ({ ...prev, [pruebaId]: Number(value) }));
+      const numericValue = Number.parseFloat(value);
+      setEfficacyResults((prev) => ({ 
+        ...prev, 
+        [pruebaId]: Number.isNaN(numericValue) ? 0.0 : numericValue 
+      }));
     }
   };
 
@@ -251,6 +252,19 @@ export function EfficacyCalculationModal({
         !isNaN(value) &&
         typeof value === "number"
       );
+    });
+  };
+
+  // Handler para marcar/desmarcar pruebas para repetición
+  const handleToggleRepeticion = (pruebaId: string) => {
+    setPruebasParaRepetir(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pruebaId)) {
+        newSet.delete(pruebaId);
+      } else {
+        newSet.add(pruebaId);
+      }
+      return newSet;
     });
   };
 
@@ -275,9 +289,24 @@ export function EfficacyCalculationModal({
     // Modo normal: guardar en base de datos
     setSaving(true);
     try {
+      // Primero marcar pruebas para repetición si hay alguna seleccionada
+      if (pruebasParaRepetir.size > 0) {
+        const pruebasParaRepetirArray = Array.from(pruebasParaRepetir);
+        const repeticionResult = await marcarPruebasParaRepeticion(pruebasParaRepetirArray);
+        if (!repeticionResult.success) {
+          console.error("Error al marcar pruebas para repetición:", repeticionResult.error);
+          alert("Error al marcar pruebas para repetición: " + repeticionResult.error);
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Luego guardar los resultados de eficacia
+      const pruebasParaRepetirArray = Array.from(pruebasParaRepetir);
       const result = await saveEfficacyResults(
         Number(montage.id),
-        efficacyResults
+        efficacyResults,
+        pruebasParaRepetirArray
       );
       if (result.success) {
         setHasSavedResults(true);
@@ -418,13 +447,13 @@ export function EfficacyCalculationModal({
               <p className="font-medium text-gray-800 mb-1">Instrucciones:</p>
               <p className="mb-2">
                 El sistema calcula automáticamente la eficacia para cada lectura
-                de cada prueba. La eficacia máxima (resaltada en verde) se
+                de cada prueba. La eficacia de la última lectura (resaltada en verde) se
                 selecciona como valor final, pero puede ajustarse manualmente.
               </p>
               <p className="text-sm text-blue-600">
                 • <strong>Azul:</strong> Eficacias calculadas por lectura •{" "}
-                <strong>Verde:</strong> Eficacia máxima encontrada •{" "}
-                <strong>Final:</strong> Valor ajustable basado en la máxima
+                <strong>Verde:</strong> Eficacia de la última lectura •{" "}
+                <strong>Final:</strong> Valor ajustable basado en la última lectura
               </p>
             </div>
           </div>
@@ -567,7 +596,7 @@ export function EfficacyCalculationModal({
                                   {maxEfficacyByPrueba[col.key]?.lectura ===
                                     lectura && (
                                     <div className="text-sm text-green-600 mt-1 font-medium">
-                                      MÁXIMA
+                                      ÚLTIMA
                                     </div>
                                   )}
                                 </div>
@@ -586,7 +615,7 @@ export function EfficacyCalculationModal({
                               Ajustable (%)
                             </span>
                             <span className="text-sm font-normal text-green-600 mt-1">
-                              Basada en máxima
+                              Basada en última lectura
                             </span>
                           </div>
                         </td>
@@ -646,7 +675,7 @@ export function EfficacyCalculationModal({
                                       }
                                     }}
                                     className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full transition-colors duration-200"
-                                    title="Restablecer a eficacia máxima"
+                                    title="Restablecer a eficacia de la última lectura"
                                   >
                                     <RotateCcw size={16} />
                                   </button>
@@ -654,6 +683,61 @@ export function EfficacyCalculationModal({
                                 <span className="text-sm text-gray-600 font-medium">
                                   % Eficacia Final
                                 </span>
+                              </div>
+                            </td>
+                          )
+                        )}
+                      </tr>
+
+                      {/* Fila de Repetición */}
+                      <tr className="border-t-2 border-orange-200 bg-orange-50">
+                        <td className="px-8 py-3 text-xl font-bold text-orange-900 border-r border-gray-300 bg-orange-100 sticky left-0 z-10">
+                          <div className="flex flex-col">
+                            <span>Marcar para Repetición</span>
+                            <span className="text-sm font-normal text-orange-600">
+                              Seleccionar pruebas a repetir
+                            </span>
+                          </div>
+                        </td>
+                        {columns.map((col) =>
+                          col.key === "testigo" ? (
+                            <td
+                              key={col.key}
+                              className="px-6 py-3 border-r border-gray-300 text-center"
+                            >
+                              <div className="bg-gray-100 rounded-lg px-4 py-3 text-gray-500 font-medium">
+                                <div className="text-sm">N/A</div>
+                                <div className="text-xs">Control</div>
+                              </div>
+                            </td>
+                          ) : (
+                            <td
+                              key={col.key}
+                              className="px-6 py-3 border-r border-gray-300 text-center"
+                            >
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`repetir-${col.key}`}
+                                    checked={pruebasParaRepetir.has(col.key)}
+                                    onCheckedChange={() => handleToggleRepeticion(col.key)}
+                                    className="w-5 h-5"
+                                  />
+                                  <label
+                                    htmlFor={`repetir-${col.key}`}
+                                    className="text-sm font-medium text-orange-700 cursor-pointer"
+                                  >
+                                    Repetir
+                                  </label>
+                                </div>
+                                {pruebasParaRepetir.has(col.key) && (
+                                  <div className="flex items-center gap-1 text-orange-600">
+                                    <RefreshCw size={14} />
+                                    <span className="text-xs font-medium">
+                                      Para repetición
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </td>
                           )

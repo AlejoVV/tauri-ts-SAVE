@@ -146,32 +146,82 @@ export const Informes: React.FC = () => {
               .eq("prueba_id", Number(prueba.no_prueba))
               .single();
 
-            // Consultar variedad de montajes_de_laboratorio usando el montaje_id obtenido
+            // Consultar variedad y nuevos campos de montajes_de_laboratorio usando el montaje_id obtenido
             let montajeData = null;
             if (pruebaEnMontaje?.montaje_id) {
               const { data } = await supabase
                 .from("montajes_de_laboratorio")
-                .select("variedad")
+                .select(
+                  "variedad, tipo_evaluacion, duracion_prueba, tipo_insumo"
+                )
                 .eq("id", pruebaEnMontaje.montaje_id)
                 .single();
               montajeData = data;
             }
             console.log("montaje:", montajeData);
 
-            // Consultar información del catálogo de eficacia
-            const { data: catalogoData } = await supabase
-              .from("catalogo_eficacia")
+            // Consultar información del catálogo de eficacia usando múltiples criterios
+            let catalogoQuery = supabase
+              .from("catalogo_eficacia_v2")
               .select(
                 "tipo_de_evaluacion, numero_de_aplicaciones, condicion_de_inoculacion, aplicacion_de_tratamiento, numero_de_repeticiones, unidades_por_repeticion, condiciones_ambientales, registro_de_datos, metodo_calculo_de_eficacia"
               )
-              .eq("objetivo_eficacia", prueba.objetivo)
-              .single();
+              .eq("objetivo_eficacia", prueba.objetivo);
+
+            console.log("Buscando en catálogo con objetivo:", prueba.objetivo);
+
+            // Agregar filtros adicionales si están disponibles en el montaje
+            if (montajeData?.tipo_evaluacion) {
+              catalogoQuery = catalogoQuery.eq(
+                "tipo_de_evaluacion",
+                montajeData.tipo_evaluacion
+              );
+              console.log("Filtro tipo_evaluacion:", montajeData.tipo_evaluacion);
+            }
+            if (montajeData?.duracion_prueba) {
+              catalogoQuery = catalogoQuery.eq(
+                "duracion",
+                montajeData.duracion_prueba
+              );
+              console.log("Filtro duracion:", montajeData.duracion_prueba);
+            }
+            if (montajeData?.tipo_insumo !== undefined) {
+              // Si tipo_insumo está vacío, buscar por "N/A" en el catálogo
+              const tipoInsumoParaBusqueda = montajeData.tipo_insumo === "" ? "N/A" : montajeData.tipo_insumo;
+              catalogoQuery = catalogoQuery.eq(
+                "tipo_insumo",
+                tipoInsumoParaBusqueda
+              );
+              console.log("Filtro tipo_insumo original:", montajeData.tipo_insumo, "-> búsqueda:", tipoInsumoParaBusqueda);
+            }
+
+            let { data: catalogoData, error: catalogoError } =
+              await catalogoQuery.single();
+
+            console.log("Resultado consulta catálogo:", { catalogoData, catalogoError: catalogoError?.message });
+
+            // Si no se encuentra con los filtros específicos, buscar solo por objetivo
+            if (catalogoError || !catalogoData) {
+              console.log(
+                "No se encontró registro específico, buscando solo por objetivo:",
+                catalogoError?.message
+              );
+              const { data: catalogoFallback } = await supabase
+                .from("catalogo_eficacia_v2")
+                .select(
+                  "tipo_de_evaluacion, numero_de_aplicaciones, condicion_de_inoculacion, aplicacion_de_tratamiento, numero_de_repeticiones, unidades_por_repeticion, condiciones_ambientales, registro_de_datos, metodo_calculo_de_eficacia"
+                )
+                .eq("objetivo_eficacia", prueba.objetivo)
+                .single();
+              catalogoData = catalogoFallback;
+            }
 
             return {
               cod_prueba: `${ot_buscada}-${prueba.no_prueba}`,
               objetivo: prueba.objetivo,
               producto: prueba.producto,
               dosis: prueba.dosis,
+              nombre_cientifico: montajeData?.nombre_cientifico || "",
               especie: vistaData?.especie_nombre || prueba.especie_vegetal,
               finca: vistaData?.finca_nombre || prueba.finca_de_la_cepa,
               observaciones: prueba.observaciones,
@@ -179,7 +229,8 @@ export const Informes: React.FC = () => {
               variedad: montajeData?.variedad || "",
               unidades: vistaData?.producto_unid || "",
               numero_aplicaciones: catalogoData?.numero_de_aplicaciones || "",
-              condicion_inoculacion: catalogoData?.condicion_de_inoculacion || "",
+              condicion_inoculacion:
+                catalogoData?.condicion_de_inoculacion || "",
               aplicacion_tratamiento:
                 catalogoData?.aplicacion_de_tratamiento || "",
               numero_repeticiones: catalogoData?.numero_de_repeticiones || "",
@@ -188,6 +239,10 @@ export const Informes: React.FC = () => {
                 catalogoData?.condiciones_ambientales || "",
               registro_datos: catalogoData?.registro_de_datos || "",
               metodo_eficacia: catalogoData?.metodo_calculo_de_eficacia || "",
+              // Nuevos campos del montaje
+              montaje_tipo_evaluacion: montajeData?.tipo_evaluacion || "",
+              montaje_duracion_prueba: montajeData?.duracion_prueba || "",
+              montaje_tipo_insumo: montajeData?.tipo_insumo || "",
             };
           })
         ),
