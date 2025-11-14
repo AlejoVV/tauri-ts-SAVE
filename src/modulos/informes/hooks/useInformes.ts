@@ -43,7 +43,8 @@ export const useInformes = () => {
             objetivo_procedimiento
           ),
           productos(
-            producto_nombre
+            producto_nombre,
+            producto_ingrediente_activo
           ),
           especie_vegetal(
             especie_nombre
@@ -146,6 +147,30 @@ export const useInformes = () => {
         }
       }
 
+      // Obtener las eficacias para las pruebas
+      let eficaciasPruebas: Record<number, number> = {};
+
+      if (pruebaIds.length > 0) {
+        const { data: eficaciasData, error: eficaciasError } = await supabase
+          .from('eficacia_de_pruebas')
+          .select('prueba_id, eficacia')
+          .in('prueba_id', pruebaIds);
+
+        if (eficaciasError) {
+          console.error('Error al obtener eficacias de pruebas:', eficaciasError);
+        }
+
+        if (eficaciasData) {
+          eficaciasData.forEach(item => {
+            if (item.prueba_id && item.eficacia !== null) {
+              eficaciasPruebas[item.prueba_id] = item.eficacia;
+            }
+          });
+          console.log("Eficacias obtenidas:", eficaciasData);
+          console.log("Eficacias mapeadas:", eficaciasPruebas);
+        }
+      }
+
       // Función para calcular días transcurridos
       const calcularDiasMontaje = (fechaMontaje: string): number => {
         const fechaInicio = new Date(fechaMontaje);
@@ -178,7 +203,11 @@ export const useInformes = () => {
           prueba_id: prueba.prueba_id?.toString() || '0',
           fecha_montaje: fechaMontaje ? new Date(fechaMontaje).toLocaleDateString() : 'Sin fecha',
           dias_montaje: diasMontaje,
-          semana_entrega: prueba.prueba_semana_entrega || null
+          semana_entrega: prueba.prueba_semana_entrega || null,
+          ingrediente_activo: prueba.productos?.producto_ingrediente_activo || 'Sin información',
+          eficacia_vs_testigo: eficaciasPruebas[prueba.prueba_id!] 
+            ? `${eficaciasPruebas[prueba.prueba_id!]}%` 
+            : 'Sin información'
         };
       });
 

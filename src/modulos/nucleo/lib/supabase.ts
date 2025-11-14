@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -16,45 +16,96 @@ export type Database = {
     Tables: {
       catalogo_eficacia: {
         Row: {
-          metodo_calculo_de_eficacia: string | null
+          aplicacion_de_tratamiento: string | null
           condicion_de_inoculacion: string | null
           condiciones_ambientales: string | null
-          aplicacion_de_tratamiento: string | null
-          registro_de_datos: string | null
+          metodo_calculo_de_eficacia: string | null
           nombre_cientifico: string | null
           numero_de_aplicaciones: string | null
           numero_de_repeticiones: string | null
           objetivo_eficacia: string
           plaga_enfermedad: string | null
+          registro_de_datos: string | null
           tipo_de_evaluacion: string | null
           unidades_por_repeticion: string | null
         }
         Insert: {
-          metodo_calculo_de_eficacia?: string | null
+          aplicacion_de_tratamiento?: string | null
           condicion_de_inoculacion?: string | null
           condiciones_ambientales?: string | null
-          aplicacion_de_tratamiento?: string | null
-          registro_de_datos?: string | null
+          metodo_calculo_de_eficacia?: string | null
           nombre_cientifico?: string | null
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia: string
           plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
           tipo_de_evaluacion?: string | null
           unidades_por_repeticion?: string | null
         }
         Update: {
-          metodo_calculo_de_eficacia?: string | null
+          aplicacion_de_tratamiento?: string | null
           condicion_de_inoculacion?: string | null
           condiciones_ambientales?: string | null
-          aplicacion_de_tratamiento?: string | null
-          registro_de_datos?: string | null
+          metodo_calculo_de_eficacia?: string | null
           nombre_cientifico?: string | null
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia?: string
           plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
           tipo_de_evaluacion?: string | null
+          unidades_por_repeticion?: string | null
+        }
+        Relationships: []
+      }
+      catalogo_eficacia_v2: {
+        Row: {
+          aplicacion_de_tratamiento: string | null
+          condicion_de_inoculacion: string | null
+          condiciones_ambientales: string | null
+          duracion: string
+          metodo_calculo_de_eficacia: string | null
+          nombre_cientifico: string | null
+          numero_de_aplicaciones: string | null
+          numero_de_repeticiones: string | null
+          objetivo_eficacia: string
+          plaga_enfermedad: string | null
+          registro_de_datos: string | null
+          tipo_de_evaluacion: string
+          tipo_insumo: string
+          unidades_por_repeticion: string | null
+        }
+        Insert: {
+          aplicacion_de_tratamiento?: string | null
+          condicion_de_inoculacion?: string | null
+          condiciones_ambientales?: string | null
+          duracion: string
+          metodo_calculo_de_eficacia?: string | null
+          nombre_cientifico?: string | null
+          numero_de_aplicaciones?: string | null
+          numero_de_repeticiones?: string | null
+          objetivo_eficacia: string
+          plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
+          tipo_de_evaluacion: string
+          tipo_insumo: string
+          unidades_por_repeticion?: string | null
+        }
+        Update: {
+          aplicacion_de_tratamiento?: string | null
+          condicion_de_inoculacion?: string | null
+          condiciones_ambientales?: string | null
+          duracion?: string
+          metodo_calculo_de_eficacia?: string | null
+          nombre_cientifico?: string | null
+          numero_de_aplicaciones?: string | null
+          numero_de_repeticiones?: string | null
+          objetivo_eficacia?: string
+          plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
+          tipo_de_evaluacion?: string
+          tipo_insumo?: string
           unidades_por_repeticion?: string | null
         }
         Relationships: []
@@ -235,10 +286,14 @@ export type Database = {
           cantidad_lecturas: number | null
           cantidad_repeticiones: number | null
           condiciones_iniciales: Json | null
+          duracion_prueba: string | null
           fecha_creacion: string | null
           id: number
           nombre: string | null
+          nombre_cientifico: string | null
           nombres_lecturas: Json | null
+          tipo_evaluacion: string | null
+          tipo_insumo: string | null
           variedad: string | null
         }
         Insert: {
@@ -246,10 +301,14 @@ export type Database = {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
+          duracion_prueba?: string | null
           fecha_creacion?: string | null
           id?: number
           nombre?: string | null
+          nombre_cientifico?: string | null
           nombres_lecturas?: Json | null
+          tipo_evaluacion?: string | null
+          tipo_insumo?: string | null
           variedad?: string | null
         }
         Update: {
@@ -257,10 +316,14 @@ export type Database = {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
+          duracion_prueba?: string | null
           fecha_creacion?: string | null
           id?: number
           nombre?: string | null
+          nombre_cientifico?: string | null
           nombres_lecturas?: Json | null
+          tipo_evaluacion?: string | null
+          tipo_insumo?: string | null
           variedad?: string | null
         }
         Relationships: []

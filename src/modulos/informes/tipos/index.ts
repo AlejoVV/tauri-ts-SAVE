@@ -49,6 +49,8 @@ export interface PruebaEnCurso {
   fecha_montaje: string;
   dias_montaje: number;
   semana_entrega: number | null;
+  ingrediente_activo: string;
+  eficacia_vs_testigo: string;
 }
 
 export interface BusquedaOTResult {
