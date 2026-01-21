@@ -5,6 +5,7 @@ import TableOrdenesMaestra from "./modulos/ordenes-trabajo/componentes/TableOrde
 import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
 import { EficaciaMain } from "./modulos/eficacia/componentes/eficacia-main";
 import { Informes } from "./modulos/informes";
+import { EficaciaHistorica } from "./modulos/eficacia-historica";
 import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
@@ -21,6 +22,8 @@ function App() {
         return <EficaciaMain />;
       case "informes":
         return <Informes />;
+      case "eficacia-historica":
+        return <EficaciaHistorica />;
       default:
         return <ObjetivosConPreciosTable />;
     }
