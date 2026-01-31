@@ -24,7 +24,8 @@ dist-ssr
 *.sw?
 /src-tauri/target
 /src-tauri/updater.key
-
+.cursor/
+.agents/
 # Environment files
 .env
 .env.local
