@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import {
   Table,
   TableBody,
@@ -10,9 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Eye, Edit, Trash2 } from "lucide-react"
+import { Eye, Edit, Trash2 } from "lucide-react"
 
 interface RegisterTestsTableProps {
   mode?: "existing-ot" | "all-tests"
@@ -56,21 +54,6 @@ const mockTests = [
 ]
 
 export function RegisterTestsTable({ mode = "all-tests" }: RegisterTestsTableProps) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filteredTests, setFilteredTests] = useState(mockTests)
-
-  const handleSearch = (value: string) => {
-    setSearchTerm(value)
-    const filtered = mockTests.filter(
-      (test) =>
-        test.id.toLowerCase().includes(value.toLowerCase()) ||
-        test.empresa.toLowerCase().includes(value.toLowerCase()) ||
-        test.contacto.toLowerCase().includes(value.toLowerCase()) ||
-        test.finca.toLowerCase().includes(value.toLowerCase())
-    )
-    setFilteredTests(filtered)
-  }
-
   const getStatusBadge = (estado: string) => {
     switch (estado) {
       case "Completado":
@@ -86,19 +69,6 @@ export function RegisterTestsTable({ mode = "all-tests" }: RegisterTestsTablePro
 
   return (
     <div className="space-y-4">
-      {/* Barra de búsqueda */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por OT, empresa, contacto o finca..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-      </div>
-
       {/* Tabla */}
       <div className="rounded-md border">
         <Table>
@@ -117,7 +87,7 @@ export function RegisterTestsTable({ mode = "all-tests" }: RegisterTestsTablePro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTests.length === 0 ? (
+            {mockTests.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   {mode === "existing-ot" 
@@ -126,7 +96,7 @@ export function RegisterTestsTable({ mode = "all-tests" }: RegisterTestsTablePro
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTests.map((test) => (
+              mockTests.map((test) => (
                 <TableRow key={test.id}>
                   <TableCell className="font-medium">{test.id}</TableCell>
                   <TableCell>{test.fecha}</TableCell>
@@ -160,8 +130,8 @@ export function RegisterTestsTable({ mode = "all-tests" }: RegisterTestsTablePro
       {/* Información adicional */}
       <div className="text-sm text-muted-foreground">
         {mode === "existing-ot" 
-          ? `Mostrando ${filteredTests.length} pruebas de la OT seleccionada`
-          : `Mostrando ${filteredTests.length} de ${mockTests.length} pruebas registradas`}
+          ? `Mostrando ${mockTests.length} pruebas de la OT seleccionada`
+          : `Mostrando ${mockTests.length} pruebas registradas`}
       </div>
     </div>
   )
