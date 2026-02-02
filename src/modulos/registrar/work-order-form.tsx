@@ -203,7 +203,7 @@ export function WorkOrderForm({
 
         {/* Fila 2: Objetivo, Cant. pruebas, Finca de la cepa */}
         <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-6 space-y-0">
+          <div className="col-span-7 space-y-0">
             <Label className="text-xs">Objetivo</Label>
             <GenericCombobox
               items={objetivos}
@@ -214,10 +214,10 @@ export function WorkOrderForm({
               emptyMessage="No se encontraron objetivos."
               disabled={isFieldDisabled("test-specific")}
               loading={loading.objetivos}
-              className="min-h-[40px] h-auto py-1.5 whitespace-normal"
+              className="min-h-[60px] h-auto py-2 text-xs leading-[1.3] whitespace-normal [&>span]:line-clamp-3"
             />
           </div>
-          <div className="col-span-2 space-y-0">
+          <div className="col-span-1 space-y-0">
             <Label htmlFor="cantidad-pruebas" className="text-xs">
               Cant. pruebas
             </Label>
@@ -226,7 +226,7 @@ export function WorkOrderForm({
               type="number"
               min="1"
               defaultValue="1"
-              className="h-8 w-24"
+              className="h-8 w-full"
               disabled={isFieldDisabled("test-specific")}
             />
           </div>
@@ -303,42 +303,49 @@ export function WorkOrderForm({
             </div>
 
             {/* Fila 4a: N° muestra, Fecha recepción */}
-            <div className="grid grid-cols-12 gap-3">
-              <div className="col-span-4 space-y-0.5">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col space-y-0.5 w-full sm:w-auto">
                 <Label htmlFor="numero-muestra" className="text-xs">
                   N° muestra
                 </Label>
                 <Input
                   id="numero-muestra"
                   type="number"
-                  className="h-8"
+                  className="h-8 w-full sm:w-20 lg:w-24"
                   disabled={isFieldDisabled("test-specific")}
                 />
               </div>
-              <div className="col-span-8 space-y-0.5">
+              <div className="flex flex-col space-y-0.5 w-full sm:w-auto">
                 <Label className="text-xs">Fecha recepción</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal h-8 text-xs",
+                        "h-8 w-full sm:w-34 lg:w-38 justify-start text-left font-normal text-xs",
                         !date && "text-muted-foreground",
                       )}
                       disabled={isFieldDisabled("test-specific")}
                     >
-                      <CalendarIcon className="mr-2 h-3 w-3" />
-                      {date
-                        ? format(date, "dd/MM/yyyy", { locale: es })
-                        : "Seleccionar"}
+                      <CalendarIcon className="mr-2 h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">
+                        {date
+                          ? format(date, "dd/MM/yyyy", { locale: es })
+                          : "Seleccionar fecha"}
+                      </span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-fit p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={date}
                       onSelect={setDate}
-                      initialFocus
+                      autoFocus
+                      captionLayout="dropdown"
+                      startMonth={new Date(2020, 0)}
+                      endMonth={new Date(2030, 11)}
+                      locale={es}
+                      className="rounded-lg border shadow-sm w-[240px] p-2 [--cell-size:1.75rem]"
                     />
                   </PopoverContent>
                 </Popover>
@@ -361,8 +368,9 @@ export function WorkOrderForm({
         </div>
 
         {/* Fila 5: Análisis solicitado, Notas varias, Dto (%) y Botón */}
-        <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-5 space-y-0.5">
+        <div className="flex flex-col lg:flex-row gap-3">
+          {/* Análisis solicitado */}
+          <div className="flex flex-col space-y-0.5 w-full lg:flex-1">
             <Label htmlFor="analisis-solicitado" className="text-xs">
               Análisis solicitado
             </Label>
@@ -373,7 +381,9 @@ export function WorkOrderForm({
               disabled={isFieldDisabled("test-specific")}
             />
           </div>
-          <div className="col-span-5 space-y-0.5">
+
+          {/* Notas varias */}
+          <div className="flex flex-col space-y-0.5 w-full lg:flex-1">
             <Label htmlFor="notas-varias" className="text-xs">
               Notas varias
             </Label>
@@ -384,8 +394,10 @@ export function WorkOrderForm({
               disabled={isFieldDisabled("test-specific")}
             />
           </div>
-          <div className="col-span-2 space-y-1.5">
-            <div className="space-y-0.5">
+
+          {/* Dto y Botón */}
+          <div className="flex flex-col space-y-1.5 w-full lg:w-auto">
+            <div className="flex flex-col space-y-0.5">
               <Label htmlFor="descuento" className="text-xs">
                 Dto (%)
               </Label>
@@ -395,14 +407,14 @@ export function WorkOrderForm({
                 min="0"
                 max="100"
                 step="0.01"
-                className="h-8 w-20"
+                className="h-8 w-full lg:w-20"
                 disabled={isFieldDisabled("main")}
               />
             </div>
             <Button
               type="button"
               onClick={() => console.log("Guardar y Continuar clicked")}
-              className="w-full bg-black hover:bg-black/90 text-white font-medium text-xs px-4 h-8 relative z-10 pointer-events-auto cursor-pointer"
+              className="w-full lg:w-auto lg:min-w-[160px] bg-black hover:bg-black/90 text-white font-medium text-xs px-4 h-8 relative z-10 pointer-events-auto cursor-pointer"
             >
               Guardar y Continuar
             </Button>
