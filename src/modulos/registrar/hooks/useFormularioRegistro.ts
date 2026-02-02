@@ -7,6 +7,8 @@ import {
   obtenerObjetivos,
   obtenerProductos,
   obtenerEspeciesVegetales,
+  buscarProductos,
+  obtenerProductoPorNombre,
   companiasACombobox,
   contactosACombobox,
   fincasACombobox,
@@ -15,6 +17,7 @@ import {
   especiesACombobox,
   type ComboboxItem,
 } from "../servicios/datosFormularioService"
+import type { AsyncComboboxItem } from "../components/comboboxes/async-combobox"
 
 interface UseFormularioRegistroReturn {
   // Datos para los comboboxes
@@ -58,7 +61,7 @@ interface UseFormularioRegistroReturn {
   setSelectedContacto: (value: string) => void
   setSelectedFinca: (value: string) => void
   setSelectedObjetivo: (value: string) => void
-  setSelectedProducto: (value: string) => void
+  setSelectedProducto: (value: string, unidades?: string) => void
   setSelectedEspecie: (value: string) => void
   
   // Funciones de recarga
@@ -68,6 +71,9 @@ interface UseFormularioRegistroReturn {
   recargarObjetivos: () => Promise<void>
   recargarProductos: () => Promise<void>
   recargarEspecies: () => Promise<void>
+  
+  // Función de búsqueda asíncrona para productos
+  buscarProductosAsync: (query: string) => Promise<AsyncComboboxItem[]>
   
   // Estado de bloqueo del contacto (depende de la compañía)
   contactoDisabled: boolean
@@ -213,35 +219,47 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
   }, [])
   
   // Handler para cuando cambia el producto seleccionado
-  const setSelectedProducto = useCallback((value: string) => {
+  // Acepta unidades opcionales que vienen del AsyncCombobox
+  const setSelectedProducto = useCallback((value: string, unidades?: string) => {
     setSelectedProductoState(value)
-  }, [])
-  
-  // Actualizar unidades cuando cambia el producto seleccionado o los productos se cargan
-  useEffect(() => {
-    if (selectedProducto && productos.length > 0) {
-      const productoSeleccionado = productos.find(p => p.value === selectedProducto)
-      console.log("Producto seleccionado:", selectedProducto)
-      console.log("Producto encontrado:", productoSeleccionado)
-      console.log("Unidades:", productoSeleccionado?.unidades)
-      if (productoSeleccionado?.unidades) {
-        setUnidadesProducto(productoSeleccionado.unidades)
-      } else {
-        setUnidadesProducto("cc/lt")
-      }
+    if (unidades) {
+      setUnidadesProducto(unidades)
+    } else if (value) {
+      // Si no vienen unidades, intentar buscar el producto
+      obtenerProductoPorNombre(value).then(producto => {
+        if (producto?.producto_unidades) {
+          setUnidadesProducto(producto.producto_unidades)
+        } else {
+          setUnidadesProducto("cc/lt")
+        }
+      })
     } else {
       setUnidadesProducto("cc/lt")
     }
-  }, [selectedProducto, productos])
+  }, [])
+  
+  // Función de búsqueda asíncrona para productos
+  // js-cache-function-results - Stable function reference
+  const buscarProductosAsync = useCallback(async (query: string): Promise<AsyncComboboxItem[]> => {
+    try {
+      const productos = await buscarProductos(query, 100)
+      return productosACombobox(productos)
+    } catch (error) {
+      console.error("Error al buscar productos:", error)
+      return []
+    }
+  }, [])
   
   // Cargar datos iniciales
+  // async-parallel - Parallel data fetching where appropriate
+  // Note: productos no se carga aquí porque ahora usa búsqueda asíncrona
   useEffect(() => {
     recargarCompanias()
     recargarFincas()
     recargarObjetivos()
-    recargarProductos()
+    // recargarProductos() - Ya no necesario, se usa búsqueda asíncrona
     recargarEspecies()
-  }, [recargarCompanias, recargarFincas, recargarObjetivos, recargarProductos, recargarEspecies])
+  }, [recargarCompanias, recargarFincas, recargarObjetivos, recargarEspecies])
   
   // Recargar contactos cuando cambia la compañía
   useEffect(() => {
@@ -278,6 +296,7 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
     recargarObjetivos,
     recargarProductos,
     recargarEspecies,
+    buscarProductosAsync,
     contactoDisabled,
     unidadesProducto,
   }

@@ -106,6 +106,70 @@ export async function obtenerProductos(): Promise<Producto[]> {
 }
 
 /**
+ * Busca productos por nombre con paginación
+ * Optimizado para manejar grandes cantidades de productos (1500+)
+ * @param searchQuery - Término de búsqueda
+ * @param limit - Número máximo de resultados (default: 100)
+ */
+export async function buscarProductos(
+  searchQuery: string,
+  limit: number = 100
+): Promise<Producto[]> {
+  // Si no hay búsqueda, devolver los primeros N productos
+  if (!searchQuery.trim()) {
+    const { data, error } = await supabase
+      .from("productos")
+      .select("*")
+      .order("producto_nombre")
+      .limit(limit)
+
+    if (error) {
+      console.error("Error al buscar productos:", error)
+      throw error
+    }
+
+    return data || []
+  }
+
+  // Buscar productos que coincidan con el término de búsqueda
+  // Usando ilike para búsqueda case-insensitive
+  const { data, error } = await supabase
+    .from("productos")
+    .select("*")
+    .ilike("producto_nombre", `%${searchQuery}%`)
+    .order("producto_nombre")
+    .limit(limit)
+
+  if (error) {
+    console.error("Error al buscar productos:", error)
+    throw error
+  }
+
+  return data || []
+}
+
+/**
+ * Obtiene un producto específico por su nombre
+ * Útil para mantener el producto seleccionado cuando se carga el formulario
+ */
+export async function obtenerProductoPorNombre(
+  nombreProducto: string
+): Promise<Producto | null> {
+  const { data, error } = await supabase
+    .from("productos")
+    .select("*")
+    .eq("producto_nombre", nombreProducto)
+    .single()
+
+  if (error) {
+    console.error("Error al obtener producto:", error)
+    return null
+  }
+
+  return data
+}
+
+/**
  * Obtiene el listado de especies vegetales para el campo "Especie vegetal"
  */
 export async function obtenerEspeciesVegetales(): Promise<EspecieVegetal[]> {

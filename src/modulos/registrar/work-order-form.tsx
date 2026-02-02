@@ -18,8 +18,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
-// Combobox genérico
+// Comboboxes
 import { GenericCombobox } from "./components/comboboxes/generic-combobox";
+import { AsyncCombobox } from "./components/comboboxes/async-combobox";
 
 // Hook para datos del formulario
 import { useFormularioRegistro } from "./hooks/useFormularioRegistro";
@@ -48,7 +49,6 @@ export function WorkOrderForm({
     contactos,
     fincas,
     objetivos,
-    productos,
     especies,
     loading,
     selectedCompania,
@@ -68,6 +68,7 @@ export function WorkOrderForm({
     recargarFincas,
     recargarProductos,
     recargarEspecies,
+    buscarProductosAsync,
     contactoDisabled,
     unidadesProducto,
   } = useFormularioRegistro();
@@ -270,17 +271,21 @@ export function WorkOrderForm({
               </div>
               <div className="col-span-5 space-y-0.5">
                 <Label className="text-xs font-semibold">Producto</Label>
-                <GenericCombobox
-                  items={productos}
+                <AsyncCombobox
                   value={selectedProducto}
-                  onValueChange={setSelectedProducto}
+                  onValueChange={(value, item) => {
+                    // Pass unidades from the selected item
+                    setSelectedProducto(value, item?.unidades);
+                  }}
+                  onSearch={buscarProductosAsync}
                   placeholder="Seleccionar producto..."
                   searchPlaceholder="Buscar producto..."
                   emptyMessage="No se encontraron productos."
                   onCreateNew={() => setProductModalOpen(true)}
                   createNewLabel="Crear nuevo producto"
                   disabled={isFieldDisabled("test-specific")}
-                  loading={loading.productos}
+                  debounceMs={300}
+                  minCharsToSearch={0}
                 />
               </div>
               <div className="col-span-3 space-y-0.5">
