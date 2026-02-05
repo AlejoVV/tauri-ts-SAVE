@@ -1,9 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { WorkOrderForm } from "./work-order-form";
-import { RegisterTestsTable } from "./register-tests-table";
 
 export function RegisterWorkOrderPage() {
   return (
@@ -19,15 +17,6 @@ export function RegisterWorkOrderPage() {
       <Card>
         <CardContent>
           <WorkOrderForm mode="create-new" disabled={false} />
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Tabla de Registro de Pruebas */}
-      <Card>
-        <CardContent>
-          <RegisterTestsTable mode="all-tests" />
         </CardContent>
       </Card>
     </div>

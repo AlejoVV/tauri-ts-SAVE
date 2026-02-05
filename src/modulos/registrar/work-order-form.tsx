@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarIcon } from "lucide-react";
+import { useState, useRef } from "react";
+import { CalendarIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -22,8 +22,9 @@ import { cn } from "@/lib/utils";
 import { GenericCombobox } from "./components/comboboxes/generic-combobox";
 import { AsyncCombobox } from "./components/comboboxes/async-combobox";
 
-// Hook para datos del formulario
+// Hooks
 import { useFormularioRegistro } from "./hooks/useFormularioRegistro";
+import { useWorkOrderRegistration } from "./hooks/useWorkOrderRegistration";
 
 // Modales
 import { CompanyModal } from "./components/modals/company-modal";
@@ -31,6 +32,9 @@ import { ContactModal } from "./components/modals/contact-modal";
 import { FarmModal } from "./components/modals/farm-modal";
 import { SpeciesModal } from "./components/modals/species-modal";
 import { ProductModal } from "./components/modals/product-modal";
+
+// Tabla de pruebas
+import { WorkOrderTestsTable } from "./components/work-order-tests-table";
 
 interface WorkOrderFormProps {
   mode?: "create-new" | "add-to-existing";
@@ -41,6 +45,15 @@ export function WorkOrderForm({
   mode = "create-new",
   disabled = false,
 }: WorkOrderFormProps) {
+  // rerender-use-ref-transient-values - Use refs for form field values
+  const dosisRef = useRef<HTMLInputElement>(null);
+  const cantidadPruebasRef = useRef<HTMLInputElement>(null);
+  const numeroMuestraRef = useRef<HTMLInputElement>(null);
+  const descuentoRef = useRef<HTMLInputElement>(null);
+  const observacionesRef = useRef<HTMLTextAreaElement>(null);
+  const analisisSolicitadoRef = useRef<HTMLTextAreaElement>(null);
+  const notasVariasRef = useRef<HTMLTextAreaElement>(null);
+
   const [date, setDate] = useState<Date>();
 
   // Hook para manejar todos los datos del formulario conectados a la BD
@@ -73,6 +86,18 @@ export function WorkOrderForm({
     unidadesProducto,
   } = useFormularioRegistro();
 
+  // Hook para manejar el flujo de registro de órdenes y pruebas
+  const {
+    ordenActual,
+    pruebaActual,
+    isSubmitting,
+    error: registrationError,
+    successMessage,
+    hasPruebasRegistradas,
+    handleSubmit,
+    shouldRefreshTable,
+  } = useWorkOrderRegistration();
+
   // Estados de los modales
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -80,12 +105,68 @@ export function WorkOrderForm({
   const [speciesModalOpen, setSpeciesModalOpen] = useState(false);
   const [productModalOpen, setProductModalOpen] = useState(false);
 
-  // Determinar qué campos deben estar deshabilitados según el modo
+  // Determinar qué campos deben estar deshabilitados
+  // Los campos de orden (Facturar, Contacto, Finca, Descuento) se deshabilitan después de registrar la primera prueba
   const isFieldDisabled = (fieldType: "main" | "test-specific") => {
     if (mode === "add-to-existing") {
       return fieldType === "main";
     }
+    if (fieldType === "main") {
+      return disabled || hasPruebasRegistradas; // Bloquear solo después de registrar la primera prueba
+    }
     return disabled;
+  };
+
+  /**
+   * Limpia los campos específicos de prueba después de guardar
+   * rerender-functional-setstate - Stable callback
+   */
+  const limpiarCamposPrueba = () => {
+    // Limpiar campos de texto
+    if (dosisRef.current) dosisRef.current.value = "";
+    if (cantidadPruebasRef.current) cantidadPruebasRef.current.value = "1";
+    if (numeroMuestraRef.current) numeroMuestraRef.current.value = "";
+    if (observacionesRef.current) observacionesRef.current.value = "";
+    if (analisisSolicitadoRef.current) analisisSolicitadoRef.current.value = "";
+    if (notasVariasRef.current) notasVariasRef.current.value = "";
+
+    // Limpiar comboboxes
+    setSelectedObjetivo("");
+    setSelectedProducto("", "cc/lt");
+    setSelectedEspecie("");
+    setDate(undefined);
+  };
+
+  /**
+   * Maneja el evento de guardar y continuar
+   * async-defer-await - Defer await to where result is used
+   */
+  const onContinuar = async () => {
+    // Recopilar datos del formulario
+    const formData = {
+      facturar: selectedCompania,
+      contacto: selectedContacto,
+      finca: selectedFinca,
+      descuento: descuentoRef.current?.value || "",
+      objetivo: selectedObjetivo,
+      cantidadPruebas: cantidadPruebasRef.current?.value || "1",
+      especieVegetal: selectedEspecie,
+      producto: selectedProducto,
+      dosis: dosisRef.current?.value || "",
+      unidadesProducto: unidadesProducto,
+      numeroMuestra: numeroMuestraRef.current?.value || "",
+      fechaRecepcion: date,
+      observaciones: observacionesRef.current?.value || "",
+      analisisSolicitado: analisisSolicitadoRef.current?.value || "",
+      notasVarias: notasVariasRef.current?.value || "",
+    };
+
+    await handleSubmit(formData);
+
+    // Limpiar campos de prueba después de guardar exitosamente
+    if (!registrationError) {
+      limpiarCamposPrueba();
+    }
   };
 
   // Handlers para cuando se crea un nuevo item en los modales
@@ -116,6 +197,23 @@ export function WorkOrderForm({
 
   return (
     <div className="space-y-2 pt-0.5">
+      {/* Alertas de estado */}
+      {successMessage && (
+        <Alert className="bg-green-50 border-green-200">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            {successMessage}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {registrationError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{registrationError}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Alerta informativa según el modo */}
       {mode === "add-to-existing" && (
         <Alert>
@@ -128,7 +226,7 @@ export function WorkOrderForm({
         </Alert>
       )}
 
-      <form className="space-y-0">
+      <form className="space-y-0" onSubmit={(e) => e.preventDefault()}>
         {/* Fila 1: OT, Prueba, Facturar a, Contacto */}
         <div className="grid grid-cols-12 gap-3">
           <div className="col-span-1 space-y-0.5">
@@ -137,9 +235,9 @@ export function WorkOrderForm({
             </Label>
             <Input
               id="ot"
-              value={mode === "add-to-existing" ? "OT-2024-001" : "501"}
+              value={ordenActual || "---"}
               readOnly
-              className="w-20 bg-muted h-8"
+              className="w-20 bg-muted h-8 text-center font-semibold"
             />
           </div>
           <div className="col-span-1 space-y-0.5">
@@ -148,9 +246,9 @@ export function WorkOrderForm({
             </Label>
             <Input
               id="prueba"
-              value={mode === "add-to-existing" ? "1207" : "1204"}
+              value={pruebaActual || "---"}
               readOnly
-              className="w-20 bg-muted h-8"
+              className="w-20 bg-muted h-8 text-center font-semibold"
             />
           </div>
           <div className="col-span-6 space-y-0.5">
@@ -223,6 +321,7 @@ export function WorkOrderForm({
               Cant. pruebas
             </Label>
             <Input
+              ref={cantidadPruebasRef}
               id="cantidad-pruebas"
               type="number"
               min="1"
@@ -294,6 +393,7 @@ export function WorkOrderForm({
                 </Label>
                 <div className="flex items-center gap-1">
                   <Input
+                    ref={dosisRef}
                     id="dosis"
                     type="number"
                     step="0.01"
@@ -314,6 +414,7 @@ export function WorkOrderForm({
                   N° muestra
                 </Label>
                 <Input
+                  ref={numeroMuestraRef}
                   id="numero-muestra"
                   type="number"
                   className="h-8 w-full sm:w-20 lg:w-24"
@@ -364,6 +465,7 @@ export function WorkOrderForm({
               Observaciones
             </Label>
             <Textarea
+              ref={observacionesRef}
               id="observaciones"
               rows={3}
               className="resize-none text-xs"
@@ -380,6 +482,7 @@ export function WorkOrderForm({
               Análisis solicitado
             </Label>
             <Textarea
+              ref={analisisSolicitadoRef}
               id="analisis-solicitado"
               rows={2}
               className="resize-none text-xs"
@@ -393,6 +496,7 @@ export function WorkOrderForm({
               Notas varias
             </Label>
             <Textarea
+              ref={notasVariasRef}
               id="notas-varias"
               rows={2}
               className="resize-none text-xs"
@@ -407,6 +511,7 @@ export function WorkOrderForm({
                 Dto (%)
               </Label>
               <Input
+                ref={descuentoRef}
                 id="descuento"
                 type="number"
                 min="0"
@@ -418,10 +523,18 @@ export function WorkOrderForm({
             </div>
             <Button
               type="button"
-              onClick={() => console.log("Guardar y Continuar clicked")}
-              className="w-full lg:w-auto lg:min-w-[160px] bg-black hover:bg-black/90 text-white font-medium text-xs px-4 h-8 relative z-10 pointer-events-auto cursor-pointer"
+              onClick={onContinuar}
+              disabled={isSubmitting || !selectedCompania}
+              className="w-full lg:w-auto lg:min-w-[160px] bg-black hover:bg-black/90 text-white font-medium text-xs px-4 h-8 relative z-10 pointer-events-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Guardar y Continuar
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                "Guardar y Continuar"
+              )}
             </Button>
           </div>
         </div>
@@ -454,6 +567,14 @@ export function WorkOrderForm({
         onOpenChange={setProductModalOpen}
         onSuccess={handleProductCreated}
       />
+
+      {/* Tabla de pruebas de la orden de trabajo */}
+      <div className="mt-6">
+        <WorkOrderTestsTable
+          ordenTrabajo={ordenActual}
+          refreshTrigger={shouldRefreshTable}
+        />
+      </div>
     </div>
   );
 }
