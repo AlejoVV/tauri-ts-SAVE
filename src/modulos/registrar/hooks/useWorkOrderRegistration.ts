@@ -2,14 +2,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   obtenerProximosIds,
-  crearOrdenConPrueba,
-  agregarPruebaAOrden,
-  obtenerFincaId,
-  obtenerObjetivoId,
-  obtenerEspecieId,
-  obtenerProductoId,
-  type DatosOrdenTrabajo,
-  type DatosPrueba,
+  registrarPrueba,
+  type DatosRegistroPrueba,
 } from "../servicios/registroService";
 
 // rerender-use-ref-transient-values - Use refs for transient frequent values
@@ -89,37 +83,13 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
   }, [refreshIds]);
 
   /**
-   * Obtiene los IDs de las entidades relacionadas por sus nombres
-   * async-parallel - Parallel fetching of entity IDs
-   */
-  const obtenerIdsEntidades = useCallback(
-    async (formData: FormData) => {
-      // js-early-exit - Return early for missing data
-      if (!formData.facturar) {
-        throw new Error("Debe seleccionar una compañía");
-      }
-
-      // async-parallel - Fetch all IDs in parallel
-      const [fincaId, objetivoId, especieId, productoId] = await Promise.all([
-        formData.finca ? obtenerFincaId(formData.finca) : Promise.resolve(null),
-        formData.objetivo
-          ? obtenerObjetivoId(formData.objetivo)
-          : Promise.resolve(null),
-        formData.especieVegetal
-          ? obtenerEspecieId(formData.especieVegetal)
-          : Promise.resolve(null),
-        formData.producto
-          ? obtenerProductoId(formData.producto)
-          : Promise.resolve(null),
-      ]);
-
-      return { fincaId, objetivoId, especieId, productoId };
-    },
-    []
-  );
-
-  /**
    * Maneja el envío del formulario (Continuar)
+   * La función de BD maneja automáticamente:
+   * - Crear la orden si no existe
+   * - Validar que los IDs de entidades existan
+   * - Insertar la prueba
+   * - Retornar el siguiente prueba_id consultado de la BD
+   * 
    * rerender-functional-setstate - Use functional setState for stable callbacks
    */
   const handleSubmit = useCallback(
@@ -127,71 +97,72 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
       // js-early-exit - Return early if already submitting
       if (isSubmitting) return;
 
+      // Validación básica
+      if (!formData.facturar) {
+        setError("Debe seleccionar una compañía");
+        return;
+      }
+
+      if (!formData.objetivo) {
+        setError("Debe seleccionar un objetivo");
+        return;
+      }
+
       setIsSubmitting(true);
       setError(null);
       setSuccessMessage(null);
 
       try {
-        // Obtener IDs de las entidades relacionadas
-        const { fincaId, objetivoId, especieId, productoId } =
-          await obtenerIdsEntidades(formData);
-
-        // Preparar datos de la prueba
-        const datosPrueba: Omit<DatosPrueba, "prueba_orden_id"> = {
+        // Preparar datos para la función de BD
+        const datosRegistro: DatosRegistroPrueba = {
+          prueba_orden_id: ordenActual || 0, // Si es null, será la nueva orden
           prueba_id: pruebaActual,
-          prueba_objetivo_id: objetivoId,
-          prueba_producto_id: productoId,
-          prueba_dosis_producto: formData.dosis,
-          prueba_producto_unid: formData.unidadesProducto || "cc/lt",
-          prueba_especie_id: especieId,
-          prueba_cantidad: formData.cantidadPruebas || "1",
-          prueba_finca_id: fincaId,
-          prueba_precio: null, // Se calculará después según objetivo y tipo
-          prueba_obs: formData.observaciones || null,
-          prueba_notas_varias: formData.notasVarias || null,
-          prueba_fecha_recibido: formData.fechaRecepcion
+          orden_descuento: formData.descuento || "0",
+          objetivo_nombre: formData.objetivo,
+          producto_nombre: formData.producto || null,
+          especie_nombre: formData.especieVegetal || null,
+          finca_nombre: formData.finca || null,
+          dosis_producto: formData.dosis || "0",
+          producto_unid: formData.unidadesProducto || "cc/lt",
+          cantidad: formData.cantidadPruebas || "1",
+          observaciones: formData.observaciones || null,
+          notas_varias: formData.notasVarias || null,
+          fecha_recibido: formData.fechaRecepcion
             ? formData.fechaRecepcion.toISOString().split("T")[0]
             : null,
-          prueba_compania: formData.facturar,
-          prueba_contacto: formData.contacto || null,
-          prueba_numero_muestra: formData.numeroMuestra || null,
-          prueba_estado_proceso: "En Proceso",
+          compania_nombre: formData.facturar,
+          contacto_nombre: formData.contacto || null,
+          estado_lab: "Pendiente",
+          numero_muestra: formData.numeroMuestra || null,
+          inst: formData.analisisSolicitado || null,
         };
 
-        // Verificar si es la primera prueba de una nueva orden o una prueba adicional
-        const esNuevaOrden = !hasPruebasRegistradas;
+        // Llamar a la función de BD que maneja todo
+        const { ordenId, pruebaId, siguientePruebaId } = await registrarPrueba(
+          datosRegistro
+        );
 
-        if (esNuevaOrden) {
-          // Primera prueba: Crear orden y prueba
-          const datosOrden: DatosOrdenTrabajo = {
-            orden_descuento: formData.descuento || null,
-            orden_compra: null,
-            orden_estado_ot: "Pendiente",
-          };
+        // Determinar si fue la primera prueba
+        const esPrimeraPrueba = !hasPruebasRegistradas;
 
-          const { ordenId, pruebaId } = await crearOrdenConPrueba(
-            datosOrden,
-            datosPrueba
-          );
-
+        // Actualizar estados
+        if (esPrimeraPrueba) {
           setOrdenActual(ordenId);
-          setHasPruebasRegistradas(true); // Marcar que ya se registró la primera prueba
+          setHasPruebasRegistradas(true);
           setSuccessMessage(
             `Orden de Trabajo #${ordenId} y Prueba #${pruebaId} creadas exitosamente`
           );
         } else {
-          // Prueba adicional: Agregar a la orden existente
-          const pruebaId = await agregarPruebaAOrden(ordenActual!, datosPrueba);
           setSuccessMessage(
-            `Prueba #${pruebaId} agregada a la Orden de Trabajo #${ordenActual}`
+            `Prueba #${pruebaId} agregada a la Orden de Trabajo #${ordenId}`
           );
         }
 
-        // Guardar datos del formulario para la siguiente prueba
+        // Guardar datos del formulario para referencia
         lastFormDataRef.current = formData;
 
-        // Incrementar el ID de prueba para la siguiente
-        setPruebaActual((prev) => prev + 1);
+        // Actualizar el ID de prueba con el valor consultado de la BD
+        setPruebaActual(siguientePruebaId);
 
         // Trigger refresh de la tabla
         setShouldRefreshTable((prev) => prev + 1);
@@ -209,7 +180,7 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
         setIsSubmitting(false);
       }
     },
-    [isSubmitting, pruebaActual, ordenActual, obtenerIdsEntidades]
+    [isSubmitting, pruebaActual, ordenActual, hasPruebasRegistradas]
   );
 
   /**

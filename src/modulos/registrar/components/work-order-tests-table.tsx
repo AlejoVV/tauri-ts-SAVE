@@ -4,7 +4,13 @@ import {
   useMaterialReactTable,
   type MRT_ColumnDef,
 } from "material-react-table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -15,7 +21,7 @@ import type { VistaMaestraRow } from "../servicios/workOrderService";
 
 interface WorkOrderTestsTableProps {
   ordenTrabajo: number | null;
-  refreshTrigger?: number; // Optional trigger to force refresh
+  refreshTrigger?: number; // Trigger para forzar actualización
 }
 
 export function WorkOrderTestsTable({
@@ -50,7 +56,7 @@ export function WorkOrderTestsTable({
     };
 
     fetchData();
-  }, [ordenTrabajo, refreshTrigger]);
+  }, [ordenTrabajo, refreshTrigger]); // Agregar refreshTrigger como dependencia
 
   // Format date helper
   const formatDate = (dateString: string | null) => {
@@ -64,7 +70,13 @@ export function WorkOrderTestsTable({
   };
 
   // Badge component for estado fields
-  const EstadoBadge = ({ estado, type }: { estado: string | null; type: "lab" | "fact" | "ot" | "proceso" }) => {
+  const EstadoBadge = ({
+    estado,
+    type,
+  }: {
+    estado: string | null;
+    type: "lab" | "fact" | "ot" | "proceso";
+  }) => {
     if (!estado) return <span className="text-muted-foreground">-</span>;
 
     const variants: Record<string, string> = {
@@ -165,7 +177,9 @@ export function WorkOrderTestsTable({
         accessorKey: "prueba_estado_lab",
         header: "Estado Lab",
         size: 140,
-        Cell: ({ cell }) => <EstadoBadge estado={cell.getValue<string>()} type="lab" />,
+        Cell: ({ cell }) => (
+          <EstadoBadge estado={cell.getValue<string>()} type="lab" />
+        ),
       },
       {
         accessorKey: "prueba_id",
@@ -189,19 +203,25 @@ export function WorkOrderTestsTable({
         accessorKey: "estado_fact",
         header: "Estado Fact.",
         size: 120,
-        Cell: ({ cell }) => <EstadoBadge estado={cell.getValue<string>()} type="fact" />,
+        Cell: ({ cell }) => (
+          <EstadoBadge estado={cell.getValue<string>()} type="fact" />
+        ),
       },
       {
         accessorKey: "estado_ot",
         header: "Estado OT",
         size: 110,
-        Cell: ({ cell }) => <EstadoBadge estado={cell.getValue<string>()} type="ot" />,
+        Cell: ({ cell }) => (
+          <EstadoBadge estado={cell.getValue<string>()} type="ot" />
+        ),
       },
       {
         accessorKey: "prueba_estado_proceso",
         header: "Estado Proceso",
         size: 140,
-        Cell: ({ cell }) => <EstadoBadge estado={cell.getValue<string>()} type="proceso" />,
+        Cell: ({ cell }) => (
+          <EstadoBadge estado={cell.getValue<string>()} type="proceso" />
+        ),
       },
       {
         accessorKey: "prueba_fecha_creacion",
@@ -337,9 +357,12 @@ export function WorkOrderTestsTable({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Pruebas de la Orden de Trabajo #{ordenTrabajo}</CardTitle>
+            <CardTitle>
+              Pruebas de la Orden de Trabajo #{ordenTrabajo}
+            </CardTitle>
             <CardDescription>
-              {data.length} {data.length === 1 ? "prueba registrada" : "pruebas registradas"}
+              {data.length}{" "}
+              {data.length === 1 ? "prueba registrada" : "pruebas registradas"}
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-base px-3 py-1">

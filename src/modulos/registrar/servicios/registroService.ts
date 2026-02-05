@@ -1,31 +1,33 @@
 // Servicio para manejar el registro de órdenes de trabajo y pruebas
 import { supabase } from "../../nucleo/lib/supabaseClient";
 
-// Interfaces para los datos de registro
-export interface DatosOrdenTrabajo {
-  orden_descuento?: string | null;
-  orden_compra?: string | null;
-  orden_estado_ot?: string | null;
-}
-
-export interface DatosPrueba {
-  prueba_id: number;
+// Interface para los datos de registro de prueba
+export interface DatosRegistroPrueba {
+  // IDs
   prueba_orden_id: number;
-  prueba_objetivo_id?: number | null;
-  prueba_producto_id?: number | null;
-  prueba_dosis_producto?: string;
-  prueba_producto_unid?: string | null;
-  prueba_especie_id?: number | null;
-  prueba_cantidad?: string | null;
-  prueba_finca_id?: number | null;
-  prueba_precio?: number | null;
-  prueba_obs?: string | null;
-  prueba_notas_varias?: string | null;
-  prueba_fecha_recibido?: string | null;
-  prueba_compania?: string | null;
-  prueba_contacto?: string | null;
-  prueba_numero_muestra?: string | null;
-  prueba_estado_proceso?: string | null;
+  prueba_id: number;
+
+  // Datos de la orden
+  orden_descuento?: string | null;
+
+  // Nombres de entidades (se convierten a IDs)
+  objetivo_nombre: string;
+  producto_nombre?: string | null;
+  especie_nombre?: string | null;
+  finca_nombre?: string | null;
+
+  // Datos de la prueba
+  dosis_producto?: string | null;
+  producto_unid?: string | null;
+  cantidad?: string | null;
+  observaciones?: string | null;
+  notas_varias?: string | null;
+  fecha_recibido?: string | null;
+  compania_nombre: string;
+  contacto_nombre?: string | null;
+  estado_lab?: string | null;
+  numero_muestra?: string | null;
+  inst?: string | null;
 }
 
 /**
@@ -93,205 +95,32 @@ export async function obtenerProximosIds(): Promise<{
 }
 
 /**
- * Crea una nueva orden de trabajo
- * server-dedup-props - Avoid duplicate serialization
- */
-export async function crearOrdenTrabajo(
-  datos: DatosOrdenTrabajo
-): Promise<number> {
-  const { data, error } = await supabase
-    .from("ordenes_trabajo")
-    .insert({
-      orden_fecha_creacion: new Date().toISOString(),
-      orden_numero_factura: null,
-      orden_compra: datos.orden_compra || null,
-      orden_descuento: datos.orden_descuento || null,
-      orden_estado_ot: datos.orden_estado_ot || "Pendiente",
-    })
-    .select("orden_id")
-    .single();
-
-  if (error) {
-    console.error("Error al crear orden de trabajo:", error);
-    throw error;
-  }
-
-  return data.orden_id;
-}
-
-/**
- * Crea una nueva prueba asociada a una orden de trabajo
- * server-serialization - Minimize data passed to client
- */
-export async function crearPrueba(datos: DatosPrueba): Promise<number> {
-  const { data, error } = await supabase
-    .from("pruebas_ordenes_trabajo")
-    .insert({
-      prueba_id: datos.prueba_id,
-      prueba_orden_id: datos.prueba_orden_id,
-      prueba_objetivo_id: datos.prueba_objetivo_id,
-      prueba_producto_id: datos.prueba_producto_id,
-      prueba_dosis_producto: datos.prueba_dosis_producto || "",
-      prueba_producto_unid: datos.prueba_producto_unid,
-      prueba_especie_id: datos.prueba_especie_id,
-      prueba_cantidad: datos.prueba_cantidad,
-      prueba_finca_id: datos.prueba_finca_id,
-      prueba_precio: datos.prueba_precio,
-      prueba_obs: datos.prueba_obs,
-      prueba_notas_varias: datos.prueba_notas_varias,
-      prueba_fecha_recibido: datos.prueba_fecha_recibido,
-      prueba_compania: datos.prueba_compania,
-      prueba_contacto: datos.prueba_contacto,
-      prueba_numero_muestra: datos.prueba_numero_muestra,
-      prueba_estado_proceso: datos.prueba_estado_proceso || "En Proceso",
-      prueba_fecha_creacion: new Date().toISOString().split("T")[0],
-    })
-    .select("prueba_id")
-    .single();
-
-  if (error) {
-    console.error("Error al crear prueba:", error);
-    throw error;
-  }
-
-  return data.prueba_id;
-}
-
-/**
- * Crea una orden de trabajo con su primera prueba en una transacción
- * async-parallel - Start promises early, await late
- */
-export async function crearOrdenConPrueba(
-  datosOrden: DatosOrdenTrabajo,
-  datosPrueba: Omit<DatosPrueba, "prueba_orden_id">
-): Promise<{ ordenId: number; pruebaId: number }> {
-  // Primero crear la orden
-  const ordenId = await crearOrdenTrabajo(datosOrden);
-
-  // Luego crear la prueba asociada a la orden
-  const pruebaId = await crearPrueba({
-    ...datosPrueba,
-    prueba_orden_id: ordenId,
-  });
-
-  return { ordenId, pruebaId };
-}
-
-/**
- * Agrega una nueva prueba a una orden de trabajo existente
- */
-export async function agregarPruebaAOrden(
-  ordenId: number,
-  datosPrueba: Omit<DatosPrueba, "prueba_orden_id">
-): Promise<number> {
-  return crearPrueba({
-    ...datosPrueba,
-    prueba_orden_id: ordenId,
-  });
-}
-
-/**
- * Caché para IDs de entidades - js-cache-function-results
- */
-const entityIdCache = new Map<string, number>();
-
-/**
- * Obtiene el ID de una compañía por su nombre
- */
-export async function obtenerCompaniaId(nombre: string): Promise<number | null> {
-  const cacheKey = `compania-${nombre}`;
-  
-  if (entityIdCache.has(cacheKey)) {
-    return entityIdCache.get(cacheKey)!;
-  }
-
-  const { data, error } = await supabase
-    .from("companias")
-    .select("compania_id")
-    .eq("compania_nombre", nombre)
-    .single();
-
-  if (error || !data) return null;
-
-  entityIdCache.set(cacheKey, data.compania_id);
-  return data.compania_id;
-}
-
-/**
- * Obtiene el ID de una finca por su nombre
- */
-export async function obtenerFincaId(nombre: string): Promise<number | null> {
-  const cacheKey = `finca-${nombre}`;
-  
-  if (entityIdCache.has(cacheKey)) {
-    return entityIdCache.get(cacheKey)!;
-  }
-
-  const { data, error } = await supabase
-    .from("fincas")
-    .select("finca_id")
-    .eq("finca_nombre", nombre)
-    .single();
-
-  if (error || !data) return null;
-
-  entityIdCache.set(cacheKey, data.finca_id);
-  return data.finca_id;
-}
-
-/**
  * Obtiene el ID de un objetivo por su nombre
  */
-export async function obtenerObjetivoId(nombre: string): Promise<number | null> {
-  const cacheKey = `objetivo-${nombre}`;
-  
-  if (entityIdCache.has(cacheKey)) {
-    return entityIdCache.get(cacheKey)!;
-  }
-
+export async function obtenerObjetivoIdPorNombre(
+  nombre: string
+): Promise<number | null> {
   const { data, error } = await supabase
     .from("objetivos")
     .select("objetivo_id")
     .eq("objetivo_nombre", nombre)
     .single();
 
-  if (error || !data) return null;
-
-  entityIdCache.set(cacheKey, data.objetivo_id);
-  return data.objetivo_id;
-}
-
-/**
- * Obtiene el ID de una especie vegetal por su nombre
- */
-export async function obtenerEspecieId(nombre: string): Promise<number | null> {
-  const cacheKey = `especie-${nombre}`;
-  
-  if (entityIdCache.has(cacheKey)) {
-    return entityIdCache.get(cacheKey)!;
+  if (error || !data) {
+    console.error("Error al obtener objetivo_id:", error);
+    return null;
   }
 
-  const { data, error } = await supabase
-    .from("especie_vegetal")
-    .select("especie_id")
-    .eq("especie_nombre", nombre)
-    .single();
-
-  if (error || !data) return null;
-
-  entityIdCache.set(cacheKey, data.especie_id);
-  return data.especie_id;
+  return data.objetivo_id;
 }
 
 /**
  * Obtiene el ID de un producto por su nombre
  */
-export async function obtenerProductoId(nombre: string): Promise<number | null> {
-  const cacheKey = `producto-${nombre}`;
-  
-  if (entityIdCache.has(cacheKey)) {
-    return entityIdCache.get(cacheKey)!;
-  }
+export async function obtenerProductoIdPorNombre(
+  nombre: string
+): Promise<number | null> {
+  if (!nombre) return null;
 
   const { data, error } = await supabase
     .from("productos")
@@ -299,15 +128,135 @@ export async function obtenerProductoId(nombre: string): Promise<number | null> 
     .eq("producto_nombre", nombre)
     .single();
 
-  if (error || !data) return null;
+  if (error || !data) {
+    console.error("Error al obtener producto_id:", error);
+    return null;
+  }
 
-  entityIdCache.set(cacheKey, data.producto_id);
   return data.producto_id;
 }
 
 /**
- * Limpia el caché de IDs de entidades
+ * Obtiene el ID de una especie vegetal por su nombre
  */
-export function limpiarCacheIds(): void {
-  entityIdCache.clear();
+export async function obtenerEspecieIdPorNombre(
+  nombre: string
+): Promise<number | null> {
+  if (!nombre) return null;
+
+  const { data, error } = await supabase
+    .from("especie_vegetal")
+    .select("especie_id")
+    .eq("especie_nombre", nombre)
+    .single();
+
+  if (error || !data) {
+    console.error("Error al obtener especie_id:", error);
+    return null;
+  }
+
+  return data.especie_id;
+}
+
+/**
+ * Obtiene el ID de una finca por su nombre
+ */
+export async function obtenerFincaIdPorNombre(
+  nombre: string
+): Promise<number | null> {
+  if (!nombre) return null;
+
+  const { data, error } = await supabase
+    .from("fincas")
+    .select("finca_id")
+    .eq("finca_nombre", nombre)
+    .single();
+
+  if (error || !data) {
+    console.error("Error al obtener finca_id:", error);
+    return null;
+  }
+
+  return data.finca_id;
+}
+
+/**
+ * Registra una prueba usando la función de base de datos insertar_prueba_por_ids
+ * Esta función maneja automáticamente:
+ * - Crear la orden si no existe
+ * - Validar que los IDs de entidades existan
+ * - Insertar la prueba
+ * 
+ * @param datos - Datos completos de la prueba (usa nombres que se convierten a IDs)
+ * @returns Promise con el resultado de la operación y el siguiente prueba_id
+ */
+export async function registrarPrueba(
+  datos: DatosRegistroPrueba
+): Promise<{ ordenId: number; pruebaId: number; siguientePruebaId: number }> {
+  try {
+    // Obtener IDs de las entidades en paralelo
+    // async-parallel - Fetch IDs in parallel
+    const [objetivoId, productoId, especieId, fincaId] = await Promise.all([
+      obtenerObjetivoIdPorNombre(datos.objetivo_nombre),
+      datos.producto_nombre
+        ? obtenerProductoIdPorNombre(datos.producto_nombre)
+        : Promise.resolve(null),
+      datos.especie_nombre
+        ? obtenerEspecieIdPorNombre(datos.especie_nombre)
+        : Promise.resolve(null),
+      datos.finca_nombre
+        ? obtenerFincaIdPorNombre(datos.finca_nombre)
+        : Promise.resolve(null),
+    ]);
+
+    // Validar que se encontró el objetivo (obligatorio)
+    if (!objetivoId) {
+      throw new Error(
+        `No se encontró el objetivo: ${datos.objetivo_nombre}`
+      );
+    }
+
+    // Llamar a la función RPC de Supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.rpc as any)(
+      "insertar_prueba_por_ids",
+      {
+        p_prueba_orden_id: datos.prueba_orden_id,
+        p_orden_descuento: parseFloat(datos.orden_descuento || "0"),
+        p_prueba_id: datos.prueba_id,
+        p_prueba_objetivo_id: objetivoId,
+        p_prueba_producto_id: productoId,
+        p_prueba_dosis_producto: parseFloat(datos.dosis_producto || "0"),
+        p_prueba_producto_unid: datos.producto_unid || null,
+        p_prueba_especie_id: especieId,
+        p_prueba_cantidad: parseFloat(datos.cantidad || "1"),
+        p_prueba_finca_id: fincaId,
+        p_prueba_obs: datos.observaciones || null,
+        p_prueba_notas_varias: datos.notas_varias || null,
+        p_prueba_fecha_recibido: datos.fecha_recibido || null,
+        p_prueba_compania_nombre: datos.compania_nombre,
+        p_prueba_contacto_nombre: datos.contacto_nombre || null,
+        p_prueba_estado_lab: datos.estado_lab || "Pendiente",
+        p_prueba_numero_muestra: datos.numero_muestra || null,
+        p_prueba_inst: datos.inst || null,
+      }
+    );
+
+    if (error) {
+      console.error("Error al registrar prueba:", error);
+      throw new Error(error.message || "Error al registrar la prueba");
+    }
+
+    // Después de insertar, obtener el siguiente prueba_id de la BD
+    const siguientePruebaId = await obtenerSiguientePruebaId();
+
+    return {
+      ordenId: datos.prueba_orden_id,
+      pruebaId: datos.prueba_id,
+      siguientePruebaId, // Retornar el siguiente ID consultado de la BD
+    };
+  } catch (error) {
+    console.error("Error en registrarPrueba:", error);
+    throw error;
+  }
 }
