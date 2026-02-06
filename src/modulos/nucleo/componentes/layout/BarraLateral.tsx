@@ -4,7 +4,7 @@ import InventoryIcon from "@mui/icons-material/Inventory";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import ScienceIcon from "@mui/icons-material/Science";
 import AddBoxIcon from "@mui/icons-material/AddBox";
-import { FileText } from "lucide-react";
+import { FileText, Settings } from "lucide-react";
 import Tooltip from "@mui/material/Tooltip";
 import { useState } from "react";
 
@@ -28,6 +28,11 @@ const itemsMenu = [
     id: "registrar",
     label: "Registrar",
     icon: <AddBoxIcon fontSize="large" color="inherit" />,
+  },
+  {
+    id: "gestionar",
+    label: "Gestionar",
+    icon: <Settings size={32} className="text-current" />,
   },
   {
     id: "informes",

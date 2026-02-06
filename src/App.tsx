@@ -6,6 +6,7 @@ import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjet
 import { EficaciaMain } from "./modulos/eficacia/componentes/eficacia-main";
 import { Informes } from "./modulos/informes";
 import { RegisterWorkOrderPage } from "./modulos/registrar/register-work-order-page";
+import { ManageWorkOrderPage } from "./modulos/gestionar/manage-work-order-page";
 import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
@@ -22,6 +23,8 @@ function App() {
         return <EficaciaMain />;
       case "registrar":
         return <RegisterWorkOrderPage />;
+      case "gestionar":
+        return <ManageWorkOrderPage />;
       case "informes":
         return <Informes />;
       default:
