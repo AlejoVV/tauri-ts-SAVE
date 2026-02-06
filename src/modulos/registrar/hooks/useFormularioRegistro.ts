@@ -56,12 +56,19 @@ interface UseFormularioRegistroReturn {
   selectedProducto: string
   selectedEspecie: string
   
+  // Detalles del producto seleccionado
+  productoCasaComercial: string
+  productoTipo: string
+  
+  // Detalles del objetivo seleccionado
+  objetivoTipoPrueba: string
+  
   // Setters
   setSelectedCompania: (value: string) => void
   setSelectedContacto: (value: string) => void
   setSelectedFinca: (value: string) => void
-  setSelectedObjetivo: (value: string) => void
-  setSelectedProducto: (value: string, unidades?: string) => void
+  setSelectedObjetivo: (value: string, tipoPrueba?: string) => void
+  setSelectedProducto: (value: string, unidades?: string, casaComercial?: string, tipo?: string) => void
   setSelectedEspecie: (value: string) => void
   
   // Funciones de recarga
@@ -115,12 +122,17 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
   const [selectedCompania, setSelectedCompaniaState] = useState("")
   const [selectedContacto, setSelectedContacto] = useState("")
   const [selectedFinca, setSelectedFinca] = useState("")
-  const [selectedObjetivo, setSelectedObjetivo] = useState("")
+  const [selectedObjetivo, setSelectedObjetivoState] = useState("")
   const [selectedProducto, setSelectedProductoState] = useState("")
   const [selectedEspecie, setSelectedEspecie] = useState("")
   
-  // Unidades del producto seleccionado
+  // Unidades y detalles del producto seleccionado
   const [unidadesProducto, setUnidadesProducto] = useState("cc/lt")
+  const [productoCasaComercial, setProductoCasaComercial] = useState("")
+  const [productoTipo, setProductoTipo] = useState("")
+  
+  // Detalles del objetivo seleccionado
+  const [objetivoTipoPrueba, setObjetivoTipoPrueba] = useState("")
   
   // Cargar compañías
   const recargarCompanias = useCallback(async () => {
@@ -218,10 +230,19 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
     setSelectedContacto("")
   }, [])
   
+  // Handler para cuando cambia el objetivo seleccionado
+  // Acepta tipo de prueba opcional que viene del GenericCombobox
+  const setSelectedObjetivo = useCallback((value: string, tipoPrueba?: string) => {
+    setSelectedObjetivoState(value)
+    setObjetivoTipoPrueba(tipoPrueba || "")
+  }, [])
+  
   // Handler para cuando cambia el producto seleccionado
-  // Acepta unidades opcionales que vienen del AsyncCombobox
-  const setSelectedProducto = useCallback((value: string, unidades?: string) => {
+  // Acepta unidades, casa comercial y tipo opcionales que vienen del AsyncCombobox
+  const setSelectedProducto = useCallback((value: string, unidades?: string, casaComercial?: string, tipo?: string) => {
     setSelectedProductoState(value)
+    
+    // Actualizar unidades
     if (unidades) {
       setUnidadesProducto(unidades)
     } else if (value) {
@@ -232,9 +253,23 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
         } else {
           setUnidadesProducto("cc/lt")
         }
+        
+        // Actualizar casa comercial y tipo
+        setProductoCasaComercial(producto?.producto_casa_comercial || "")
+        setProductoTipo(producto?.producto_tipo || "")
       })
     } else {
       setUnidadesProducto("cc/lt")
+      setProductoCasaComercial("")
+      setProductoTipo("")
+    }
+    
+    // Si vienen casa comercial y tipo, actualizarlos directamente
+    if (casaComercial !== undefined) {
+      setProductoCasaComercial(casaComercial || "")
+    }
+    if (tipo !== undefined) {
+      setProductoTipo(tipo || "")
     }
   }, [])
   
@@ -299,5 +334,8 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
     buscarProductosAsync,
     contactoDisabled,
     unidadesProducto,
+    productoCasaComercial,
+    productoTipo,
+    objetivoTipoPrueba,
   }
 }

@@ -16,6 +16,8 @@ export interface AsyncComboboxItem {
   label: string;
   id?: number;
   unidades?: string;
+  casaComercial?: string;
+  tipo?: string;
 }
 
 interface AsyncComboboxProps {
@@ -51,20 +53,20 @@ const AsyncComboboxListItem = memo(
         "relative flex items-start cursor-pointer select-none py-2 px-3 text-sm outline-none transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         isSelected && "bg-primary/10 font-medium",
-        isHighlighted && "bg-accent",
+        isHighlighted && "bg-accent"
       )}
     >
       <Check
         className={cn(
           "mr-2 h-4 w-4 flex-shrink-0 self-start mt-0.5",
-          isSelected ? "opacity-100" : "opacity-0",
+          isSelected ? "opacity-100" : "opacity-0"
         )}
       />
       <span className="whitespace-normal break-words leading-tight flex-1">
         {item.label}
       </span>
     </div>
-  )),
+  ))
 );
 AsyncComboboxListItem.displayName = "AsyncComboboxListItem";
 
@@ -86,9 +88,11 @@ export function AsyncCombobox({
   const [searchQuery, setSearchQuery] = useState("");
   const [items, setItems] = useState<AsyncComboboxItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<AsyncComboboxItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<AsyncComboboxItem | null>(
+    null
+  );
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -132,7 +136,7 @@ export function AsyncCombobox({
         searchAbortControllerRef.current = null;
       }
     },
-    [onSearch, minCharsToSearch],
+    [onSearch, minCharsToSearch]
   );
 
   // Debounced search effect
@@ -194,7 +198,8 @@ export function AsyncCombobox({
       if (elementTop < scrollTop) {
         scrollContainer.scrollTop = elementTop;
       } else if (elementBottom > scrollBottom) {
-        scrollContainer.scrollTop = elementBottom - scrollContainer.clientHeight;
+        scrollContainer.scrollTop =
+          elementBottom - scrollContainer.clientHeight;
       }
     }
   }, [highlightedIndex]);
@@ -219,12 +224,15 @@ export function AsyncCombobox({
   const handleSelect = useCallback(
     (itemValue: string, item: AsyncComboboxItem) => {
       const isDeselecting = value === itemValue;
-      onValueChange(isDeselecting ? "" : itemValue, isDeselecting ? undefined : item);
+      onValueChange(
+        isDeselecting ? "" : itemValue,
+        isDeselecting ? undefined : item
+      );
       setSelectedItem(isDeselecting ? null : item);
       setOpen(false);
       setSearchQuery("");
     },
-    [value, onValueChange],
+    [value, onValueChange]
   );
 
   // Keyboard navigation
@@ -262,7 +270,7 @@ export function AsyncCombobox({
           className={cn(
             "w-full justify-between bg-transparent h-9 text-sm",
             disabled && "opacity-50 cursor-not-allowed",
-            className,
+            className
           )}
           disabled={disabled}
         >

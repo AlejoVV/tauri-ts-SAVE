@@ -84,6 +84,9 @@ export function WorkOrderForm({
     buscarProductosAsync,
     contactoDisabled,
     unidadesProducto,
+    productoCasaComercial,
+    productoTipo,
+    objetivoTipoPrueba,
   } = useFormularioRegistro();
 
   // Hook para manejar el flujo de registro de órdenes y pruebas
@@ -131,8 +134,8 @@ export function WorkOrderForm({
     if (notasVariasRef.current) notasVariasRef.current.value = "";
 
     // Limpiar comboboxes
-    setSelectedObjetivo("");
-    setSelectedProducto("", "cc/lt");
+    setSelectedObjetivo("", "");
+    setSelectedProducto("", "cc/lt", "", "");
     setSelectedEspecie("");
     setDate(undefined);
   };
@@ -256,7 +259,7 @@ export function WorkOrderForm({
             <GenericCombobox
               items={companias}
               value={selectedCompania}
-              onValueChange={setSelectedCompania}
+              onValueChange={(value) => setSelectedCompania(value)}
               placeholder="Seleccionar compañía..."
               searchPlaceholder="Buscar compañía..."
               emptyMessage="No se encontraron compañías."
@@ -278,7 +281,7 @@ export function WorkOrderForm({
             <GenericCombobox
               items={contactos}
               value={selectedContacto}
-              onValueChange={setSelectedContacto}
+              onValueChange={(value) => setSelectedContacto(value)}
               placeholder={
                 contactoDisabled
                   ? "Seleccione empresa primero..."
@@ -307,7 +310,10 @@ export function WorkOrderForm({
             <GenericCombobox
               items={objetivos}
               value={selectedObjetivo}
-              onValueChange={setSelectedObjetivo}
+              onValueChange={(value, item) => {
+                // Pass tipo de prueba from the selected item
+                setSelectedObjetivo(value, item?.tipoPrueba);
+              }}
               placeholder="Seleccionar objetivo..."
               searchPlaceholder="Buscar objetivo..."
               emptyMessage="No se encontraron objetivos."
@@ -320,22 +326,32 @@ export function WorkOrderForm({
             <Label htmlFor="cantidad-pruebas" className="text-xs">
               Cant. pruebas
             </Label>
-            <Input
-              ref={cantidadPruebasRef}
-              id="cantidad-pruebas"
-              type="number"
-              min="1"
-              defaultValue="1"
-              className="h-8 w-full"
-              disabled={isFieldDisabled("test-specific")}
-            />
+            <div className="space-y-1">
+              <Input
+                ref={cantidadPruebasRef}
+                id="cantidad-pruebas"
+                type="number"
+                min="1"
+                defaultValue="1"
+                className="h-8 w-full"
+                disabled={isFieldDisabled("test-specific")}
+              />
+              {selectedObjetivo && objetivoTipoPrueba && (
+                <div className="text-[11px] text-muted-foreground/70 leading-tight px-1">
+                  <span className="flex items-center gap-1">
+                    <span className="font-medium">Tipo:</span>
+                    <span>{objetivoTipoPrueba}</span>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           <div className="col-span-4 space-y-0">
             <Label className="text-xs">Finca de la cepa</Label>
             <GenericCombobox
               items={fincas}
               value={selectedFinca}
-              onValueChange={setSelectedFinca}
+              onValueChange={(value) => setSelectedFinca(value)}
               placeholder="Seleccionar finca..."
               searchPlaceholder="Buscar finca..."
               emptyMessage="No se encontraron fincas."
@@ -358,7 +374,7 @@ export function WorkOrderForm({
                 <GenericCombobox
                   items={especies}
                   value={selectedEspecie}
-                  onValueChange={setSelectedEspecie}
+                  onValueChange={(value) => setSelectedEspecie(value)}
                   placeholder="Seleccionar especie..."
                   searchPlaceholder="Buscar especie..."
                   emptyMessage="No se encontraron especies."
@@ -370,22 +386,49 @@ export function WorkOrderForm({
               </div>
               <div className="col-span-5 space-y-0.5">
                 <Label className="text-xs font-semibold">Producto</Label>
-                <AsyncCombobox
-                  value={selectedProducto}
-                  onValueChange={(value, item) => {
-                    // Pass unidades from the selected item
-                    setSelectedProducto(value, item?.unidades);
-                  }}
-                  onSearch={buscarProductosAsync}
-                  placeholder="Seleccionar producto..."
-                  searchPlaceholder="Buscar producto..."
-                  emptyMessage="No se encontraron productos."
-                  onCreateNew={() => setProductModalOpen(true)}
-                  createNewLabel="Crear nuevo producto"
-                  disabled={isFieldDisabled("test-specific")}
-                  debounceMs={300}
-                  minCharsToSearch={0}
-                />
+                <div className="space-y-1">
+                  <AsyncCombobox
+                    value={selectedProducto}
+                    onValueChange={(value, item) => {
+                      // Pass unidades, casa comercial y tipo from the selected item
+                      setSelectedProducto(
+                        value,
+                        item?.unidades,
+                        item?.casaComercial,
+                        item?.tipo
+                      );
+                    }}
+                    onSearch={buscarProductosAsync}
+                    placeholder="Seleccionar producto..."
+                    searchPlaceholder="Buscar producto..."
+                    emptyMessage="No se encontraron productos."
+                    onCreateNew={() => setProductModalOpen(true)}
+                    createNewLabel="Crear nuevo producto"
+                    disabled={isFieldDisabled("test-specific")}
+                    debounceMs={300}
+                    minCharsToSearch={0}
+                  />
+                  {selectedProducto &&
+                    (productoCasaComercial || productoTipo) && (
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70 leading-tight px-1">
+                        {productoCasaComercial && (
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Casa:</span>
+                            <span>{productoCasaComercial}</span>
+                          </span>
+                        )}
+                        {productoCasaComercial && productoTipo && (
+                          <span className="text-muted-foreground/50">•</span>
+                        )}
+                        {productoTipo && (
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Tipo:</span>
+                            <span>{productoTipo}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                </div>
               </div>
               <div className="col-span-3 space-y-0.5">
                 <Label htmlFor="dosis" className="text-xs">
@@ -407,54 +450,31 @@ export function WorkOrderForm({
               </div>
             </div>
 
-            {/* Fila 4a: N° muestra, Fecha recepción */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex flex-col space-y-0.5 w-full sm:w-auto">
-                <Label htmlFor="numero-muestra" className="text-xs">
-                  N° muestra
+            {/* Fila 4a: Análisis solicitado, Notas varias */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col space-y-0.5">
+                <Label htmlFor="analisis-solicitado" className="text-xs">
+                  Análisis solicitado
                 </Label>
-                <Input
-                  ref={numeroMuestraRef}
-                  id="numero-muestra"
-                  type="number"
-                  className="h-8 w-full sm:w-20 lg:w-24"
+                <Textarea
+                  ref={analisisSolicitadoRef}
+                  id="analisis-solicitado"
+                  rows={2}
+                  className="resize-none text-xs"
                   disabled={isFieldDisabled("test-specific")}
                 />
               </div>
-              <div className="flex flex-col space-y-0.5 w-full sm:w-auto">
-                <Label className="text-xs">Fecha recepción</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "h-8 w-full sm:w-34 lg:w-38 justify-start text-left font-normal text-xs",
-                        !date && "text-muted-foreground",
-                      )}
-                      disabled={isFieldDisabled("test-specific")}
-                    >
-                      <CalendarIcon className="mr-2 h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">
-                        {date
-                          ? format(date, "dd/MM/yyyy", { locale: es })
-                          : "Seleccionar fecha"}
-                      </span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-fit p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      autoFocus
-                      captionLayout="dropdown"
-                      startMonth={new Date(2020, 0)}
-                      endMonth={new Date(2030, 11)}
-                      locale={es}
-                      className="rounded-lg border shadow-sm w-[240px] p-2 [--cell-size:1.75rem]"
-                    />
-                  </PopoverContent>
-                </Popover>
+              <div className="flex flex-col space-y-0.5">
+                <Label htmlFor="notas-varias" className="text-xs">
+                  Notas varias
+                </Label>
+                <Textarea
+                  ref={notasVariasRef}
+                  id="notas-varias"
+                  rows={2}
+                  className="resize-none text-xs"
+                  disabled={isFieldDisabled("test-specific")}
+                />
               </div>
             </div>
           </div>
@@ -474,69 +494,102 @@ export function WorkOrderForm({
           </div>
         </div>
 
-        {/* Fila 5: Análisis solicitado, Notas varias, Dto (%) y Botón */}
-        <div className="flex flex-col lg:flex-row gap-3">
-          {/* Análisis solicitado */}
-          <div className="flex flex-col space-y-0.5 w-full lg:flex-1">
-            <Label htmlFor="analisis-solicitado" className="text-xs">
-              Análisis solicitado
+        {/* Fila 5: N° muestra, Fecha recepción, Dto (%), Guardar y Continuar, Nueva OT */}
+        <div className="flex flex-wrap items-end gap-3">
+          {/* N° muestra */}
+          <div className="flex flex-col space-y-0.5">
+            <Label htmlFor="numero-muestra" className="text-xs">
+              N° muestra
             </Label>
-            <Textarea
-              ref={analisisSolicitadoRef}
-              id="analisis-solicitado"
-              rows={2}
-              className="resize-none text-xs"
+            <Input
+              ref={numeroMuestraRef}
+              id="numero-muestra"
+              type="number"
+              className="h-8 w-24"
               disabled={isFieldDisabled("test-specific")}
             />
           </div>
 
-          {/* Notas varias */}
-          <div className="flex flex-col space-y-0.5 w-full lg:flex-1">
-            <Label htmlFor="notas-varias" className="text-xs">
-              Notas varias
+          {/* Fecha recepción */}
+          <div className="flex flex-col space-y-0.5">
+            <Label className="text-xs">Fecha recepción</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-8 w-40 justify-start text-left font-normal text-xs",
+                    !date && "text-muted-foreground"
+                  )}
+                  disabled={isFieldDisabled("test-specific")}
+                >
+                  <CalendarIcon className="mr-2 h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">
+                    {date
+                      ? format(date, "dd/MM/yyyy", { locale: es })
+                      : "Seleccionar fecha"}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-fit p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  autoFocus
+                  captionLayout="dropdown"
+                  startMonth={new Date(2020, 0)}
+                  endMonth={new Date(2030, 11)}
+                  locale={es}
+                  className="rounded-lg border shadow-sm w-[240px] p-2 [--cell-size:1.75rem]"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Dto (%) */}
+          <div className="flex flex-col space-y-0.5">
+            <Label htmlFor="descuento" className="text-xs">
+              Dto (%)
             </Label>
-            <Textarea
-              ref={notasVariasRef}
-              id="notas-varias"
-              rows={2}
-              className="resize-none text-xs"
-              disabled={isFieldDisabled("test-specific")}
+            <Input
+              ref={descuentoRef}
+              id="descuento"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              className="h-8 w-20"
+              disabled={isFieldDisabled("main")}
             />
           </div>
 
-          {/* Dto y Botón */}
-          <div className="flex flex-col space-y-1.5 w-full lg:w-auto">
-            <div className="flex flex-col space-y-0.5">
-              <Label htmlFor="descuento" className="text-xs">
-                Dto (%)
-              </Label>
-              <Input
-                ref={descuentoRef}
-                id="descuento"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                className="h-8 w-full lg:w-20"
-                disabled={isFieldDisabled("main")}
-              />
-            </div>
-            <Button
-              type="button"
-              onClick={onContinuar}
-              disabled={isSubmitting || !selectedCompania}
-              className="w-full lg:w-auto lg:min-w-[160px] bg-black hover:bg-black/90 text-white font-medium text-xs px-4 h-8 relative z-10 pointer-events-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                "Guardar y Continuar"
-              )}
-            </Button>
-          </div>
+          {/* Botón Guardar y Continuar */}
+          <Button
+            type="button"
+            onClick={onContinuar}
+            disabled={isSubmitting || !selectedCompania}
+            className="h-8 min-w-[160px] bg-black hover:bg-black/90 text-white font-medium text-xs px-4"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              "Guardar y Continuar"
+            )}
+          </Button>
+
+          {/* Botón Nueva OT */}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            className="h-8 min-w-[120px] font-medium text-xs px-4 border-black text-black hover:bg-black hover:text-white transition-colors"
+          >
+            Nueva OT
+          </Button>
         </div>
       </form>
 

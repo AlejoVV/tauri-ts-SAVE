@@ -16,6 +16,9 @@ export interface ComboboxItem {
   label: string
   id: number
   unidades?: string // Para productos - valor de producto_unidades
+  casaComercial?: string // Para productos - valor de producto_casa_comercial
+  tipo?: string // Para productos - valor de producto_tipo
+  tipoPrueba?: string // Para objetivos - valor de objetivo_tipo_prueba
 }
 
 /**
@@ -77,7 +80,7 @@ export async function obtenerFincas(): Promise<Finca[]> {
 export async function obtenerObjetivos(): Promise<Objetivo[]> {
   const { data, error } = await supabase
     .from("objetivos")
-    .select("*")
+    .select("objetivo_id, objetivo_nombre, objetivo_tipo_prueba")
     .order("objetivo_nombre")
 
   if (error) {
@@ -119,7 +122,7 @@ export async function buscarProductos(
   if (!searchQuery.trim()) {
     const { data, error } = await supabase
       .from("productos")
-      .select("*")
+      .select("producto_id, producto_nombre, producto_unidades, producto_casa_comercial, producto_tipo")
       .order("producto_nombre")
       .limit(limit)
 
@@ -135,7 +138,7 @@ export async function buscarProductos(
   // Usando ilike para búsqueda case-insensitive
   const { data, error } = await supabase
     .from("productos")
-    .select("*")
+    .select("producto_id, producto_nombre, producto_unidades, producto_casa_comercial, producto_tipo")
     .ilike("producto_nombre", `%${searchQuery}%`)
     .order("producto_nombre")
     .limit(limit)
@@ -157,7 +160,7 @@ export async function obtenerProductoPorNombre(
 ): Promise<Producto | null> {
   const { data, error } = await supabase
     .from("productos")
-    .select("*")
+    .select("producto_id, producto_nombre, producto_unidades, producto_casa_comercial, producto_tipo")
     .eq("producto_nombre", nombreProducto)
     .single()
 
@@ -217,6 +220,7 @@ export function objetivosACombobox(objetivos: Objetivo[]): ComboboxItem[] {
     value: o.objetivo_nombre,
     label: o.objetivo_nombre,
     id: o.objetivo_id,
+    tipoPrueba: o.objetivo_tipo_prueba || undefined,
   }))
 }
 
@@ -226,6 +230,8 @@ export function productosACombobox(productos: Producto[]): ComboboxItem[] {
     label: p.producto_nombre,
     id: p.producto_id,
     unidades: p.producto_unidades || "cc/lt", // Valor por defecto si no hay unidades
+    casaComercial: p.producto_casa_comercial || undefined,
+    tipo: p.producto_tipo || undefined,
   }))
 }
 

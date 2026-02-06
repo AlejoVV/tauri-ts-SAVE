@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  memo,
+  useRef,
+  useEffect,
+} from "react";
 import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,12 +23,13 @@ export interface ComboboxItem {
   label: string;
   id?: number;
   unidades?: string; // Para productos - valor de producto_unidades
+  tipoPrueba?: string; // Para objetivos - valor de objetivo_tipo_prueba
 }
 
 interface GenericComboboxProps {
   items: ComboboxItem[];
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange: (value: string, item?: ComboboxItem) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -50,20 +58,20 @@ const ComboboxListItem = memo(
         "relative flex items-start cursor-pointer select-none py-2 px-3 text-sm outline-none transition-colors",
         "hover:bg-accent hover:text-accent-foreground",
         isSelected && "bg-primary/10 font-medium",
-        isHighlighted && "bg-accent",
+        isHighlighted && "bg-accent"
       )}
     >
       <Check
         className={cn(
           "mr-2 h-4 w-4 flex-shrink-0 self-start mt-0.5",
-          isSelected ? "opacity-100" : "opacity-0",
+          isSelected ? "opacity-100" : "opacity-0"
         )}
       />
       <span className="whitespace-normal break-words leading-tight flex-1">
         {item.label}
       </span>
     </div>
-  )),
+  ))
 );
 ComboboxListItem.displayName = "ComboboxListItem";
 
@@ -89,7 +97,7 @@ export function GenericCombobox({
   // js-cache-property-access - Cache selectedItem lookup
   const selectedItem = useMemo(
     () => items.find((item) => item.value === value),
-    [items, value],
+    [items, value]
   );
 
   // Volver scroll arriba cuando cambia la búsqueda
@@ -107,7 +115,7 @@ export function GenericCombobox({
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase(),
-    [],
+    []
   );
 
   // Filtrar y ordenar items basado en la búsqueda
@@ -157,7 +165,7 @@ export function GenericCombobox({
 
     // Asegurar que el item seleccionado siempre esté visible
     const selectedIndex = filteredAndSortedItems.findIndex(
-      (item) => item.value === value,
+      (item) => item.value === value
     );
 
     if (selectedIndex !== -1 && selectedIndex < limit) {
@@ -191,7 +199,8 @@ export function GenericCombobox({
       if (elementTop < scrollTop) {
         scrollContainer.scrollTop = elementTop;
       } else if (elementBottom > scrollBottom) {
-        scrollContainer.scrollTop = elementBottom - scrollContainer.clientHeight;
+        scrollContainer.scrollTop =
+          elementBottom - scrollContainer.clientHeight;
       }
     }
   }, [highlightedIndex]);
@@ -207,12 +216,16 @@ export function GenericCombobox({
 
   // rerender-functional-setstate - Stable select handler
   const handleSelect = useCallback(
-    (itemValue: string) => {
-      onValueChange(value === itemValue ? "" : itemValue);
+    (itemValue: string, item: ComboboxItem) => {
+      const isDeselecting = value === itemValue;
+      onValueChange(
+        isDeselecting ? "" : itemValue,
+        isDeselecting ? undefined : item
+      );
       setOpen(false);
       setSearchQuery("");
     },
-    [value, onValueChange],
+    [value, onValueChange]
   );
 
   // Manejar navegación con teclado
@@ -231,7 +244,10 @@ export function GenericCombobox({
       } else if (e.key === "Enter") {
         e.preventDefault();
         if (displayedItems[highlightedIndex]) {
-          handleSelect(displayedItems[highlightedIndex].value);
+          handleSelect(
+            displayedItems[highlightedIndex].value,
+            displayedItems[highlightedIndex]
+          );
         }
       }
     };
@@ -250,7 +266,7 @@ export function GenericCombobox({
           className={cn(
             "w-full justify-between bg-transparent h-9 text-sm",
             disabled && "opacity-50 cursor-not-allowed",
-            className,
+            className
           )}
           disabled={disabled || loading}
         >
@@ -298,7 +314,7 @@ export function GenericCombobox({
                     item={item}
                     isSelected={value === item.value}
                     isHighlighted={highlightedIndex === index}
-                    onSelect={() => handleSelect(item.value)}
+                    onSelect={() => handleSelect(item.value, item)}
                   />
                 ))}
 
