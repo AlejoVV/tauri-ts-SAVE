@@ -43,6 +43,7 @@ export interface UseWorkOrderRegistrationReturn {
   handleSubmit: (formData: FormData) => Promise<void>;
   resetForm: () => void;
   refreshIds: () => Promise<void>;
+  setOrdenEspecifica: (numeroOT: number) => void;
 
   // Trigger para recargar tabla
   shouldRefreshTable: number;
@@ -196,6 +197,18 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
     refreshIds();
   }, [refreshIds]);
 
+  /**
+   * Establece un número de OT específico para adicionar pruebas
+   * Se usa cuando se carga una OT existente
+   * rerender-functional-setstate - Stable callback
+   */
+  const setOrdenEspecifica = useCallback((numeroOT: number) => {
+    setOrdenActual(numeroOT);
+    setHasPruebasRegistradas(true); // Ya tiene pruebas registradas
+    setError(null);
+    setSuccessMessage(null);
+  }, []);
+
   return {
     ordenActual,
     pruebaActual,
@@ -206,6 +219,7 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
     handleSubmit,
     resetForm,
     refreshIds,
+    setOrdenEspecifica,
     shouldRefreshTable,
   };
 }

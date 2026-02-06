@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { CalendarIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { CalendarIcon, Loader2, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -19,22 +19,27 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
 // Comboboxes
-import { GenericCombobox } from "./components/comboboxes/generic-combobox";
-import { AsyncCombobox } from "./components/comboboxes/async-combobox";
+import { GenericCombobox } from "@/modulos/registrar/components/comboboxes/generic-combobox";
+import { AsyncCombobox } from "@/modulos/registrar/components/comboboxes/async-combobox";
 
 // Hooks
-import { useFormularioRegistro } from "./hooks/useFormularioRegistro";
-import { useWorkOrderRegistration } from "./hooks/useWorkOrderRegistration";
+import { useFormularioRegistro } from "@/modulos/registrar/hooks/useFormularioRegistro";
+import { useWorkOrderRegistration } from "@/modulos/registrar/hooks/useWorkOrderRegistration";
 
 // Modales
-import { CompanyModal } from "./components/modals/company-modal";
-import { ContactModal } from "./components/modals/contact-modal";
-import { FarmModal } from "./components/modals/farm-modal";
-import { SpeciesModal } from "./components/modals/species-modal";
-import { ProductModal } from "./components/modals/product-modal";
+import { CompanyModal } from "@/modulos/registrar/components/modals/company-modal";
+import { ContactModal } from "@/modulos/registrar/components/modals/contact-modal";
+import { FarmModal } from "@/modulos/registrar/components/modals/farm-modal";
+import { SpeciesModal } from "@/modulos/registrar/components/modals/species-modal";
+import { ProductModal } from "@/modulos/registrar/components/modals/product-modal";
+import { AddToOTConfirmationDialog } from "@/modulos/registrar/components/modals/add-to-ot-confirmation-dialog";
+import { SearchOTDialog } from "@/modulos/registrar/components/modals/search-ot-dialog";
 
 // Tabla de pruebas
-import { WorkOrderTestsTable } from "./components/work-order-tests-table";
+import { WorkOrderTestsTable } from "@/modulos/registrar/components/work-order-tests-table";
+
+// Tipos
+import type { OTData } from "@/modulos/registrar/servicios/workOrderService";
 
 interface WorkOrderFormProps {
   mode?: "create-new" | "add-to-existing";
@@ -99,6 +104,7 @@ export function WorkOrderForm({
     hasPruebasRegistradas,
     handleSubmit,
     shouldRefreshTable,
+    setOrdenEspecifica,
   } = useWorkOrderRegistration();
 
   // Estados de los modales
@@ -108,9 +114,19 @@ export function WorkOrderForm({
   const [speciesModalOpen, setSpeciesModalOpen] = useState(false);
   const [productModalOpen, setProductModalOpen] = useState(false);
 
+  // Estados para modo adicionar
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [adicionarMode, setAdicionarMode] = useState(false);
+  const [otCargada, setOTCargada] = useState<OTData | null>(null);
+
   // Determinar qué campos deben estar deshabilitados
   // Los campos de orden (Facturar, Contacto, Finca, Descuento) se deshabilitan después de registrar la primera prueba
   const isFieldDisabled = (fieldType: "main" | "test-specific") => {
+    // Si está en modo adicionar, bloquear campos principales
+    if (adicionarMode) {
+      return fieldType === "main";
+    }
     if (mode === "add-to-existing") {
       return fieldType === "main";
     }
@@ -118,6 +134,27 @@ export function WorkOrderForm({
       return disabled || hasPruebasRegistradas; // Bloquear solo después de registrar la primera prueba
     }
     return disabled;
+  };
+
+  /**
+   * Carga los datos de una OT existente para adicionar pruebas
+   * rerender-functional-setstate - Stable callback
+   */
+  const cargarDatosOT = (otData: OTData) => {
+    // 1. Cargar datos en los campos del formulario
+    setSelectedCompania(otData.facturarAId);
+    setSelectedContacto(otData.contactoId);
+    setSelectedFinca(otData.fincaId);
+    if (descuentoRef.current) {
+      descuentoRef.current.value = otData.descuento;
+    }
+
+    // 2. Establecer modo de adición
+    setAdicionarMode(true);
+    setOTCargada(otData);
+
+    // 3. Actualizar número de OT en el hook
+    setOrdenEspecifica(otData.numeroOT);
   };
 
   /**
@@ -214,6 +251,19 @@ export function WorkOrderForm({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{registrationError}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Alerta informativa cuando está en modo adicionar */}
+      {adicionarMode && otCargada && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>Adicionando prueba a OT #{otCargada.numeroOT}</strong>
+            <br />
+            Los campos de facturación están bloqueados. Complete los campos de
+            la nueva prueba y presione "Guardar y Continuar".
+          </AlertDescription>
         </Alert>
       )}
 
@@ -581,6 +631,17 @@ export function WorkOrderForm({
             )}
           </Button>
 
+          {/* Botón Adicionar */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setConfirmDialogOpen(true)}
+            disabled={isSubmitting || adicionarMode}
+            className="h-8 min-w-[120px] font-medium text-xs px-4 border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            Adicionar
+          </Button>
+
           {/* Botón Nueva OT */}
           <Button
             type="button"
@@ -619,6 +680,22 @@ export function WorkOrderForm({
         open={productModalOpen}
         onOpenChange={setProductModalOpen}
         onSuccess={handleProductCreated}
+      />
+
+      {/* Modales para adicionar a OT existente */}
+      <AddToOTConfirmationDialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        onConfirm={() => {
+          setConfirmDialogOpen(false);
+          setSearchDialogOpen(true);
+        }}
+      />
+      <SearchOTDialog
+        open={searchDialogOpen}
+        onOpenChange={setSearchDialogOpen}
+        onOTSelected={cargarDatosOT}
+        numeroOTMaximo={ordenActual || 0}
       />
 
       {/* Tabla de pruebas de la orden de trabajo */}
