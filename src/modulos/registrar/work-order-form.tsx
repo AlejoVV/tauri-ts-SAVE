@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { CalendarIcon, Loader2, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { CalendarIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -118,7 +118,6 @@ export function WorkOrderForm({
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [adicionarMode, setAdicionarMode] = useState(false);
-  const [otCargada, setOTCargada] = useState<OTData | null>(null);
 
   // Determinar qué campos deben estar deshabilitados
   // Los campos de orden (Facturar, Contacto, Finca, Descuento) se deshabilitan después de registrar la primera prueba
@@ -151,7 +150,6 @@ export function WorkOrderForm({
 
     // 2. Establecer modo de adición
     setAdicionarMode(true);
-    setOTCargada(otData);
 
     // 3. Actualizar número de OT en el hook
     setOrdenEspecifica(otData.numeroOT);
@@ -251,19 +249,6 @@ export function WorkOrderForm({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{registrationError}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Alerta informativa cuando está en modo adicionar */}
-      {adicionarMode && otCargada && (
-        <Alert className="bg-blue-50 border-blue-200">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
-            <strong>Adicionando prueba a OT #{otCargada.numeroOT}</strong>
-            <br />
-            Los campos de facturación están bloqueados. Complete los campos de
-            la nueva prueba y presione "Guardar y Continuar".
-          </AlertDescription>
         </Alert>
       )}
 
