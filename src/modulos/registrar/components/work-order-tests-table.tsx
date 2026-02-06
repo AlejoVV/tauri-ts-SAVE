@@ -100,12 +100,14 @@ export function WorkOrderTestsTable({
         accessorKey: "finca_nombre",
         header: "Finca",
         size: 85,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "objetivo_nombre",
         header: "Objetivo",
         size: 150,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
         muiTableBodyCellProps: {
           sx: {
@@ -118,12 +120,14 @@ export function WorkOrderTestsTable({
         accessorKey: "producto_nombre",
         header: "Producto",
         size: 100,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "dosis_producto",
         header: "Dosis",
         size: 60,
+        minSize: 30,
         Cell: ({ row }) => {
           const dosis = row.original.dosis_producto;
           const unidad = row.original.producto_unid;
@@ -135,12 +139,14 @@ export function WorkOrderTestsTable({
         accessorKey: "producto_unid",
         header: "Unidad",
         size: 60,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "observaciones",
         header: "Observaciones",
         size: 130,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
         muiTableBodyCellProps: {
           sx: {
@@ -153,12 +159,14 @@ export function WorkOrderTestsTable({
         accessorKey: "especie_nombre",
         header: "Especie",
         size: 85,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "prueba_estado_lab",
         header: "Estado Lab",
         size: 95,
+        minSize: 30,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="lab" />
         ),
@@ -167,6 +175,7 @@ export function WorkOrderTestsTable({
         accessorKey: "prueba_id",
         header: "Prueba ID",
         size: 70,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<number>() || "-",
         muiTableBodyCellProps: {
           align: "center",
@@ -176,6 +185,7 @@ export function WorkOrderTestsTable({
         accessorKey: "prueba_numero_muestra",
         header: "N° Muestra",
         size: 75,
+        minSize: 30,
         Cell: ({ cell }) => cell.getValue<number>() || "-",
         muiTableBodyCellProps: {
           align: "center",
@@ -185,6 +195,7 @@ export function WorkOrderTestsTable({
         accessorKey: "estado_fact",
         header: "Estado Fact.",
         size: 90,
+        minSize: 30,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="fact" />
         ),
@@ -193,6 +204,7 @@ export function WorkOrderTestsTable({
         accessorKey: "estado_ot",
         header: "Estado OT",
         size: 80,
+        minSize: 30,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="ot" />
         ),
@@ -201,6 +213,7 @@ export function WorkOrderTestsTable({
         accessorKey: "prueba_estado_proceso",
         header: "Estado Proceso",
         size: 105,
+        minSize: 30,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="proceso" />
         ),
@@ -209,22 +222,25 @@ export function WorkOrderTestsTable({
         accessorKey: "prueba_fecha_creacion",
         header: "Fecha Creación",
         size: 95,
+        minSize: 30,
         Cell: ({ cell }) => formatDate(cell.getValue<string>()),
       },
       {
         accessorKey: "fecha_recibo_muestra",
         header: "Fecha Recibo",
         size: 95,
+        minSize: 30,
         Cell: ({ cell }) => formatDate(cell.getValue<string>()),
       },
       {
         accessorKey: "fecha_entrega_info",
         header: "Fecha Entrega",
         size: 95,
+        minSize: 30,
         Cell: ({ cell }) => formatDate(cell.getValue<string>()),
       },
     ],
-    []
+    [],
   );
 
   // Table configuration following best practices
