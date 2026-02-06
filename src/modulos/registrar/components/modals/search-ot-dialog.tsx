@@ -13,8 +13,14 @@ import {
 import { Button } from "@/modulos/registrar/components/ui/button";
 import { Input } from "@/modulos/registrar/components/ui/input";
 import { Label } from "@/modulos/registrar/components/ui/label";
-import { Alert, AlertDescription } from "@/modulos/registrar/components/ui/alert";
-import { buscarOTPorNumero, type OTData } from "@/modulos/registrar/servicios/workOrderService";
+import {
+  Alert,
+  AlertDescription,
+} from "@/modulos/registrar/components/ui/alert";
+import {
+  buscarOTPorNumero,
+  type OTData,
+} from "@/modulos/registrar/servicios/workOrderService";
 
 interface SearchOTDialogProps {
   open: boolean;

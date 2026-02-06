@@ -87,6 +87,9 @@ interface UseFormularioRegistroReturn {
   
   // Unidades del producto seleccionado
   unidadesProducto: string
+  
+  // Función especial para cargar compañía, contacto y finca de OT existente
+  cargarDatosOT: (companiaNombre: string, contactoNombre: string, fincaNombre: string) => Promise<void>
 }
 
 export function useFormularioRegistro(): UseFormularioRegistroReturn {
@@ -304,6 +307,55 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
   // El contacto está deshabilitado si no hay compañía seleccionada
   const contactoDisabled = !selectedCompania
   
+  /**
+   * Carga los datos de una OT existente: compañía, contacto y finca
+   * async-defer-await - Wait for data to load and add missing items to lists
+   */
+  const cargarDatosOT = useCallback(async (companiaNombre: string, contactoNombre: string, fincaNombre: string) => {
+    // 1. Verificar si la compañía está en la lista, si no, agregarla
+    const companiaExiste = companias.some(c => c.value === companiaNombre)
+    if (!companiaExiste && companiaNombre) {
+      // Agregar la compañía a la lista temporalmente con ID 0
+      setCompanias(prev => [{
+        value: companiaNombre,
+        label: companiaNombre,
+        id: 0,
+      }, ...prev])
+    }
+    
+    // 2. Establecer la compañía sin limpiar el contacto
+    setSelectedCompaniaState(companiaNombre)
+    
+    // 3. Cargar contactos de esta compañía
+    if (companiaNombre) {
+      setLoading((prev) => ({ ...prev, contactos: true }))
+      try {
+        const data = await obtenerContactosPorCompania(companiaNombre)
+        const contactosList = contactosACombobox(data)
+        
+        // 4. Verificar si el contacto está en la lista, si no, agregarlo
+        const contactoExiste = contactosList.some(c => c.value === contactoNombre)
+        if (!contactoExiste && contactoNombre) {
+          contactosList.unshift({
+            value: contactoNombre,
+            label: contactoNombre,
+            id: 0,
+          })
+        }
+        
+        setContactos(contactosList)
+      } catch (error) {
+        console.error("Error al cargar contactos:", error)
+      } finally {
+        setLoading((prev) => ({ ...prev, contactos: false }))
+      }
+    }
+    
+    // 5. Establecer contacto y finca
+    setSelectedContacto(contactoNombre)
+    setSelectedFinca(fincaNombre)
+  }, [companias])
+  
   return {
     companias,
     contactos,
@@ -337,5 +389,6 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
     productoCasaComercial,
     productoTipo,
     objetivoTipoPrueba,
+    cargarDatosOT,
   }
 }

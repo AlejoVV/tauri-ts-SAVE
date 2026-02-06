@@ -92,6 +92,7 @@ export function WorkOrderForm({
     productoCasaComercial,
     productoTipo,
     objetivoTipoPrueba,
+    cargarDatosOT: cargarDatosOTHook,
   } = useFormularioRegistro();
 
   // Hook para manejar el flujo de registro de órdenes y pruebas
@@ -139,19 +140,24 @@ export function WorkOrderForm({
    * Carga los datos de una OT existente para adicionar pruebas
    * rerender-functional-setstate - Stable callback
    */
-  const cargarDatosOT = (otData: OTData) => {
-    // 1. Cargar datos en los campos del formulario
-    setSelectedCompania(otData.facturarAId);
-    setSelectedContacto(otData.contactoId);
-    setSelectedFinca(otData.fincaId);
+  /**
+   * Carga los datos de una OT existente para adicionar pruebas
+   * async-defer-await - Wait for data to load before proceeding
+   */
+  const cargarDatosOT = async (otData: OTData) => {
+    // 1. Cargar compañía, contacto y finca usando la función del hook
+    // que se encarga de agregar los items a las listas si no están presentes
+    await cargarDatosOTHook(otData.facturarA, otData.contacto, otData.finca);
+    
+    // 2. Establecer descuento
     if (descuentoRef.current) {
       descuentoRef.current.value = otData.descuento;
     }
 
-    // 2. Establecer modo de adición
+    // 3. Establecer modo de adición
     setAdicionarMode(true);
 
-    // 3. Actualizar número de OT en el hook
+    // 4. Actualizar número de OT en el hook
     setOrdenEspecifica(otData.numeroOT);
   };
 

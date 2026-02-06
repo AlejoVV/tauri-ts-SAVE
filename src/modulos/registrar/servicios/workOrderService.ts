@@ -54,12 +54,9 @@ export async function contarPruebasPorOrden(
  */
 export interface OTData {
   numeroOT: number;
-  facturarA: string;
-  facturarAId: string;
-  contacto: string;
-  contactoId: string;
-  finca: string;
-  fincaId: string;
+  facturarA: string; // Nombre de la compañía (para mostrar y usar como value)
+  contacto: string; // Nombre del contacto (para mostrar y usar como value)
+  finca: string; // Nombre de la finca (para mostrar y usar como value)
   descuento: string;
 }
 
@@ -112,36 +109,14 @@ export async function buscarOTPorNumero(numeroOT: number): Promise<OTData> {
   const prueba = pruebaResult.data;
   const orden = ordenResult.data;
 
-  // Los nombres de compañía y contacto están guardados como strings
-  // Necesitamos buscar sus IDs correspondientes
-  // async-parallel - Fetch company and contact IDs in parallel
-  const [companiaResult, contactoResult] = await Promise.all([
-    prueba.prueba_compania
-      ? supabase
-          .from("companias")
-          .select("compania_id, compania_nombre")
-          .eq("compania_nombre", prueba.prueba_compania)
-          .single()
-      : Promise.resolve({ data: null, error: null }),
-    prueba.prueba_contacto
-      ? supabase
-          .from("contactos")
-          .select("contacto_id, contacto_nombre_completo")
-          .eq("contacto_nombre_completo", prueba.prueba_contacto)
-          .single()
-      : Promise.resolve({ data: null, error: null }),
-  ]);
-
   // Construir objeto con los datos
+  // Los comboboxes usan NOMBRES como values, no IDs
   const otData: OTData = {
     numeroOT: orden.orden_id,
     facturarA: prueba.prueba_compania || "",
-    facturarAId: companiaResult.data?.compania_id?.toString() || "",
     contacto: prueba.prueba_contacto || "",
-    contactoId: contactoResult.data?.contacto_id?.toString() || "",
     finca:
       (prueba.fincas as { finca_nombre?: string } | null)?.finca_nombre || "",
-    fincaId: prueba.prueba_finca_id?.toString() || "",
     descuento: orden.orden_descuento || "0",
   };
 
