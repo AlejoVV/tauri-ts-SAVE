@@ -240,7 +240,7 @@ export function WorkOrderForm({
   };
 
   return (
-    <div className="space-y-2 pt-0.5">
+    <div className="space-y-1 pt-0.5">
       {/* Alertas de estado */}
       {successMessage && (
         <Alert className="bg-green-50 border-green-200">
@@ -692,7 +692,7 @@ export function WorkOrderForm({
       />
 
       {/* Tabla de pruebas de la orden de trabajo */}
-      <div className="mt-6">
+      <div className="mt-3">
         <WorkOrderTestsTable
           ordenTrabajo={ordenActual}
           refreshTrigger={shouldRefreshTable}

@@ -7,7 +7,6 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -253,7 +252,7 @@ export function WorkOrderTestsTable({
     enableColumnResizing: true,
     enableSorting: true,
     enableSortingRemoval: false,
-    enablePagination: true,
+    enablePagination: false,
     enableStickyHeader: true,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
@@ -261,6 +260,7 @@ export function WorkOrderTestsTable({
     enableHiding: false,
     enableColumnActions: false,
     enableTopToolbar: false,
+    enableBottomToolbar: false,
     muiTablePaperProps: {
       elevation: 0,
       sx: {
@@ -365,10 +365,6 @@ export function WorkOrderTestsTable({
       },
     },
     initialState: {
-      pagination: {
-        pageSize: 10,
-        pageIndex: 0,
-      },
       density: "compact",
     },
     state: {
@@ -423,40 +419,19 @@ export function WorkOrderTestsTable({
   // Empty state
   if (data.length === 0 && !isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pruebas de la Orden de Trabajo #{ordenTrabajo}</CardTitle>
-          <CardDescription>
-            No se encontraron pruebas para esta orden de trabajo
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <p className="text-sm">No hay pruebas registradas</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-4 text-muted-foreground">
+        <p className="text-xs">Sin pruebas registradas</p>
+      </div>
     );
   }
 
   // Table view
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>
-              Pruebas de la Orden de Trabajo #{ordenTrabajo}
-            </CardTitle>
-            <CardDescription>
-              {data.length}{" "}
-              {data.length === 1 ? "prueba registrada" : "pruebas registradas"}
-            </CardDescription>
-          </div>
-          <Badge variant="outline" className="text-base px-3 py-1">
-            Total: {data.length}
-          </Badge>
-        </div>
+      <CardHeader className="py-2 px-4">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {data.length} {data.length === 1 ? "prueba" : "pruebas"}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
         <MaterialReactTable table={table} />
