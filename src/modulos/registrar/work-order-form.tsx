@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { CalendarIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { CalendarIcon, Loader2, CheckCircle2, AlertCircle, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -271,18 +271,31 @@ export function WorkOrderForm({
       )}
 
       <form className="space-y-0" onSubmit={(e) => e.preventDefault()}>
-        {/* Fila 1: OT, Prueba, Facturar a, Contacto */}
+        {/* Fila 1: OT, Adicionar, Prueba, Facturar a, Contacto */}
         <div className="grid grid-cols-12 gap-3">
           <div className="col-span-1 space-y-0.5">
             <Label htmlFor="ot" className="text-xs">
               OT
             </Label>
-            <Input
-              id="ot"
-              value={ordenActual || "---"}
-              readOnly
-              className="w-20 bg-muted h-8 text-center font-semibold"
-            />
+            <div className="flex items-center gap-1">
+              <Input
+                id="ot"
+                value={ordenActual || "---"}
+                readOnly
+                className="w-full bg-muted h-8 text-center font-semibold"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={() => setConfirmDialogOpen(true)}
+                disabled={isSubmitting || adicionarMode}
+                className="h-8 w-8 flex-shrink-0 border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                title="Adicionar a OT existente"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="col-span-1 space-y-0.5">
             <Label htmlFor="prueba" className="text-xs">
@@ -620,17 +633,6 @@ export function WorkOrderForm({
             ) : (
               "Guardar y Continuar"
             )}
-          </Button>
-
-          {/* Botón Adicionar */}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setConfirmDialogOpen(true)}
-            disabled={isSubmitting || adicionarMode}
-            className="h-8 min-w-[120px] font-medium text-xs px-4 border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors"
-          >
-            Adicionar
           </Button>
 
           {/* Botón Nueva OT */}
