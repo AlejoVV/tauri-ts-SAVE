@@ -99,13 +99,13 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "finca_nombre",
         header: "Finca",
-        size: 120,
+        size: 85,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "objetivo_nombre",
         header: "Objetivo",
-        size: 200,
+        size: 150,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
         muiTableBodyCellProps: {
           sx: {
@@ -117,13 +117,13 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "producto_nombre",
         header: "Producto",
-        size: 150,
+        size: 100,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "dosis_producto",
         header: "Dosis",
-        size: 80,
+        size: 60,
         Cell: ({ row }) => {
           const dosis = row.original.dosis_producto;
           const unidad = row.original.producto_unid;
@@ -134,31 +134,13 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "producto_unid",
         header: "Unidad",
-        size: 80,
-        Cell: ({ cell }) => cell.getValue<string>() || "-",
-      },
-      {
-        accessorKey: "facturara",
-        header: "Facturar A",
-        size: 150,
-        Cell: ({ cell }) => cell.getValue<string>() || "-",
-        muiTableBodyCellProps: {
-          sx: {
-            whiteSpace: "normal",
-            wordBreak: "break-word",
-          },
-        },
-      },
-      {
-        accessorKey: "contacto",
-        header: "Contacto",
-        size: 150,
+        size: 60,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "observaciones",
         header: "Observaciones",
-        size: 200,
+        size: 130,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
         muiTableBodyCellProps: {
           sx: {
@@ -170,13 +152,13 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "especie_nombre",
         header: "Especie",
-        size: 120,
+        size: 85,
         Cell: ({ cell }) => cell.getValue<string>() || "-",
       },
       {
         accessorKey: "prueba_estado_lab",
         header: "Estado Lab",
-        size: 140,
+        size: 95,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="lab" />
         ),
@@ -184,7 +166,7 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "prueba_id",
         header: "Prueba ID",
-        size: 90,
+        size: 70,
         Cell: ({ cell }) => cell.getValue<number>() || "-",
         muiTableBodyCellProps: {
           align: "center",
@@ -193,7 +175,7 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "prueba_numero_muestra",
         header: "N° Muestra",
-        size: 100,
+        size: 75,
         Cell: ({ cell }) => cell.getValue<number>() || "-",
         muiTableBodyCellProps: {
           align: "center",
@@ -202,7 +184,7 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "estado_fact",
         header: "Estado Fact.",
-        size: 120,
+        size: 90,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="fact" />
         ),
@@ -210,7 +192,7 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "estado_ot",
         header: "Estado OT",
-        size: 110,
+        size: 80,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="ot" />
         ),
@@ -218,7 +200,7 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "prueba_estado_proceso",
         header: "Estado Proceso",
-        size: 140,
+        size: 105,
         Cell: ({ cell }) => (
           <EstadoBadge estado={cell.getValue<string>()} type="proceso" />
         ),
@@ -226,19 +208,19 @@ export function WorkOrderTestsTable({
       {
         accessorKey: "prueba_fecha_creacion",
         header: "Fecha Creación",
-        size: 130,
+        size: 95,
         Cell: ({ cell }) => formatDate(cell.getValue<string>()),
       },
       {
         accessorKey: "fecha_recibo_muestra",
         header: "Fecha Recibo",
-        size: 130,
+        size: 95,
         Cell: ({ cell }) => formatDate(cell.getValue<string>()),
       },
       {
         accessorKey: "fecha_entrega_info",
         header: "Fecha Entrega",
-        size: 130,
+        size: 95,
         Cell: ({ cell }) => formatDate(cell.getValue<string>()),
       },
     ],
@@ -250,27 +232,120 @@ export function WorkOrderTestsTable({
     columns,
     data,
     enableRowSelection: false,
-    enableColumnFilters: true,
-    enableColumnOrdering: true,
+    enableColumnFilters: false,
+    enableColumnOrdering: false,
+    enableColumnResizing: true,
     enableSorting: true,
+    enableSortingRemoval: false,
     enablePagination: true,
     enableStickyHeader: true,
-    enableDensityToggle: true,
+    enableDensityToggle: false,
+    enableFullScreenToggle: false,
+    enableGlobalFilter: false,
+    enableHiding: false,
+    enableColumnActions: false,
+    enableTopToolbar: false,
+    muiTablePaperProps: {
+      elevation: 0,
+      sx: {
+        borderRadius: "0.5rem",
+        border: "1px solid #e0e0e0",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      },
+    },
+    muiTableProps: {
+      sx: {
+        tableLayout: "fixed",
+      },
+    },
     muiTableContainerProps: {
       sx: {
         maxHeight: "500px",
+        flexGrow: 1,
+        overflow: "auto",
       },
     },
-    muiTableHeadCellProps: {
+    muiTableHeadCellProps: ({ column }) => ({
       sx: {
         fontWeight: "bold",
-        fontSize: "0.875rem",
+        fontSize: "0.8rem",
         backgroundColor: "hsl(var(--muted))",
+        paddingLeft: "8px",
+        paddingRight: "8px",
+        cursor: "pointer",
+        userSelect: "none",
+        "& .MuiTableSortLabel-icon": {
+          display: "none",
+        },
       },
-    },
+      onDoubleClick: () => {
+        const currentSorting = column.getIsSorted();
+        if (currentSorting === false) {
+          column.toggleSorting(false); // Sort ascending
+        } else if (currentSorting === "asc") {
+          column.toggleSorting(true); // Sort descending
+        } else {
+          column.toggleSorting(false); // Back to ascending
+        }
+      },
+    }),
     muiTableBodyCellProps: {
       sx: {
-        fontSize: "0.875rem",
+        fontSize: "0.8rem",
+      },
+    },
+    muiTableBodyRowProps: ({ table }) => {
+      const density = table.getState().density;
+
+      // Configurar estilos según la densidad
+      let height, paddingTop, paddingBottom, fontSize;
+
+      switch (density) {
+        case "compact":
+          height = "20px";
+          paddingTop = "0px";
+          paddingBottom = "0px";
+          fontSize = "0.75rem";
+          break;
+        case "comfortable":
+          height = "auto";
+          paddingTop = "6px";
+          paddingBottom = "6px";
+          fontSize = "0.78rem";
+          break;
+        default: // 'standard'
+          height = "auto";
+          paddingTop = "12px";
+          paddingBottom = "12px";
+          fontSize = "0.85rem";
+          break;
+      }
+
+      return {
+        sx: {
+          height: height,
+          "& td": {
+            paddingTop: paddingTop,
+            paddingBottom: paddingBottom,
+            paddingLeft: "8px",
+            paddingRight: "8px",
+            fontSize: fontSize,
+            whiteSpace: density === "compact" ? "nowrap" : "normal",
+            overflow: density === "compact" ? "hidden" : "visible",
+            textOverflow: density === "compact" ? "ellipsis" : "visible",
+            wordWrap: density === "compact" ? "normal" : "break-word",
+            verticalAlign: "top",
+          },
+        },
+      };
+    },
+    muiSkeletonProps: {
+      animation: "wave",
+      height: 35,
+      sx: {
+        borderRadius: "4px",
       },
     },
     initialState: {
@@ -279,9 +354,6 @@ export function WorkOrderTestsTable({
         pageIndex: 0,
       },
       density: "compact",
-      columnPinning: {
-        left: ["prueba_id"],
-      },
     },
     state: {
       isLoading,
@@ -370,10 +442,8 @@ export function WorkOrderTestsTable({
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-lg border">
-          <MaterialReactTable table={table} />
-        </div>
+      <CardContent className="flex-1 overflow-hidden">
+        <MaterialReactTable table={table} />
       </CardContent>
     </Card>
   );
