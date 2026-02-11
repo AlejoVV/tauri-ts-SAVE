@@ -88,7 +88,7 @@ export const useInformes = () => {
         const primeraPrueba = pruebasData[0];
         
         // Obtener email del contacto desde vistamaestratotal
-        let emailContacto = 'Sin información';
+        let emailContacto = '-';
         const { data: vistaData, error: vistaError } = await supabase
           .from('vistamaestratotal')
           .select('contacto_email')
@@ -96,21 +96,21 @@ export const useInformes = () => {
           .limit(1);
 
         if (!vistaError && vistaData && vistaData.length > 0) {
-          emailContacto = vistaData[0].contacto_email || 'Sin información';
+          emailContacto = vistaData[0].contacto_email || '-';
         }
         
         empresa = {
           id: '1',
-          nombre: primeraPrueba.prueba_compania || 'Sin información',
-          direccion: 'Sin información',
-          telefono: 'Sin información'
+          nombre: primeraPrueba.prueba_compania || '-',
+          direccion: '-',
+          telefono: '-'
         };
 
         contacto = {
           id: '1',
-          nombre: primeraPrueba.prueba_contacto || 'Sin información',
+          nombre: primeraPrueba.prueba_contacto || '-',
           email: emailContacto,
-          telefono: 'Sin información',
+          telefono: '-',
           empresa_id: '1'
         };
       }
@@ -187,27 +187,27 @@ export const useInformes = () => {
 
         return {
           no_prueba: prueba.prueba_id?.toString() || '0',
-          no_muestra: prueba.prueba_numero_muestra || 'Sin información',
-          estado_en_lab: (prueba.prueba_estado_lab as string) || 'Sin información',
-          objetivo: prueba.objetivos?.objetivo_nombre || 'Sin información',
-          producto: prueba.productos?.producto_nombre || 'Sin información',
+          no_muestra: prueba.prueba_numero_muestra || '-',
+          estado_en_lab: (prueba.prueba_estado_lab as string) || '-',
+          objetivo: prueba.objetivos?.objetivo_nombre || '-',
+          producto: prueba.productos?.producto_nombre || '-',
           dosis: parseFloat(prueba.prueba_dosis_producto || '0') || 0,
-          especie_vegetal: prueba.especie_vegetal?.especie_nombre || 'Sin información',
-          observaciones: prueba.prueba_obs || 'Sin información',
-          finca_de_la_cepa: prueba.fincas?.finca_nombre || 'Sin información',
-          fecha_ingreso_ot: prueba.prueba_fecha_creacion ? new Date(prueba.prueba_fecha_creacion).toLocaleDateString() : 'Sin información',
-          estado_proceso: prueba.prueba_estado_proceso || 'Sin información',
-          procedimiento: prueba.objetivos?.objetivo_procedimiento || 'Sin información',
+          especie_vegetal: prueba.especie_vegetal?.especie_nombre || '-',
+          observaciones: prueba.prueba_obs || '-',
+          finca_de_la_cepa: prueba.fincas?.finca_nombre || '-',
+          fecha_ingreso_ot: prueba.prueba_fecha_creacion ? new Date(prueba.prueba_fecha_creacion).toLocaleDateString() : '-',
+          estado_proceso: prueba.prueba_estado_proceso || '-',
+          procedimiento: prueba.objetivos?.objetivo_procedimiento || '-',
           // Nuevos campos
-          finca: prueba.fincas?.finca_nombre || 'Sin información',
+          finca: prueba.fincas?.finca_nombre || '-',
           prueba_id: prueba.prueba_id?.toString() || '0',
-          fecha_montaje: fechaMontaje ? new Date(fechaMontaje).toLocaleDateString() : 'Sin fecha',
+          fecha_montaje: fechaMontaje ? new Date(fechaMontaje).toLocaleDateString() : '-',
           dias_montaje: diasMontaje,
           semana_entrega: prueba.prueba_semana_entrega || null,
-          ingrediente_activo: prueba.productos?.producto_ingrediente_activo || 'Sin información',
+          ingrediente_activo: prueba.productos?.producto_ingrediente_activo || '-',
           eficacia_vs_testigo: eficaciasPruebas[prueba.prueba_id!] 
             ? `${eficaciasPruebas[prueba.prueba_id!]}%` 
-            : 'Sin información'
+            : '-'
         };
       });
 

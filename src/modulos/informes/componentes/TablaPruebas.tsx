@@ -68,7 +68,7 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
         filterFn: "contains",
         Cell: ({ cell }) => (
           <div
-            className="font-medium text-sm truncate"
+            className="text-sm truncate"
             title={cell.getValue<string>()}
           >
             {cell.getValue<string>()}
@@ -84,12 +84,48 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
         enableColumnFilter: true,
         filterFn: "contains",
         Cell: ({ cell }) => (
-          <div className="text-sm font-mono">{cell.getValue<string>()}</div>
+          <div className="text-sm">{cell.getValue<string>()}</div>
         ),
+      },
+      {
+        accessorKey: "no_muestra",
+        header: "No. Muestra",
+        minSize: 80,
+        maxSize: 120,
+        size: 100,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => (
+          <div className="text-sm">{cell.getValue<string>()}</div>
+        ),
+      },
+      {
+        accessorKey: "estado_en_lab",
+        header: "Estado Lab",
+        minSize: 90,
+        maxSize: 120,
+        size: 100,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => <EstadoPrueba estado={cell.getValue<string>()} />,
       },
       {
         accessorKey: "objetivo",
         header: "Objetivo",
+        minSize: 120,
+        maxSize: 200,
+        size: 150,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => (
+          <div className="text-sm truncate" title={cell.getValue<string>()}>
+            {cell.getValue<string>()}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "producto",
+        header: "Producto",
         minSize: 120,
         maxSize: 200,
         size: 150,
@@ -114,6 +150,20 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
         ),
       },
       {
+        accessorKey: "observaciones",
+        header: "Observaciones",
+        minSize: 150,
+        maxSize: 300,
+        size: 200,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => (
+          <div className="text-sm truncate" title={cell.getValue<string>()}>
+            {cell.getValue<string>()}
+          </div>
+        ),
+      },
+      {
         accessorKey: "especie_vegetal",
         header: "Especie Vegetal",
         minSize: 100,
@@ -128,6 +178,18 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
         ),
       },
       {
+        accessorKey: "fecha_ingreso_ot",
+        header: "Fecha Creación",
+        minSize: 100,
+        maxSize: 120,
+        size: 110,
+        enableColumnFilter: true,
+        filterFn: "contains",
+        Cell: ({ cell }) => (
+          <div className="text-sm">{cell.getValue<string>()}</div>
+        ),
+      },
+      {
         accessorKey: "fecha_montaje",
         header: "Fecha Montaje",
         minSize: 100,
@@ -139,7 +201,7 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
           const fecha = cell.getValue<string>();
           return (
             <div className="text-sm">
-              {fecha && fecha !== "Sin fecha" ? fecha : "-"}
+              {fecha && fecha !== "-" ? fecha : "-"}
             </div>
           );
         },
