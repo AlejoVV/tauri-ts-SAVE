@@ -881,6 +881,7 @@ export type Database = {
           fecha_recibo_muestra: string | null
           finca_nombre: string | null
           notas_varias: string | null
+          objetivo_general: string | null
           objetivo_nombre: string | null
           observaciones: string | null
           orden_compra: string | null

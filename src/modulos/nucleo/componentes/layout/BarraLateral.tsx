@@ -3,6 +3,7 @@ import IconButton from "@mui/material/IconButton";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import ScienceIcon from "@mui/icons-material/Science";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import { FileText } from "lucide-react";
 import Tooltip from "@mui/material/Tooltip";
 import { useState } from "react";
@@ -27,6 +28,11 @@ const itemsMenu = [
     id: "informes",
     label: "Informes",
     icon: <FileText size={32} className="text-current" />,
+  },
+  {
+    id: "resumen",
+    label: "Resumen",
+    icon: <AssignmentIcon fontSize="large" color="inherit" />,
   },
 ];
 
