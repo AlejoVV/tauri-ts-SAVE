@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, AlertCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { obtenerPruebasPorOrden } from "@/modulos/registrar/servicios/workOrderService";
@@ -21,11 +22,13 @@ import type { VistaMaestraRow } from "@/modulos/registrar/servicios/workOrderSer
 interface WorkOrderTestsTableProps {
   ordenTrabajo: number | null;
   refreshTrigger?: number; // Trigger para forzar actualización
+  onEdit?: (prueba: VistaMaestraRow) => void;
 }
 
 export function WorkOrderTestsTable({
   ordenTrabajo,
   refreshTrigger = 0,
+  onEdit,
 }: WorkOrderTestsTableProps) {
   const [data, setData] = useState<VistaMaestraRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -261,6 +264,27 @@ export function WorkOrderTestsTable({
     enableColumnActions: false,
     enableTopToolbar: false,
     enableBottomToolbar: false,
+    enableRowActions: !!onEdit,
+    positionActionsColumn: "first",
+    displayColumnDefOptions: {
+      "mrt-row-actions": {
+        header: "",
+        size: 48,
+        minSize: 48,
+      },
+    },
+    renderRowActions: ({ row }) =>
+      onEdit ? (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6"
+          onClick={() => onEdit(row.original)}
+          title="Editar prueba"
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+      ) : null,
     muiTablePaperProps: {
       elevation: 0,
       sx: {
