@@ -1,9 +1,18 @@
 // Servicio para obtener datos de pruebas asociadas a una orden de trabajo
 import { supabase } from "../../nucleo/lib/supabaseClient";
 import type { Tables } from "../../nucleo/lib/supabase";
+import {
+  obtenerObjetivoIdPorNombre,
+  obtenerProductoIdPorNombre,
+  obtenerEspecieIdPorNombre,
+  obtenerFincaIdPorNombre,
+} from "./registroService";
 
 // Type for vistamaestra row
 export type VistaMaestraRow = Tables<"vistamaestratotal">;
+
+// Type for full prueba row from direct table
+export type PruebaDatos = Tables<"pruebas_ordenes_trabajo">;
 
 /**
  * Obtiene todas las pruebas asociadas a una orden de trabajo específica
@@ -121,4 +130,111 @@ export async function buscarOTPorNumero(numeroOT: number): Promise<OTData> {
   };
 
   return otData;
+}
+
+/**
+ * Obtiene los datos completos de una prueba por su ID
+ * Incluye campos como prueba_inst, prueba_notas_varias que no están en la vista
+ */
+export async function obtenerPruebaPorId(pruebaId: number): Promise<PruebaDatos> {
+  const { data, error } = await supabase
+    .from("pruebas_ordenes_trabajo")
+    .select("*")
+    .eq("prueba_id", pruebaId)
+    .single();
+
+  if (error || !data) {
+    console.error("Error al obtener prueba por ID:", error);
+    throw new Error(`No se encontró la prueba #${pruebaId}`);
+  }
+
+  return data;
+}
+
+/**
+ * Datos editables de una prueba existente
+ */
+export interface DatosActualizarPrueba {
+  objetivo_nombre?: string | null;
+  finca_nombre?: string | null;
+  especie_nombre?: string | null;
+  producto_nombre?: string | null;
+  dosis_producto?: string | null;
+  producto_unid?: string | null;
+  cantidad?: string | null;
+  observaciones?: string | null;
+  notas_varias?: string | null;
+  analisis_solicitado?: string | null;
+  numero_muestra?: string | null;
+  fecha_recibido?: string | null;
+}
+
+/**
+ * Actualiza los datos editables de una prueba existente
+ */
+export async function actualizarPrueba(
+  pruebaId: number,
+  datos: DatosActualizarPrueba
+): Promise<void> {
+  const [objetivoId, fincaId, especieId, productoId] = await Promise.all([
+    datos.objetivo_nombre
+      ? obtenerObjetivoIdPorNombre(datos.objetivo_nombre)
+      : Promise.resolve(undefined),
+    datos.finca_nombre
+      ? obtenerFincaIdPorNombre(datos.finca_nombre)
+      : Promise.resolve(undefined),
+    datos.especie_nombre
+      ? obtenerEspecieIdPorNombre(datos.especie_nombre)
+      : Promise.resolve(undefined),
+    datos.producto_nombre
+      ? obtenerProductoIdPorNombre(datos.producto_nombre)
+      : Promise.resolve(undefined),
+  ]);
+
+  const updateData: Record<string, unknown> = {};
+
+  if (objetivoId !== undefined) updateData.prueba_objetivo_id = objetivoId;
+  if (fincaId !== undefined) updateData.prueba_finca_id = fincaId;
+  if (especieId !== undefined) updateData.prueba_especie_id = especieId;
+  if (productoId !== undefined) updateData.prueba_producto_id = productoId;
+  if (datos.dosis_producto !== undefined)
+    updateData.prueba_dosis_producto = datos.dosis_producto ?? "0";
+  if (datos.producto_unid !== undefined)
+    updateData.prueba_producto_unid = datos.producto_unid;
+  if (datos.cantidad !== undefined) updateData.prueba_cantidad = datos.cantidad;
+  if (datos.observaciones !== undefined)
+    updateData.prueba_obs = datos.observaciones;
+  if (datos.notas_varias !== undefined)
+    updateData.prueba_notas_varias = datos.notas_varias;
+  if (datos.analisis_solicitado !== undefined)
+    updateData.prueba_inst = datos.analisis_solicitado;
+  if (datos.numero_muestra !== undefined)
+    updateData.prueba_numero_muestra = datos.numero_muestra;
+  if (datos.fecha_recibido !== undefined)
+    updateData.prueba_fecha_recibido = datos.fecha_recibido;
+
+  const { error } = await supabase
+    .from("pruebas_ordenes_trabajo")
+    .update(updateData)
+    .eq("prueba_id", pruebaId);
+
+  if (error) {
+    console.error("Error al actualizar prueba:", error);
+    throw new Error(error.message || "Error al actualizar la prueba");
+  }
+}
+
+/**
+ * Elimina una prueba de la orden de trabajo por su ID
+ */
+export async function eliminarPrueba(pruebaId: number): Promise<void> {
+  const { error } = await supabase
+    .from("pruebas_ordenes_trabajo")
+    .delete()
+    .eq("prueba_id", pruebaId);
+
+  if (error) {
+    console.error("Error al eliminar prueba:", error);
+    throw new Error(error.message || "Error al eliminar la prueba");
+  }
 }

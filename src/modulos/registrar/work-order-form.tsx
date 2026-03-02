@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { CalendarIcon, Loader2, CheckCircle2, AlertCircle, Plus } from "lucide-react";
+import { CalendarIcon, Loader2, CheckCircle2, AlertCircle, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -10,12 +10,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 // Comboboxes
@@ -38,8 +46,13 @@ import { SearchOTDialog } from "@/modulos/registrar/components/modals/search-ot-
 // Tabla de pruebas
 import { WorkOrderTestsTable } from "@/modulos/registrar/components/work-order-tests-table";
 
-// Tipos
-import type { OTData } from "@/modulos/registrar/servicios/workOrderService";
+// Tipos y servicios de gestión de pruebas
+import type { OTData, VistaMaestraRow } from "@/modulos/registrar/servicios/workOrderService";
+import {
+  obtenerPruebaPorId,
+  actualizarPrueba,
+  eliminarPrueba,
+} from "@/modulos/registrar/servicios/workOrderService";
 
 interface WorkOrderFormProps {
   mode?: "create-new" | "add-to-existing";
@@ -60,6 +73,15 @@ export function WorkOrderForm({
   const notasVariasRef = useRef<HTMLTextAreaElement>(null);
 
   const [date, setDate] = useState<Date>();
+
+  // Estado para edición / duplicado / eliminación de pruebas
+  const [pruebaEditando, setPruebaEditando] = useState<VistaMaestraRow | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [pruebaAEliminar, setPruebaAEliminar] = useState<VistaMaestraRow | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [localRefreshTrigger, setLocalRefreshTrigger] = useState(0);
 
   // Hook para manejar todos los datos del formulario conectados a la BD
   const {
@@ -182,11 +204,135 @@ export function WorkOrderForm({
   };
 
   /**
+   * Pre-rellena todos los campos del formulario con datos de una prueba existente
+   */
+  const preRellenarFormulario = async (prueba: VistaMaestraRow) => {
+    await cargarDatosOTHook(
+      prueba.facturara || "",
+      prueba.contacto || "",
+      prueba.finca_nombre || ""
+    );
+
+    setSelectedObjetivo(prueba.objetivo_nombre || "");
+    setSelectedEspecie(prueba.especie_nombre || "");
+    setSelectedProducto(prueba.producto_nombre || "", prueba.producto_unid || undefined);
+
+    if (dosisRef.current) dosisRef.current.value = prueba.dosis_producto || "";
+    if (cantidadPruebasRef.current) cantidadPruebasRef.current.value = prueba.prueba_cantidad || "1";
+    if (observacionesRef.current) observacionesRef.current.value = prueba.observaciones || "";
+    if (numeroMuestraRef.current) numeroMuestraRef.current.value = prueba.prueba_numero_muestra?.toString() || "";
+
+    if (prueba.fecha_recibo_muestra) {
+      setDate(new Date(prueba.fecha_recibo_muestra));
+    } else {
+      setDate(undefined);
+    }
+
+    if (prueba.prueba_id) {
+      try {
+        const pruebaDatos = await obtenerPruebaPorId(prueba.prueba_id);
+        if (analisisSolicitadoRef.current)
+          analisisSolicitadoRef.current.value = pruebaDatos.prueba_inst || "";
+        if (notasVariasRef.current)
+          notasVariasRef.current.value = pruebaDatos.prueba_notas_varias || "";
+      } catch (err) {
+        console.error("Error al obtener datos completos de prueba:", err);
+      }
+    }
+  };
+
+  /**
+   * Carga datos en el formulario para EDITAR una prueba existente
+   */
+  const handleEditarPrueba = async (prueba: VistaMaestraRow) => {
+    setEditError(null);
+    await preRellenarFormulario(prueba);
+    setPruebaEditando(prueba);
+  };
+
+  /**
+   * Carga datos en el formulario para DUPLICAR una prueba (crea una nueva)
+   */
+  const handleDuplicarPrueba = async (prueba: VistaMaestraRow) => {
+    setEditError(null);
+    await preRellenarFormulario(prueba);
+    setPruebaEditando(null);
+  };
+
+  /**
+   * Solicita confirmación antes de eliminar una prueba
+   */
+  const handleEliminarPrueba = (prueba: VistaMaestraRow) => {
+    setPruebaAEliminar(prueba);
+    setDeleteDialogOpen(true);
+  };
+
+  /**
+   * Ejecuta la eliminación de la prueba confirmada
+   */
+  const handleConfirmarEliminar = async () => {
+    if (!pruebaAEliminar?.prueba_id) return;
+    setDeleteSubmitting(true);
+    try {
+      await eliminarPrueba(pruebaAEliminar.prueba_id);
+      setDeleteDialogOpen(false);
+      setPruebaAEliminar(null);
+      setLocalRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      console.error("Error al eliminar prueba:", err);
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
+  /**
+   * Cancela el modo de edición y limpia el formulario
+   */
+  const handleCancelarEdicion = () => {
+    setPruebaEditando(null);
+    setEditError(null);
+    limpiarCamposPrueba();
+  };
+
+  /**
    * Maneja el evento de guardar y continuar
    * async-defer-await - Defer await to where result is used
    */
   const onContinuar = async () => {
-    // Recopilar datos del formulario
+    // Modo edición: actualizar prueba existente
+    if (pruebaEditando) {
+      if (!pruebaEditando.prueba_id) return;
+      setEditSubmitting(true);
+      setEditError(null);
+      try {
+        await actualizarPrueba(pruebaEditando.prueba_id, {
+          objetivo_nombre: selectedObjetivo || null,
+          finca_nombre: selectedFinca || null,
+          especie_nombre: selectedEspecie || null,
+          producto_nombre: selectedProducto || null,
+          dosis_producto: dosisRef.current?.value || null,
+          producto_unid: unidadesProducto || null,
+          cantidad: cantidadPruebasRef.current?.value || null,
+          observaciones: observacionesRef.current?.value || null,
+          notas_varias: notasVariasRef.current?.value || null,
+          analisis_solicitado: analisisSolicitadoRef.current?.value || null,
+          numero_muestra: numeroMuestraRef.current?.value || null,
+          fecha_recibido: date ? date.toISOString().split("T")[0] : null,
+        });
+        setPruebaEditando(null);
+        limpiarCamposPrueba();
+        setLocalRefreshTrigger((prev) => prev + 1);
+      } catch (err) {
+        setEditError(
+          err instanceof Error ? err.message : "Error al actualizar la prueba"
+        );
+      } finally {
+        setEditSubmitting(false);
+      }
+      return;
+    }
+
+    // Modo normal: registrar nueva prueba
     const formData = {
       facturar: selectedCompania,
       contacto: selectedContacto,
@@ -207,7 +353,6 @@ export function WorkOrderForm({
 
     await handleSubmit(formData);
 
-    // Limpiar campos de prueba después de guardar exitosamente
     if (!registrationError) {
       limpiarCamposPrueba();
     }
@@ -256,6 +401,35 @@ export function WorkOrderForm({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{registrationError}</AlertDescription>
         </Alert>
+      )}
+
+      {editError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{editError}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Indicador de modo edición */}
+      {pruebaEditando && (
+        <div className="flex items-center gap-2 px-2 py-1 bg-amber-50 border border-amber-200 rounded-md">
+          <Badge variant="secondary" className="bg-amber-100 text-amber-800 text-xs">
+            Editando Prueba #{pruebaEditando.prueba_id}
+          </Badge>
+          <span className="text-xs text-amber-700 flex-1">
+            Modifique los campos y haga clic en "Guardar Cambios"
+          </span>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-5 w-5 text-amber-700 hover:text-amber-900"
+            onClick={handleCancelarEdicion}
+            title="Cancelar edición"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
       )}
 
       {/* Alerta informativa según el modo */}
@@ -618,18 +792,25 @@ export function WorkOrderForm({
             />
           </div>
 
-          {/* Botón Guardar y Continuar */}
+          {/* Botón Guardar y Continuar / Guardar Cambios */}
           <Button
             type="button"
-            onClick={onContinuar}
-            disabled={isSubmitting || !selectedCompania}
-            className="h-8 min-w-[160px] bg-black hover:bg-black/90 text-white font-medium text-xs px-4"
+            onClick={() => void onContinuar()}
+            disabled={(pruebaEditando ? editSubmitting : isSubmitting) || !selectedCompania}
+            className={cn(
+              "h-8 min-w-[160px] font-medium text-xs px-4 text-white",
+              pruebaEditando
+                ? "bg-amber-600 hover:bg-amber-700"
+                : "bg-black hover:bg-black/90"
+            )}
           >
-            {isSubmitting ? (
+            {(pruebaEditando ? editSubmitting : isSubmitting) ? (
               <>
                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                 Guardando...
               </>
+            ) : pruebaEditando ? (
+              "Guardar Cambios"
             ) : (
               "Guardar y Continuar"
             )}
@@ -695,9 +876,56 @@ export function WorkOrderForm({
       <div className="mt-3">
         <WorkOrderTestsTable
           ordenTrabajo={ordenActual}
-          refreshTrigger={shouldRefreshTable}
+          refreshTrigger={shouldRefreshTable + localRefreshTrigger}
+          onEdit={(prueba) => void handleEditarPrueba(prueba)}
+          onDuplicate={(prueba) => void handleDuplicarPrueba(prueba)}
+          onDelete={handleEliminarPrueba}
         />
       </div>
+
+      {/* Diálogo de confirmación de eliminación */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">Eliminar prueba</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-sm text-muted-foreground">
+            ¿Está seguro que desea eliminar la{" "}
+            <span className="font-semibold text-foreground">
+              Prueba #{pruebaAEliminar?.prueba_id}
+            </span>
+            {pruebaAEliminar?.objetivo_nombre && (
+              <> — {pruebaAEliminar.objetivo_nombre}</>
+            )}
+            ? Esta acción no se puede deshacer.
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteSubmitting}
+              className="text-sm h-8"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void handleConfirmarEliminar()}
+              disabled={deleteSubmitting}
+              className="text-sm h-8"
+            >
+              {deleteSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
