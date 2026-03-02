@@ -669,17 +669,20 @@ export function WorkOrderForm({
                 <Label htmlFor="dosis" className="text-xs">
                   Dosis
                 </Label>
-                <div className="flex items-center gap-1">
+                <div className="space-y-1">
                   <Input
                     ref={dosisRef}
                     id="dosis"
                     type="text"
-                    className="flex-1 h-8"
+                    className="h-8"
                     disabled={isFieldDisabled("test-specific")}
                   />
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {unidadesProducto}
-                  </span>
+                  {selectedProducto && unidadesProducto && (
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 leading-tight px-1 min-w-0">
+                      <span className="font-medium shrink-0">Unid:</span>
+                      <span className="truncate" title={unidadesProducto}>{unidadesProducto}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
