@@ -208,16 +208,34 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
                 disabled={loading}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact-profession">Profesión</Label>
-              <Input
-                id="contact-profession"
-                value={formData.profesion}
-                onChange={(e) => setFormData({ ...formData, profesion: e.target.value })}
-                disabled={loading}
-              />
+            <div className="col-span-2 grid grid-cols-3 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="contact-profession">Profesión</Label>
+                <Input
+                  id="contact-profession"
+                  value={formData.profesion}
+                  onChange={(e) => setFormData({ ...formData, profesion: e.target.value })}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Género</Label>
+                <Select
+                  value={formData.genero}
+                  onValueChange={(value) => setFormData({ ...formData, genero: value })}
+                  disabled={loading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Género" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="F">Femenino</SelectItem>
+                    <SelectItem value="M">Masculino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-2">
               <Label htmlFor="contact-position">Cargo</Label>
               <Input
                 id="contact-position"
@@ -225,22 +243,6 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
                 onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
                 disabled={loading}
               />
-            </div>
-            <div className="space-y-2 col-span-2">
-              <Label>Género</Label>
-              <Select
-                value={formData.genero}
-                onValueChange={(value) => setFormData({ ...formData, genero: value })}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar género" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="F">Femenino</SelectItem>
-                  <SelectItem value="M">Masculino</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <div className="flex justify-end gap-2">
