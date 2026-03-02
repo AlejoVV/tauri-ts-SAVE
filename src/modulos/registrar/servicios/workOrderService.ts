@@ -198,7 +198,7 @@ export async function actualizarPrueba(
   if (especieId !== undefined) updateData.prueba_especie_id = especieId;
   if (productoId !== undefined) updateData.prueba_producto_id = productoId;
   if (datos.dosis_producto !== undefined)
-    updateData.prueba_dosis_producto = datos.dosis_producto ?? "0";
+    updateData.prueba_dosis_producto = datos.dosis_producto ?? null;
   if (datos.producto_unid !== undefined)
     updateData.prueba_producto_unid = datos.producto_unid;
   if (datos.cantidad !== undefined) updateData.prueba_cantidad = datos.cantidad;

@@ -189,7 +189,10 @@ export function WorkOrderForm({
    */
   const limpiarCamposPrueba = () => {
     // Limpiar campos de texto
-    if (dosisRef.current) dosisRef.current.value = "";
+    if (dosisRef.current) {
+      dosisRef.current.value = "";
+      dosisRef.current.placeholder = "";
+    }
     if (cantidadPruebasRef.current) cantidadPruebasRef.current.value = "1";
     if (numeroMuestraRef.current) numeroMuestraRef.current.value = "";
     if (observacionesRef.current) observacionesRef.current.value = "";
@@ -618,13 +621,17 @@ export function WorkOrderForm({
                   <AsyncCombobox
                     value={selectedProducto}
                     onValueChange={(value, item) => {
-                      // Pass unidades, casa comercial y tipo from the selected item
                       setSelectedProducto(
                         value,
                         item?.unidades,
                         item?.casaComercial,
                         item?.tipo
                       );
+                      // rerender-use-ref-transient-values: mutate DOM directly, no re-render needed
+                      if (dosisRef.current) {
+                        dosisRef.current.value = "";
+                        dosisRef.current.placeholder = value ? "Por definir" : "";
+                      }
                     }}
                     onSearch={buscarProductosAsync}
                     placeholder="Seleccionar producto..."
@@ -666,8 +673,7 @@ export function WorkOrderForm({
                   <Input
                     ref={dosisRef}
                     id="dosis"
-                    type="number"
-                    step="0.01"
+                    type="text"
                     className="flex-1 h-8"
                     disabled={isFieldDisabled("test-specific")}
                   />

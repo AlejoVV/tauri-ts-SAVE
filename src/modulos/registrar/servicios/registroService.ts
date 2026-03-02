@@ -226,7 +226,7 @@ export async function registrarPrueba(
         p_prueba_id: datos.prueba_id,
         p_prueba_objetivo_id: objetivoId,
         p_prueba_producto_id: productoId,
-        p_prueba_dosis_producto: parseFloat(datos.dosis_producto || "0"),
+        p_prueba_dosis_producto: datos.dosis_producto || null,
         p_prueba_producto_unid: datos.producto_unid || null,
         p_prueba_especie_id: especieId,
         p_prueba_cantidad: parseFloat(datos.cantidad || "1"),
