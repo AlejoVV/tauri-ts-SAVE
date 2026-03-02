@@ -136,9 +136,8 @@ export function WorkOrderTestsTable({
         minSize: 30,
         Cell: ({ row }) => {
           const dosis = row.original.dosis_producto;
-          const unidad = row.original.producto_unid;
           if (!dosis) return "-";
-          return `${dosis} ${unidad || ""}`.trim();
+          return dosis;
         },
       },
       {

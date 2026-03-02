@@ -722,7 +722,7 @@ export function WorkOrderForm({
           </div>
         </div>
 
-        {/* Fila 5: N° muestra, Fecha recepción, Dto (%), Guardar y Continuar, Nueva OT */}
+        {/* Fila 5: N° muestra, Fecha recibo muestra, Dto (%), Guardar y Continuar, Nueva OT */}
         <div className="flex flex-wrap items-end gap-3">
           {/* N° muestra */}
           <div className="flex flex-col space-y-0.5">
@@ -738,9 +738,9 @@ export function WorkOrderForm({
             />
           </div>
 
-          {/* Fecha recepción */}
+          {/* Fecha recibo muestra */}
           <div className="flex flex-col space-y-0.5">
-            <Label className="text-xs">Fecha recepción</Label>
+            <Label className="text-xs">Fecha recibo muestra</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
