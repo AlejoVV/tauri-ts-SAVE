@@ -22,28 +22,45 @@ export function SpeciesModal({ open, onOpenChange, onSuccess }: SpeciesModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!nombre.trim()) {
+      setError("El nombre de la especie es obligatorio.")
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
       const { error: insertError } = await supabase
         .from("especie_vegetal")
-        .insert({ especie_nombre: nombre })
+        .insert({ especie_nombre: nombre.trim() })
+        .select("especie_id")
+        .single()
 
-      if (insertError) throw insertError
+      if (insertError) {
+        throw new Error(
+          insertError.code === "23505"
+            ? `Ya existe una especie vegetal con el nombre "${nombre.trim()}".`
+            : "Error al crear la especie. Intente nuevamente."
+        )
+      }
 
       setNombre("")
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
       console.error("Error al crear especie:", err)
-      setError("Error al crear la especie. Intente nuevamente.")
+      setError(
+        err instanceof Error ? err.message : "Error al crear la especie. Intente nuevamente."
+      )
     } finally {
       setLoading(false)
     }
   }
 
   const handleClose = () => {
+    if (loading) return
     setNombre("")
     setError(null)
     onOpenChange(false)

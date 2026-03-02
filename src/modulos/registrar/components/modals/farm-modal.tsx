@@ -23,18 +23,32 @@ export function FarmModal({ open, onOpenChange, onSuccess }: FarmModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!nombre.trim()) {
+      setError("El nombre de la finca es obligatorio.")
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
       const { error: insertError } = await supabase
         .from("fincas")
-        .insert({ 
-          finca_nombre: nombre,
-          finca_ubicacion: ubicacion || null
+        .insert({
+          finca_nombre: nombre.trim(),
+          finca_ubicacion: ubicacion.trim() || null,
         })
+        .select("finca_id")
+        .single()
 
-      if (insertError) throw insertError
+      if (insertError) {
+        throw new Error(
+          insertError.code === "23505"
+            ? `Ya existe una finca con el nombre "${nombre.trim()}".`
+            : "Error al crear la finca. Intente nuevamente."
+        )
+      }
 
       setNombre("")
       setUbicacion("")
@@ -42,13 +56,16 @@ export function FarmModal({ open, onOpenChange, onSuccess }: FarmModalProps) {
       onSuccess?.()
     } catch (err) {
       console.error("Error al crear finca:", err)
-      setError("Error al crear la finca. Intente nuevamente.")
+      setError(
+        err instanceof Error ? err.message : "Error al crear la finca. Intente nuevamente."
+      )
     } finally {
       setLoading(false)
     }
   }
 
   const handleClose = () => {
+    if (loading) return
     setNombre("")
     setUbicacion("")
     setError(null)

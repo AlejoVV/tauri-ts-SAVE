@@ -29,6 +29,12 @@ export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!formData.nombre.trim()) {
+      setError("El nombre del producto es obligatorio.")
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -36,21 +42,31 @@ export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProp
       const { error: insertError } = await supabase
         .from("productos")
         .insert({
-          producto_nombre: formData.nombre,
+          producto_nombre: formData.nombre.trim(),
           producto_unidades: formData.unidades || null,
-          producto_casa_comercial: formData.casaComercial || null,
+          producto_casa_comercial: formData.casaComercial.trim() || null,
           producto_tipo: formData.tipoProducto || null,
-          producto_ingrediente_activo: formData.ingredienteActivo || null,
+          producto_ingrediente_activo: formData.ingredienteActivo.trim() || null,
         })
+        .select("producto_id")
+        .single()
 
-      if (insertError) throw insertError
+      if (insertError) {
+        throw new Error(
+          insertError.code === "23505"
+            ? `Ya existe un producto con el nombre "${formData.nombre.trim()}".`
+            : "Error al crear el producto. Intente nuevamente."
+        )
+      }
 
       resetForm()
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
       console.error("Error al crear producto:", err)
-      setError("Error al crear el producto. Intente nuevamente.")
+      setError(
+        err instanceof Error ? err.message : "Error al crear el producto. Intente nuevamente."
+      )
     } finally {
       setLoading(false)
     }
@@ -68,6 +84,7 @@ export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProp
   }
 
   const handleClose = () => {
+    if (loading) return
     resetForm()
     onOpenChange(false)
   }

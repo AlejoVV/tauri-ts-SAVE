@@ -22,28 +22,45 @@ export function CompanyModal({ open, onOpenChange, onSuccess }: CompanyModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!nombre.trim()) {
+      setError("El nombre de la compañía es obligatorio.")
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
       const { error: insertError } = await supabase
         .from("companias")
-        .insert({ compania_nombre: nombre })
+        .insert({ compania_nombre: nombre.trim() })
+        .select("compania_id")
+        .single()
 
-      if (insertError) throw insertError
+      if (insertError) {
+        throw new Error(
+          insertError.code === "23505"
+            ? `Ya existe una compañía con el nombre "${nombre.trim()}".`
+            : "Error al crear la compañía. Intente nuevamente."
+        )
+      }
 
       setNombre("")
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
       console.error("Error al crear compañía:", err)
-      setError("Error al crear la compañía. Intente nuevamente.")
+      setError(
+        err instanceof Error ? err.message : "Error al crear la compañía. Intente nuevamente."
+      )
     } finally {
       setLoading(false)
     }
   }
 
   const handleClose = () => {
+    if (loading) return
     setNombre("")
     setError(null)
     onOpenChange(false)

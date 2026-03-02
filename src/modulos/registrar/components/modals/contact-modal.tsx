@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -17,106 +17,149 @@ interface ContactModalProps {
   onSuccess?: () => void
 }
 
+const INITIAL_FORM = {
+  nombres: "",
+  apellidos: "",
+  celular: "",
+  email: "",
+  profesion: "",
+  cargo: "",
+  genero: "",
+}
+
 export function ContactModal({ open, onOpenChange, compania, onSuccess }: ContactModalProps) {
-  const [formData, setFormData] = useState({
-    nombres: "",
-    apellidos: "",
-    celular: "",
-    email: "",
-    profesion: "",
-    cargo: "",
-    genero: "",
-  })
+  const [formData, setFormData] = useState(INITIAL_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Pre-llenar la compañía si viene como prop
-  useEffect(() => {
-    if (compania) {
-      setFormData(prev => ({ ...prev }))
-    }
-  }, [compania])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Early-exit validations
+    if (!formData.nombres.trim()) {
+      setError("El nombre del contacto es obligatorio.")
+      return
+    }
+    if (!compania) {
+      setError("Debe seleccionar una compañía antes de crear un contacto.")
+      return
+    }
+
     setLoading(true)
     setError(null)
 
+    // Tracks the newly created contacto_id for rollback if a later step fails
+    let contactoId: number | null = null
+
     try {
-      // 1. Crear el contacto
+      // Step 1 — create the contact record
       const { data: contactoCreado, error: contactoError } = await supabase
         .from("contactos")
         .insert({
-          contacto_nombres: formData.nombres,
-          contacto_apellidos: formData.apellidos,
+          contacto_nombres: formData.nombres.trim(),
+          contacto_apellidos: formData.apellidos.trim() || null,
           contacto_nombre_completo: `${formData.nombres} ${formData.apellidos}`.trim(),
-          contacto_celular_principal: formData.celular,
-          contacto_email: formData.email,
-          contacto_profesion: formData.profesion,
-          contacto_cargo: formData.cargo,
-          contacto_genero: formData.genero,
+          contacto_celular_principal: formData.celular.trim() || null,
+          contacto_email: formData.email.trim() || null,
+          contacto_profesion: formData.profesion.trim() || null,
+          contacto_cargo: formData.cargo.trim() || null,
+          contacto_genero: formData.genero || null,
         })
-        .select()
+        .select("contacto_id")
         .single()
 
-      if (contactoError) throw contactoError
-
-      // 2. Relacionar el contacto con la compañía
-      if (compania && contactoCreado) {
-        // Buscar el ID de la compañía
-        const { data: companiaData } = await supabase
-          .from("companias")
-          .select("compania_id")
-          .eq("compania_nombre", compania)
-          .single()
-
-        if (companiaData) {
-          await supabase
-            .from("contacto_compania")
-            .insert({
-              contacto_id: contactoCreado.contacto_id,
-              compania_id: companiaData.compania_id,
-            })
-        }
+      if (contactoError) {
+        throw new Error(
+          contactoError.code === "23505"
+            ? "Ya existe un contacto con estos datos en el sistema."
+            : "Error al crear el contacto. Intente nuevamente."
+        )
       }
 
+      contactoId = contactoCreado.contacto_id
+
+      // Step 2 — resolve company ID
+      const { data: companiaData, error: companiaLookupError } = await supabase
+        .from("companias")
+        .select("compania_id")
+        .eq("compania_nombre", compania)
+        .single()
+
+      if (companiaLookupError || !companiaData) {
+        throw new Error(
+          `No se encontró la compañía "${compania}". Recargue la página y vuelva a intentar.`
+        )
+      }
+
+      // Step 3 — create the contact–company relationship
+      const { error: relacionError } = await supabase
+        .from("contacto_compania")
+        .insert({
+          contacto_id: contactoId,
+          compania_id: companiaData.compania_id,
+        })
+
+      if (relacionError) {
+        throw new Error(
+          relacionError.code === "23505"
+            ? "Este contacto ya está vinculado a esta compañía."
+            : "Error al vincular el contacto con la compañía."
+        )
+      }
+
+      // All steps succeeded — close and refresh
       resetForm()
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
-      console.error("Error al crear contacto:", err)
-      setError("Error al crear el contacto. Intente nuevamente.")
+      // Best-effort rollback: remove orphan contact if the error occurred after step 1
+      if (contactoId !== null) {
+        supabase
+          .from("contactos")
+          .delete()
+          .eq("contacto_id", contactoId)
+          .then(({ error: deleteError }) => {
+            if (deleteError) {
+              console.error("Error al revertir el contacto creado:", deleteError)
+            }
+          })
+      }
+
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Error inesperado al crear el contacto. Intente nuevamente."
+      setError(message)
     } finally {
       setLoading(false)
     }
   }
 
   const resetForm = () => {
-    setFormData({
-      nombres: "",
-      apellidos: "",
-      celular: "",
-      email: "",
-      profesion: "",
-      cargo: "",
-      genero: "",
-    })
+    setFormData(INITIAL_FORM)
     setError(null)
   }
 
   const handleClose = () => {
+    if (loading) return
     resetForm()
     onOpenChange(false)
   }
+
+  const canSubmit = !loading && !!formData.nombres.trim() && !!compania
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Crear Nuevo Contacto</DialogTitle>
-          {compania && (
+          {compania ? (
             <p className="text-sm text-muted-foreground">
               Para la compañía: <strong>{compania}</strong>
+            </p>
+          ) : (
+            <p className="text-sm text-amber-600">
+              Seleccione una compañía en el formulario antes de crear un contacto.
             </p>
           )}
         </DialogHeader>
@@ -185,8 +228,8 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
             </div>
             <div className="space-y-2 col-span-2">
               <Label>Género</Label>
-              <Select 
-                value={formData.genero} 
+              <Select
+                value={formData.genero}
                 onValueChange={(value) => setFormData({ ...formData, genero: value })}
                 disabled={loading}
               >
@@ -204,7 +247,7 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || !formData.nombres.trim()}>
+            <Button type="submit" disabled={!canSubmit}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Crear Contacto
             </Button>
