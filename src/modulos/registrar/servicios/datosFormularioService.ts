@@ -229,7 +229,7 @@ export function productosACombobox(productos: Producto[]): ComboboxItem[] {
     value: p.producto_nombre,
     label: p.producto_nombre,
     id: p.producto_id,
-    unidades: p.producto_unidades || "cc/lt", // Valor por defecto si no hay unidades
+    unidades: p.producto_unidades || "",
     casaComercial: p.producto_casa_comercial || undefined,
     tipo: p.producto_tipo || undefined,
   }))

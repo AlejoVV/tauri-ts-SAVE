@@ -130,7 +130,7 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
   const [selectedEspecie, setSelectedEspecie] = useState("")
   
   // Unidades y detalles del producto seleccionado
-  const [unidadesProducto, setUnidadesProducto] = useState("cc/lt")
+  const [unidadesProducto, setUnidadesProducto] = useState("")
   const [productoCasaComercial, setProductoCasaComercial] = useState("")
   const [productoTipo, setProductoTipo] = useState("")
   
@@ -246,23 +246,20 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
     setSelectedProductoState(value)
     
     // Actualizar unidades
-    if (unidades) {
+    // Usar !== undefined para distinguir "producto sin unidades" (unidades="") de "no se pasó" (undefined)
+    if (unidades !== undefined) {
       setUnidadesProducto(unidades)
     } else if (value) {
       // Si no vienen unidades, intentar buscar el producto
       obtenerProductoPorNombre(value).then(producto => {
-        if (producto?.producto_unidades) {
-          setUnidadesProducto(producto.producto_unidades)
-        } else {
-          setUnidadesProducto("cc/lt")
-        }
+        setUnidadesProducto(producto?.producto_unidades || "")
         
         // Actualizar casa comercial y tipo
         setProductoCasaComercial(producto?.producto_casa_comercial || "")
         setProductoTipo(producto?.producto_tipo || "")
       })
     } else {
-      setUnidadesProducto("cc/lt")
+      setUnidadesProducto("")
       setProductoCasaComercial("")
       setProductoTipo("")
     }
