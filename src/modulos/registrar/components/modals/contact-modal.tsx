@@ -35,7 +35,7 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Early-exit validations
+    // js-early-exit: validate required fields before any network call
     if (!formData.nombres.trim()) {
       setError("El nombre del contacto es obligatorio.")
       return
@@ -48,17 +48,45 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
     setLoading(true)
     setError(null)
 
-    // Tracks the newly created contacto_id for rollback if a later step fails
-    let contactoId: number | null = null
-
     try {
+      // async-parallel: fetch company ID and check for duplicate contact simultaneously
+      const nombreCompleto = `${formData.nombres} ${formData.apellidos}`.trim()
+
+      const [companiaResult, duplicateResult] = await Promise.all([
+        supabase
+          .from("companias")
+          .select("compania_id")
+          .eq("compania_nombre", compania)
+          .maybeSingle(),
+        supabase
+          .from("contactos")
+          .select("contacto_id")
+          .ilike("contacto_nombres", formData.nombres.trim())
+          .ilike("contacto_apellidos", formData.apellidos.trim() || "")
+          .limit(1)
+          .maybeSingle(),
+      ])
+
+      // js-early-exit: validate pre-conditions before any INSERT (avoids burning sequence IDs)
+      if (!companiaResult.data) {
+        throw new Error(
+          `No se encontró la compañía "${compania}". Recargue la página y vuelva a intentar.`
+        )
+      }
+      if (duplicateResult.data) {
+        throw new Error(
+          `Ya existe un contacto con el nombre "${nombreCompleto}" en el sistema.`
+        )
+      }
+
+      const companiaId = companiaResult.data.compania_id
+
       // Step 1 — create the contact record
       const { data: contactoCreado, error: contactoError } = await supabase
         .from("contactos")
         .insert({
           contacto_nombres: formData.nombres.trim(),
           contacto_apellidos: formData.apellidos.trim() || null,
-          contacto_nombre_completo: `${formData.nombres} ${formData.apellidos}`.trim(),
           contacto_celular_principal: formData.celular.trim() || null,
           contacto_email: formData.email.trim() || null,
           contacto_profesion: formData.profesion.trim() || null,
@@ -68,69 +96,31 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
         .select("contacto_id")
         .single()
 
-      if (contactoError) {
-        throw new Error(
-          contactoError.code === "23505"
-            ? "Ya existe un contacto con estos datos en el sistema."
-            : "Error al crear el contacto. Intente nuevamente."
-        )
+      if (contactoError || !contactoCreado) {
+        throw new Error("Error al crear el contacto. Intente nuevamente.")
       }
 
-      contactoId = contactoCreado.contacto_id
-
-      // Step 2 — resolve company ID
-      const { data: companiaData, error: companiaLookupError } = await supabase
-        .from("companias")
-        .select("compania_id")
-        .eq("compania_nombre", compania)
-        .single()
-
-      if (companiaLookupError || !companiaData) {
-        throw new Error(
-          `No se encontró la compañía "${compania}". Recargue la página y vuelva a intentar.`
-        )
-      }
-
-      // Step 3 — create the contact–company relationship
+      // Step 2 — create the contact–company relationship
       const { error: relacionError } = await supabase
         .from("contacto_compania")
         .insert({
-          contacto_id: contactoId,
-          compania_id: companiaData.compania_id,
+          contacto_id: contactoCreado.contacto_id,
+          compania_id: companiaId,
         })
 
       if (relacionError) {
-        throw new Error(
-          relacionError.code === "23505"
-            ? "Este contacto ya está vinculado a esta compañía."
-            : "Error al vincular el contacto con la compañía."
-        )
+        throw new Error("Error al vincular el contacto con la compañía.")
       }
 
-      // All steps succeeded — close and refresh
-      const nombreCompleto = `${formData.nombres} ${formData.apellidos}`.trim()
       resetForm()
       onOpenChange(false)
       onSuccess?.(nombreCompleto)
     } catch (err) {
-      // Best-effort rollback: remove orphan contact if the error occurred after step 1
-      if (contactoId !== null) {
-        supabase
-          .from("contactos")
-          .delete()
-          .eq("contacto_id", contactoId)
-          .then(({ error: deleteError }) => {
-            if (deleteError) {
-              console.error("Error al revertir el contacto creado:", deleteError)
-            }
-          })
-      }
-
-      const message =
+      setError(
         err instanceof Error
           ? err.message
           : "Error inesperado al crear el contacto. Intente nuevamente."
-      setError(message)
+      )
     } finally {
       setLoading(false)
     }
