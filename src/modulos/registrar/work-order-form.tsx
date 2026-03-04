@@ -106,7 +106,6 @@ export function WorkOrderForm({
     recargarCompanias,
     recargarContactos,
     recargarFincas,
-    recargarProductos,
     recargarEspecies,
     buscarProductosAsync,
     contactoDisabled,
@@ -369,24 +368,35 @@ export function WorkOrderForm({
     setSelectedCompania(nombre);
   };
 
-  const handleContactCreated = () => {
+  // async-defer-await: await reload before selecting so the item is in the list
+  const handleContactCreated = async (nombreCompleto: string) => {
     setContactModalOpen(false);
-    recargarContactos();
+    await recargarContactos();
+    setSelectedContacto(nombreCompleto);
   };
 
-  const handleFarmCreated = () => {
+  // async-defer-await: await reload before selecting so the item is in the list
+  const handleFarmCreated = async (nombre: string) => {
     setFarmModalOpen(false);
-    recargarFincas();
+    await recargarFincas();
+    setSelectedFinca(nombre);
   };
 
-  const handleSpeciesCreated = () => {
+  // async-defer-await: await reload before selecting so the item is in the list
+  const handleSpeciesCreated = async (nombre: string) => {
     setSpeciesModalOpen(false);
-    recargarEspecies();
+    await recargarEspecies();
+    setSelectedEspecie(nombre);
   };
 
-  const handleProductCreated = () => {
+  // AsyncCombobox searches on demand — no reload needed, set selection directly
+  const handleProductCreated = (nombre: string, unidades: string, casaComercial: string, tipo: string) => {
     setProductModalOpen(false);
-    recargarProductos();
+    setSelectedProducto(nombre, unidades, casaComercial, tipo);
+    if (dosisRef.current) {
+      dosisRef.current.value = "";
+      dosisRef.current.placeholder = nombre ? "Por definir" : "";
+    }
   };
 
   return (

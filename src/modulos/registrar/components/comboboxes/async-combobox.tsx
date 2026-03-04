@@ -275,7 +275,7 @@ export function AsyncCombobox({
           disabled={disabled}
         >
           <span className="text-left line-clamp-2 flex-1 break-words">
-            {selectedItem ? selectedItem.label : placeholder}
+            {selectedItem ? selectedItem.label : value ? value : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 self-start mt-1" />
         </Button>

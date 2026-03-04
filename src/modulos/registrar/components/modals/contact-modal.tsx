@@ -14,7 +14,7 @@ interface ContactModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   compania?: string
-  onSuccess?: () => void
+  onSuccess?: (nombreCompleto: string) => void
 }
 
 const INITIAL_FORM = {
@@ -108,9 +108,10 @@ export function ContactModal({ open, onOpenChange, compania, onSuccess }: Contac
       }
 
       // All steps succeeded — close and refresh
+      const nombreCompleto = `${formData.nombres} ${formData.apellidos}`.trim()
       resetForm()
       onOpenChange(false)
-      onSuccess?.()
+      onSuccess?.(nombreCompleto)
     } catch (err) {
       // Best-effort rollback: remove orphan contact if the error occurred after step 1
       if (contactoId !== null) {

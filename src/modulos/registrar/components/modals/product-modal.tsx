@@ -48,7 +48,7 @@ const PRODUCT_UNITS: { label: string; options: string[] }[] = [
 interface ProductModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  onSuccess?: (nombre: string, unidades: string, casaComercial: string, tipo: string) => void
 }
 
 export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProps) {
@@ -74,6 +74,18 @@ export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProp
     setError(null)
 
     try {
+      // js-early-exit: check for duplicate name before attempting insert
+      const { data: existing } = await supabase
+        .from("productos")
+        .select("producto_id")
+        .ilike("producto_nombre", formData.nombre.trim())
+        .limit(1)
+        .maybeSingle()
+
+      if (existing) {
+        throw new Error(`Ya existe un producto con el nombre "${formData.nombre.trim()}".`)
+      }
+
       const { error: insertError } = await supabase
         .from("productos")
         .insert({
@@ -83,20 +95,18 @@ export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProp
           producto_tipo: formData.tipoProducto || null,
           producto_ingrediente_activo: formData.ingredienteActivo.trim() || null,
         })
-        .select("producto_id")
-        .single()
 
       if (insertError) {
-        throw new Error(
-          insertError.code === "23505"
-            ? `Ya existe un producto con el nombre "${formData.nombre.trim()}".`
-            : "Error al crear el producto. Intente nuevamente."
-        )
+        throw new Error("Error al crear el producto. Intente nuevamente.")
       }
 
+      const nombreCreado = formData.nombre.trim()
+      const unidadesCreadas = formData.unidades
+      const casaCreada = formData.casaComercial.trim()
+      const tipoCreado = formData.tipoProducto
       resetForm()
       onOpenChange(false)
-      onSuccess?.()
+      onSuccess?.(nombreCreado, unidadesCreadas, casaCreada, tipoCreado)
     } catch (err) {
       console.error("Error al crear producto:", err)
       setError(
