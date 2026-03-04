@@ -133,7 +133,7 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
             : null,
           compania_nombre: formData.facturar,
           contacto_nombre: formData.contacto || null,
-          estado_lab: "Pendiente",
+          estado_lab: "Esperando Aprobación",
           numero_muestra: formData.numeroMuestra || null,
           inst: formData.analisisSolicitado || null,
         };

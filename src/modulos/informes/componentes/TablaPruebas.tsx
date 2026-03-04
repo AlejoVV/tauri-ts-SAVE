@@ -20,7 +20,7 @@ const EstadoPrueba: React.FC<{ estado: string }> = ({ estado }) => {
         return "bg-blue-100 text-blue-800";
       case "completada":
         return "bg-green-100 text-green-800";
-      case "pendiente":
+      case "esperando aprobación":
         return "bg-yellow-100 text-yellow-800";
       case "cancelada":
         return "bg-red-100 text-red-800";
@@ -32,7 +32,7 @@ const EstadoPrueba: React.FC<{ estado: string }> = ({ estado }) => {
   return (
     <span
       className={`inline-flex px-2 py-1 text-xs font-medium rounded ${getEstadoColor(
-        estado
+        estado,
       )}`}
     >
       {estado}
@@ -40,7 +40,10 @@ const EstadoPrueba: React.FC<{ estado: string }> = ({ estado }) => {
   );
 };
 
-export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelectionChange }) => {
+export const TablaPruebas: React.FC<TablaPruebasProps> = ({
+  pruebas,
+  onSelectionChange,
+}) => {
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
   // Calcular el número de filas seleccionadas
@@ -50,7 +53,7 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
   React.useEffect(() => {
     if (onSelectionChange) {
       const selectedTests = Object.keys(rowSelection)
-        .map(rowId => pruebas.find(prueba => prueba.no_prueba === rowId))
+        .map((rowId) => pruebas.find((prueba) => prueba.no_prueba === rowId))
         .filter(Boolean) as PruebaEnCurso[];
       onSelectionChange(selectedTests);
     }
@@ -184,7 +187,7 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
         ),
       },
     ],
-    []
+    [],
   );
 
   const table = useMaterialReactTable({
@@ -216,7 +219,8 @@ export const TablaPruebas: React.FC<TablaPruebasProps> = ({ pruebas, onSelection
         {filasSeleccionadas > 0 && (
           <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1">
             <span className="text-sm font-medium text-blue-700">
-              {filasSeleccionadas} prueba{filasSeleccionadas !== 1 ? 's' : ''} seleccionada{filasSeleccionadas !== 1 ? 's' : ''}
+              {filasSeleccionadas} prueba{filasSeleccionadas !== 1 ? "s" : ""}{" "}
+              seleccionada{filasSeleccionadas !== 1 ? "s" : ""}
             </span>
           </div>
         )}

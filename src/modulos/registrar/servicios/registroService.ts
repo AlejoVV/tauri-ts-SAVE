@@ -236,7 +236,7 @@ export async function registrarPrueba(
         p_prueba_fecha_recibido: datos.fecha_recibido || null,
         p_prueba_compania_nombre: datos.compania_nombre,
         p_prueba_contacto_nombre: datos.contacto_nombre || null,
-        p_prueba_estado_lab: datos.estado_lab || "Pendiente",
+        p_prueba_estado_lab: datos.estado_lab || "Esperando Aprobación",
         p_prueba_numero_muestra: datos.numero_muestra || null,
         p_prueba_inst: datos.inst || null,
       }
