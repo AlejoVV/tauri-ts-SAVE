@@ -297,6 +297,18 @@ export function WorkOrderForm({
   };
 
   /**
+   * js-early-exit: Returns placeholder text when field is empty and product is selected.
+   * rerender-use-ref-transient-values: Reads DOM ref directly without triggering re-render.
+   */
+  const getDosisValue = (): string => {
+    const value = dosisRef.current?.value ?? "";
+    if (!value && dosisRef.current?.placeholder === "Por definir") {
+      return "Por definir";
+    }
+    return value;
+  };
+
+  /**
    * Maneja el evento de guardar y continuar
    * async-defer-await - Defer await to where result is used
    */
@@ -312,7 +324,7 @@ export function WorkOrderForm({
           finca_nombre: selectedFinca || null,
           especie_nombre: selectedEspecie || null,
           producto_nombre: selectedProducto || null,
-          dosis_producto: dosisRef.current?.value || null,
+          dosis_producto: getDosisValue() || null,
           producto_unid: unidadesProducto || null,
           cantidad: cantidadPruebasRef.current?.value || null,
           observaciones: observacionesRef.current?.value || null,
@@ -344,7 +356,7 @@ export function WorkOrderForm({
       cantidadPruebas: cantidadPruebasRef.current?.value || "1",
       especieVegetal: selectedEspecie,
       producto: selectedProducto,
-      dosis: dosisRef.current?.value || "",
+      dosis: getDosisValue(),
       unidadesProducto: unidadesProducto,
       numeroMuestra: numeroMuestraRef.current?.value || "",
       fechaRecepcion: date,
