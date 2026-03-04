@@ -12,7 +12,7 @@ import { supabase } from "../../../nucleo/lib/supabaseClient"
 interface CompanyModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  onSuccess?: (nombre: string) => void
 }
 
 export function CompanyModal({ open, onOpenChange, onSuccess }: CompanyModalProps) {
@@ -32,23 +32,30 @@ export function CompanyModal({ open, onOpenChange, onSuccess }: CompanyModalProp
     setError(null)
 
     try {
+      // js-early-exit: check for duplicate name before attempting insert
+      const { data: existing } = await supabase
+        .from("companias")
+        .select("compania_id")
+        .ilike("compania_nombre", nombre.trim())
+        .limit(1)
+        .maybeSingle()
+
+      if (existing) {
+        throw new Error(`Ya existe una compañía con el nombre "${nombre.trim()}".`)
+      }
+
       const { error: insertError } = await supabase
         .from("companias")
         .insert({ compania_nombre: nombre.trim() })
-        .select("compania_id")
-        .single()
 
       if (insertError) {
-        throw new Error(
-          insertError.code === "23505"
-            ? `Ya existe una compañía con el nombre "${nombre.trim()}".`
-            : "Error al crear la compañía. Intente nuevamente."
-        )
+        throw new Error("Error al crear la compañía. Intente nuevamente.")
       }
 
+      const nombreCreado = nombre.trim()
       setNombre("")
       onOpenChange(false)
-      onSuccess?.()
+      onSuccess?.(nombreCreado)
     } catch (err) {
       console.error("Error al crear compañía:", err)
       setError(

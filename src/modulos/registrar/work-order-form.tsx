@@ -362,9 +362,11 @@ export function WorkOrderForm({
   };
 
   // Handlers para cuando se crea un nuevo item en los modales
-  const handleCompanyCreated = () => {
+  // async-defer-await: await reload before selecting so the item is in the list
+  const handleCompanyCreated = async (nombre: string) => {
     setCompanyModalOpen(false);
-    recargarCompanias();
+    await recargarCompanias();
+    setSelectedCompania(nombre);
   };
 
   const handleContactCreated = () => {

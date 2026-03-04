@@ -7,8 +7,43 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from "../../../nucleo/lib/supabaseClient"
+
+const PRODUCT_UNITS: { label: string; options: string[] }[] = [
+  {
+    label: "Unidades simples",
+    options: ["cc/lt", "gr/lt", "lt/Ha", "cc/Ha", "gr/Ha", "Kg/Ha", "ppm", "cc/m2"],
+  },
+  {
+    label: "2 componentes",
+    options: [
+      "cc/lt + cc/lt",
+      "cc/lt + gr/lt",
+      "gr/lt + cc/lt",
+      "gr/lt + gr/lt",
+      "cc/lt + lt/Ha",
+      "gr/lt + lt/Ha",
+    ],
+  },
+  {
+    label: "3 componentes",
+    options: [
+      "cc/lt + cc/lt + cc/lt",
+      "cc/lt + cc/lt + gr/lt",
+      "cc/lt + gr/lt + cc/lt",
+      "gr/lt + cc/lt + cc/lt",
+    ],
+  },
+  {
+    label: "4 componentes",
+    options: ["cc/lt + cc/lt + cc/lt + cc/lt"],
+  },
+  {
+    label: "5 componentes",
+    options: ["cc/lt + cc/lt + cc/lt + cc/lt + cc/lt"],
+  },
+]
 
 interface ProductModalProps {
   open: boolean
@@ -122,10 +157,17 @@ export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProp
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar unidad" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cc/lt">cc/lt</SelectItem>
-                  <SelectItem value="gr/lt">gr/lt</SelectItem>
-                  <SelectItem value="cc/lt + cc/lt">cc/lt + cc/lt</SelectItem>
+                <SelectContent className="max-h-60">
+                  {PRODUCT_UNITS.map((group) => (
+                    <SelectGroup key={group.label}>
+                      <SelectLabel>{group.label}</SelectLabel>
+                      {group.options.map((unit) => (
+                        <SelectItem key={unit} value={unit}>
+                          {unit}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
