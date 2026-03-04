@@ -123,7 +123,7 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
           producto_nombre: formData.producto || null,
           especie_nombre: formData.especieVegetal || null,
           finca_nombre: formData.finca || null,
-          dosis_producto: formData.dosis || "0",
+          dosis_producto: formData.dosis || null,
           producto_unid: formData.unidadesProducto || "cc/lt",
           cantidad: formData.cantidadPruebas || "1",
           observaciones: formData.observaciones || null,
