@@ -22,7 +22,7 @@ interface FormData {
   dosis: string;
   unidadesProducto: string;
   numeroMuestra: string;
-  fechaRecepcion: Date | undefined;
+  fechaRecepcion: string;
   observaciones: string;
   analisisSolicitado: string;
   notasVarias: string;
@@ -128,9 +128,7 @@ export function useWorkOrderRegistration(): UseWorkOrderRegistrationReturn {
           cantidad: formData.cantidadPruebas || "1",
           observaciones: formData.observaciones || null,
           notas_varias: formData.notasVarias || null,
-          fecha_recibido: formData.fechaRecepcion
-            ? formData.fechaRecepcion.toISOString().split("T")[0]
-            : null,
+          fecha_recibido: formData.fechaRecepcion || null,
           compania_nombre: formData.facturar,
           contacto_nombre: formData.contacto || null,
           estado_lab: "Esperando Aprobación",

@@ -71,7 +71,7 @@ export function WorkOrderForm({
   const analisisSolicitadoRef = useRef<HTMLTextAreaElement>(null);
   const notasVariasRef = useRef<HTMLTextAreaElement>(null);
 
-  const [date, setDate] = useState<Date>();
+  const [dateStr, setDateStr] = useState<string>("");
 
   // Estado para edición / duplicado / eliminación de pruebas
   const [pruebaEditando, setPruebaEditando] = useState<VistaMaestraRow | null>(null);
@@ -200,7 +200,7 @@ export function WorkOrderForm({
     setSelectedObjetivo("", "");
     setSelectedProducto("", "cc/lt", "", "");
     setSelectedEspecie("");
-    setDate(undefined);
+    setDateStr("");
   };
 
   /**
@@ -222,11 +222,7 @@ export function WorkOrderForm({
     if (observacionesRef.current) observacionesRef.current.value = prueba.observaciones || "";
     if (numeroMuestraRef.current) numeroMuestraRef.current.value = prueba.prueba_numero_muestra?.toString() || "";
 
-    if (prueba.fecha_recibo_muestra) {
-      setDate(new Date(prueba.fecha_recibo_muestra));
-    } else {
-      setDate(undefined);
-    }
+    setDateStr(prueba.fecha_recibo_muestra ?? "");
 
     if (prueba.prueba_id) {
       try {
@@ -329,7 +325,7 @@ export function WorkOrderForm({
           notas_varias: notasVariasRef.current?.value || null,
           analisis_solicitado: analisisSolicitadoRef.current?.value || null,
           numero_muestra: numeroMuestraRef.current?.value || null,
-          fecha_recibido: date ? date.toISOString().split("T")[0] : null,
+          fecha_recibido: dateStr || null,
         });
         setPruebaEditando(null);
         limpiarCamposPrueba();
@@ -357,7 +353,7 @@ export function WorkOrderForm({
       dosis: getDosisValue(),
       unidadesProducto: unidadesProducto,
       numeroMuestra: numeroMuestraRef.current?.value || "",
-      fechaRecepcion: date,
+      fechaRecepcion: dateStr,
       observaciones: observacionesRef.current?.value || "",
       analisisSolicitado: analisisSolicitadoRef.current?.value || "",
       notasVarias: notasVariasRef.current?.value || "",
@@ -778,14 +774,14 @@ export function WorkOrderForm({
                   variant="outline"
                   className={cn(
                     "h-8 w-40 justify-start text-left font-normal text-xs",
-                    !date && "text-muted-foreground"
+                    !dateStr && "text-muted-foreground"
                   )}
                   disabled={isFieldDisabled("test-specific")}
                 >
                   <CalendarIcon className="mr-2 h-3 w-3 flex-shrink-0" />
                   <span className="truncate">
-                    {date
-                      ? format(date, "dd/MM/yyyy", { locale: es })
+                    {dateStr
+                      ? format(new Date(dateStr + "T00:00:00"), "dd/MM/yyyy", { locale: es })
                       : "Seleccionar fecha"}
                   </span>
                 </Button>
@@ -793,8 +789,8 @@ export function WorkOrderForm({
               <PopoverContent className="w-fit p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={date}
-                  onSelect={setDate}
+                  selected={dateStr ? new Date(dateStr + "T00:00:00") : undefined}
+                  onSelect={(d) => setDateStr(d ? format(d, "yyyy-MM-dd") : "")}
                   autoFocus
                   captionLayout="dropdown"
                   startMonth={new Date(2020, 0)}
