@@ -1017,7 +1017,7 @@ export const saveEfficacyResults = async (
 
     // Preparar los datos para insertar con validación
     const dataToInsert = Object.entries(efficacyResults)
-      .filter(([pruebaId, eficacia]) => {
+      .filter(([_pruebaId, eficacia]) => {
         // Validar que la eficacia sea un número válido
         return !isNaN(Number(eficacia)) && Number.isFinite(Number(eficacia));
       })

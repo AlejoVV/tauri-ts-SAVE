@@ -150,7 +150,7 @@ export async function obtenerObjetivos(): Promise<Objetivo[]> {
     async (from, to) => {
       const { data, error } = await supabase
         .from("objetivos")
-        .select("objetivo_id, objetivo_nombre, objetivo_tipo_prueba")
+        .select("*")
         .order("objetivo_nombre")
         .range(from, to)
       if (error) { console.error("Error al obtener objetivos:", error); throw error }
@@ -215,7 +215,7 @@ export async function obtenerProductoPorNombre(
 ): Promise<Producto | null> {
   const { data, error } = await supabase
     .from("productos")
-    .select("producto_id, producto_nombre, producto_unidades, producto_casa_comercial, producto_tipo")
+    .select("*")
     .eq("producto_nombre", nombreProducto)
     .single()
 
@@ -237,7 +237,7 @@ export async function buscarProductos(
 ): Promise<Producto[]> {
   const query = supabase
     .from("productos")
-    .select("producto_id, producto_nombre, producto_unidades, producto_casa_comercial, producto_tipo")
+    .select("*")
     .order("producto_nombre")
     .limit(limit)
 
