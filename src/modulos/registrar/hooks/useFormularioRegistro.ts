@@ -286,15 +286,14 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
   }, [])
   
   // Cargar datos iniciales
-  // async-parallel - Parallel data fetching where appropriate
-  // Note: productos no se carga aquí porque ahora usa búsqueda asíncrona
+  // async-parallel - All independent fetches fired concurrently at mount
   useEffect(() => {
     recargarCompanias()
     recargarFincas()
     recargarObjetivos()
-    // recargarProductos() - Ya no necesario, se usa búsqueda asíncrona
+    recargarProductos()
     recargarEspecies()
-  }, [recargarCompanias, recargarFincas, recargarObjetivos, recargarEspecies])
+  }, [recargarCompanias, recargarFincas, recargarObjetivos, recargarProductos, recargarEspecies])
   
   // Recargar contactos cuando cambia la compañía
   useEffect(() => {

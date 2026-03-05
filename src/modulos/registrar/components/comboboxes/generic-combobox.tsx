@@ -22,8 +22,10 @@ export interface ComboboxItem {
   value: string;
   label: string;
   id?: number;
-  unidades?: string; // Para productos - valor de producto_unidades
-  tipoPrueba?: string; // Para objetivos - valor de objetivo_tipo_prueba
+  unidades?: string;      // Para productos - valor de producto_unidades
+  casaComercial?: string; // Para productos - valor de producto_casa_comercial
+  tipo?: string;          // Para productos - valor de producto_tipo
+  tipoPrueba?: string;    // Para objetivos - valor de objetivo_tipo_prueba
 }
 
 interface GenericComboboxProps {

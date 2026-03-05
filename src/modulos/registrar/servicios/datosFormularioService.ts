@@ -92,20 +92,52 @@ export async function obtenerObjetivos(): Promise<Objetivo[]> {
 }
 
 /**
- * Obtiene el listado de productos para el campo "Producto"
+ * Obtiene el listado completo de productos para el campo "Producto".
+ * Supabase/PostgREST corta en 1000 filas por defecto; esta función
+ * obtiene el conteo total y descarga todas las páginas en paralelo.
+ *
+ * async-parallel: Promise.all sobre todas las páginas concurrentemente.
+ * js-combine-iterations: un solo bucle para construir el array final.
  */
 export async function obtenerProductos(): Promise<Producto[]> {
-  const { data, error } = await supabase
-    .from("productos")
-    .select("*")
-    .order("producto_nombre")
+  const PAGE_SIZE = 1000
 
-  if (error) {
-    console.error("Error al obtener productos:", error)
-    throw error
+  // 1. Obtener el total para calcular cuántas páginas necesitamos
+  const { count, error: countError } = await supabase
+    .from("productos")
+    .select("*", { count: "exact", head: true })
+
+  if (countError) {
+    console.error("Error al obtener conteo de productos:", countError)
+    throw countError
   }
 
-  return data || []
+  if (!count || count === 0) return []
+
+  const pages = Math.ceil(count / PAGE_SIZE)
+
+  // 2. async-parallel: descargar todas las páginas simultáneamente
+  const results = await Promise.all(
+    Array.from({ length: pages }, (_, i) =>
+      supabase
+        .from("productos")
+        .select("*")
+        .order("producto_nombre")
+        .range(i * PAGE_SIZE, (i + 1) * PAGE_SIZE - 1)
+    )
+  )
+
+  // 3. js-combine-iterations: construir resultado en un solo paso
+  const allData: Producto[] = []
+  for (const { data, error } of results) {
+    if (error) {
+      console.error("Error al obtener página de productos:", error)
+      throw error
+    }
+    if (data) allData.push(...data)
+  }
+
+  return allData
 }
 
 /**

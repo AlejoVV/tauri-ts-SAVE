@@ -28,7 +28,6 @@ import { cn } from "@/lib/utils";
 
 // Comboboxes
 import { GenericCombobox } from "@/modulos/registrar/components/comboboxes/generic-combobox";
-import { AsyncCombobox } from "@/modulos/registrar/components/comboboxes/async-combobox";
 
 // Hooks
 import { useFormularioRegistro } from "@/modulos/registrar/hooks/useFormularioRegistro";
@@ -107,7 +106,8 @@ export function WorkOrderForm({
     recargarContactos,
     recargarFincas,
     recargarEspecies,
-    buscarProductosAsync,
+    recargarProductos,
+    productos,
     contactoDisabled,
     unidadesProducto,
     productoCasaComercial,
@@ -399,9 +399,10 @@ export function WorkOrderForm({
     setSelectedEspecie(nombre);
   };
 
-  // AsyncCombobox searches on demand — no reload needed, set selection directly
-  const handleProductCreated = (nombre: string, unidades: string, casaComercial: string, tipo: string) => {
+  // async-defer-await: reload list so the new product appears before selecting it
+  const handleProductCreated = async (nombre: string, unidades: string, casaComercial: string, tipo: string) => {
     setProductModalOpen(false);
+    await recargarProductos();
     setSelectedProducto(nombre, unidades, casaComercial, tipo);
     if (dosisRef.current) {
       dosisRef.current.value = "";
@@ -637,10 +638,11 @@ export function WorkOrderForm({
                   loading={loading.especies}
                 />
               </div>
-              <div className="col-span-5 space-y-0.5">
+                <div className="col-span-5 space-y-0.5">
                 <Label className="text-xs font-semibold">Producto</Label>
                 <div className="space-y-1">
-                  <AsyncCombobox
+                  <GenericCombobox
+                    items={productos}
                     value={selectedProducto}
                     onValueChange={(value, item) => {
                       setSelectedProducto(
@@ -655,15 +657,13 @@ export function WorkOrderForm({
                         dosisRef.current.placeholder = value ? "Por definir" : "";
                       }
                     }}
-                    onSearch={buscarProductosAsync}
                     placeholder="Seleccionar producto..."
                     searchPlaceholder="Buscar producto..."
                     emptyMessage="No se encontraron productos."
                     onCreateNew={() => setProductModalOpen(true)}
                     createNewLabel="Crear nuevo producto"
                     disabled={isFieldDisabled("test-specific")}
-                    debounceMs={300}
-                    minCharsToSearch={0}
+                    loading={loading.productos}
                   />
                   {selectedProducto &&
                     (productoCasaComercial || productoTipo) && (
