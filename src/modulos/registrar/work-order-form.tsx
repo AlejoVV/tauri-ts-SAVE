@@ -141,18 +141,16 @@ export function WorkOrderForm({
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [adicionarMode, setAdicionarMode] = useState(false);
 
-  // Determinar qué campos deben estar deshabilitados
-  // Los campos de orden (Facturar, Contacto, Finca, Descuento) se deshabilitan después de registrar la primera prueba
+  // Determinar qué campos deben estar deshabilitados.
+  // Solo "Facturar a" y "Contacto" ("main") se bloquean después de registrar la primera prueba
+  // o en modo adicionar/add-to-existing. Finca, Descuento y campos de prueba ("test-specific")
+  // permanecen editables en todo momento.
   const isFieldDisabled = (fieldType: "main" | "test-specific") => {
-    // Si está en modo adicionar, bloquear campos principales
-    if (adicionarMode) {
-      return fieldType === "main";
-    }
-    if (mode === "add-to-existing") {
+    if (adicionarMode || mode === "add-to-existing") {
       return fieldType === "main";
     }
     if (fieldType === "main") {
-      return disabled || hasPruebasRegistradas; // Bloquear solo después de registrar la primera prueba
+      return disabled || hasPruebasRegistradas;
     }
     return disabled;
   };
@@ -612,7 +610,7 @@ export function WorkOrderForm({
               emptyMessage="No se encontraron fincas."
               onCreateNew={() => setFarmModalOpen(true)}
               createNewLabel="Crear nueva finca"
-              disabled={isFieldDisabled("main")}
+              disabled={isFieldDisabled("test-specific")}
               loading={loading.fincas}
             />
           </div>
@@ -821,7 +819,7 @@ export function WorkOrderForm({
               max="100"
               step="0.01"
               className="h-8 w-20"
-              disabled={isFieldDisabled("main")}
+              disabled={isFieldDisabled("test-specific")}
             />
           </div>
 
