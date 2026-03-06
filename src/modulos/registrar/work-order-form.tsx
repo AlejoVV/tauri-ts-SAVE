@@ -114,6 +114,7 @@ export function WorkOrderForm({
     productoTipo,
     objetivoTipoPrueba,
     cargarDatosOT: cargarDatosOTHook,
+    resetSelecciones,
   } = useFormularioRegistro();
 
   // Hook para manejar el flujo de registro de órdenes y pruebas
@@ -125,6 +126,7 @@ export function WorkOrderForm({
     successMessage,
     hasPruebasRegistradas,
     handleSubmit,
+    resetForm,
     shouldRefreshTable,
     setOrdenEspecifica,
   } = useWorkOrderRegistration();
@@ -201,6 +203,30 @@ export function WorkOrderForm({
     setSelectedProducto("", "cc/lt", "", "");
     setSelectedEspecie("");
     setDateStr("");
+  };
+
+  /**
+   * Reinicia completamente el módulo al estado inicial para una nueva OT.
+   * Obtiene los IDs actualizados de OT y prueba antes de limpiar.
+   * rerender-move-effect-to-event - Logic lives in the click handler, not an effect
+   */
+  const handleNuevaOT = () => {
+    // 1. Limpiar refs de campos de prueba
+    limpiarCamposPrueba();
+
+    // 2. Limpiar descuento
+    if (descuentoRef.current) descuentoRef.current.value = "";
+
+    // 3. Limpiar todas las selecciones de comboboxes (compañía, contacto, finca, etc.)
+    resetSelecciones();
+
+    // 4. Resetear estado de la orden (pone ordenActual=null y llama refreshIds internamente)
+    resetForm();
+
+    // 5. Salir del modo adicionar y cancelar cualquier edición en curso
+    setAdicionarMode(false);
+    setPruebaEditando(null);
+    setEditError(null);
   };
 
   /**
@@ -848,6 +874,7 @@ export function WorkOrderForm({
             type="button"
             variant="outline"
             disabled={isSubmitting}
+            onClick={handleNuevaOT}
             className="h-8 min-w-[120px] font-medium text-xs px-4 border-black text-black hover:bg-black hover:text-white transition-colors"
           >
             Nueva OT

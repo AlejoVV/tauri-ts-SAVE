@@ -90,6 +90,9 @@ interface UseFormularioRegistroReturn {
   
   // Función especial para cargar compañía, contacto y finca de OT existente
   cargarDatosOT: (companiaNombre: string, contactoNombre: string, fincaNombre: string) => Promise<void>
+  
+  // Reinicia todas las selecciones al estado inicial
+  resetSelecciones: () => void
 }
 
 export function useFormularioRegistro(): UseFormularioRegistroReturn {
@@ -304,6 +307,23 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
   const contactoDisabled = !selectedCompania
   
   /**
+   * Reinicia todas las selecciones de comboboxes al estado vacío
+   * rerender-functional-setstate - Stable callback with no dependencies
+   */
+  const resetSelecciones = useCallback(() => {
+    setSelectedCompaniaState("")
+    setSelectedContacto("")
+    setSelectedFinca("")
+    setSelectedObjetivoState("")
+    setObjetivoTipoPrueba("")
+    setSelectedProductoState("")
+    setUnidadesProducto("")
+    setProductoCasaComercial("")
+    setProductoTipo("")
+    setSelectedEspecie("")
+  }, [])
+
+  /**
    * Carga los datos de una OT existente: compañía, contacto y finca
    * async-defer-await - Wait for data to load and add missing items to lists
    */
@@ -386,5 +406,6 @@ export function useFormularioRegistro(): UseFormularioRegistroReturn {
     productoTipo,
     objetivoTipoPrueba,
     cargarDatosOT,
+    resetSelecciones,
   }
 }
