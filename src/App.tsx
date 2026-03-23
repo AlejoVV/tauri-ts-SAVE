@@ -1,13 +1,10 @@
-// import ViewTable from "./components/ViewTable";
-// import TableMaterial from "./components/TableMaterial";
-//import ObjetivosConPreciosTable from "./components/TableObjetivosConPrecio";
-import TableOrdenesMaestra from "./modulos/ordenes-trabajo/componentes/TableOrdenesMaestra";
-import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
-import { EficaciaMain } from "./modulos/eficacia/componentes/eficacia-main";
-import { Informes } from "./modulos/informes";
-import { RegisterWorkOrderPage } from "./modulos/registrar/register-work-order-page";
-import { ManageWorkOrderPage } from "./modulos/gestionar/manage-work-order-page";
-import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
+import { TableOrdenesMaestra } from "@/modulos/ordenes-trabajo/componentes/TableOrdenesMaestra";
+import { ObjetivosConPreciosTable } from "@/modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
+import { EficaciaMain } from "@/modulos/eficacia/componentes/EficaciaMain";
+import { Informes } from "@/modulos/informes";
+import { RegisterWorkOrderPage } from "@/modulos/registrar/componentes/RegisterWorkOrderPage";
+import { ManageWorkOrderPage } from "@/modulos/gestionar/componentes/ManageWorkOrderPage";
+import Sidebar from "@/modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
 function App() {
