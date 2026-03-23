@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { CalendarIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
@@ -78,25 +76,21 @@ export function EditTestModal({
     cargarDatosOT,
   } = useFormularioRegistro();
 
-  // Cargar datos cuando cambia la prueba seleccionada
   useEffect(() => {
     if (!prueba || !open) return;
 
     const cargarDatos = async () => {
       try {
-        // Cargar compañía/contacto/finca usando cargarDatosOT del hook
         await cargarDatosOT(
           prueba.facturara || "",
           prueba.contacto || "",
           prueba.finca_nombre || ""
         );
 
-        // Pre-seleccionar objetivo, especie, producto
         setSelectedObjetivo(prueba.objetivo_nombre || "");
         setSelectedEspecie(prueba.especie_nombre || "");
         setSelectedProducto(prueba.producto_nombre || "", prueba.producto_unid || undefined);
 
-        // Obtener datos adicionales de la tabla directa (inst, notas_varias)
         if (prueba.prueba_id) {
           const pruebaDatos = await obtenerPruebaPorId(prueba.prueba_id);
 
@@ -106,7 +100,6 @@ export function EditTestModal({
             notasVariasRef.current.value = pruebaDatos.prueba_notas_varias || "";
         }
 
-        // Campos simples
         if (dosisRef.current)
           dosisRef.current.value = prueba.dosis_producto || "";
         if (cantidadRef.current)
@@ -116,7 +109,6 @@ export function EditTestModal({
         if (observacionesRef.current)
           observacionesRef.current.value = prueba.observaciones || "";
 
-        // Fecha recepción
         if (prueba.fecha_recibo_muestra) {
           setDate(new Date(prueba.fecha_recibo_muestra));
         } else {
@@ -138,35 +130,35 @@ export function EditTestModal({
     setError(null);
     setSuccessMessage(null);
 
-    try {
-      await actualizarPrueba(prueba.prueba_id, {
-        objetivo_nombre: selectedObjetivo || null,
-        finca_nombre: selectedFinca || null,
-        especie_nombre: selectedEspecie || null,
-        producto_nombre: selectedProducto || null,
-        dosis_producto: dosisRef.current?.value || null,
-        producto_unid: unidadesProducto || null,
-        cantidad: cantidadRef.current?.value || null,
-        observaciones: observacionesRef.current?.value || null,
-        notas_varias: notasVariasRef.current?.value || null,
-        analisis_solicitado: analisisSolicitadoRef.current?.value || null,
-        numero_muestra: numeroMuestraRef.current?.value || null,
-        fecha_recibido: date ? date.toISOString().split("T")[0] : null,
-      });
+    const result = await actualizarPrueba(prueba.prueba_id, {
+      objetivo_nombre: selectedObjetivo || null,
+      finca_nombre: selectedFinca || null,
+      especie_nombre: selectedEspecie || null,
+      producto_nombre: selectedProducto || null,
+      dosis_producto: dosisRef.current?.value || null,
+      producto_unid: unidadesProducto || null,
+      cantidad: cantidadRef.current?.value || null,
+      observaciones: observacionesRef.current?.value || null,
+      notas_varias: notasVariasRef.current?.value || null,
+      analisis_solicitado: analisisSolicitadoRef.current?.value || null,
+      numero_muestra: numeroMuestraRef.current?.value || null,
+      fecha_recibido: date ? date.toISOString().split("T")[0] : null,
+    });
 
-      setSuccessMessage(`Prueba #${prueba.prueba_id} actualizada exitosamente`);
-      setTimeout(() => {
-        setSuccessMessage(null);
-        onSuccess();
-        onOpenChange(false);
-      }, 1500);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Error al actualizar la prueba"
-      );
-    } finally {
+    if (!result.success) {
+      setError(result.error ?? "Error al actualizar la prueba");
       setIsSubmitting(false);
+      return;
     }
+
+    setSuccessMessage(`Prueba #${prueba.prueba_id} actualizada exitosamente`);
+    setTimeout(() => {
+      setSuccessMessage(null);
+      onSuccess();
+      onOpenChange(false);
+    }, 1500);
+
+    setIsSubmitting(false);
   };
 
   return (
@@ -178,7 +170,6 @@ export function EditTestModal({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Alertas */}
         {successMessage && (
           <Alert className="bg-green-50 border-green-200">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -195,7 +186,6 @@ export function EditTestModal({
         )}
 
         <div className="space-y-4">
-          {/* Fila 1: Facturar a (solo lectura) y Contacto (solo lectura) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-sm">Facturar a</Label>
@@ -215,7 +205,6 @@ export function EditTestModal({
             </div>
           </div>
 
-          {/* Fila 2: Objetivo y Cant. pruebas */}
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-10 space-y-1">
               <Label className="text-sm">Objetivo</Label>
@@ -247,7 +236,6 @@ export function EditTestModal({
             </div>
           </div>
 
-          {/* Fila 3: Finca, Especie, Producto, Dosis */}
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-3 space-y-1">
               <Label className="text-sm">Finca</Label>
@@ -310,7 +298,6 @@ export function EditTestModal({
             </div>
           </div>
 
-          {/* Fila 4: Análisis solicitado y Notas varias */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="edit-analisis" className="text-sm">
@@ -336,7 +323,6 @@ export function EditTestModal({
             </div>
           </div>
 
-          {/* Fila 5: Observaciones */}
           <div className="space-y-1">
             <Label htmlFor="edit-observaciones" className="text-sm">
               Observaciones
@@ -349,7 +335,6 @@ export function EditTestModal({
             />
           </div>
 
-          {/* Fila 6: N° muestra y Fecha recepción */}
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1">
               <Label htmlFor="edit-numero-muestra" className="text-sm">
@@ -409,7 +394,7 @@ export function EditTestModal({
             Cancelar
           </Button>
           <Button
-            onClick={handleGuardar}
+            onClick={() => void handleGuardar()}
             disabled={isSubmitting}
             className="h-9 bg-black hover:bg-black/90 text-white text-sm"
           >

@@ -1,29 +1,61 @@
-"use client";
-
 import { useState, useRef } from "react";
 import { Search, Loader2 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-
-import { WorkOrderTestsTable } from "./components/work-order-tests-table";
-import { EditTestModal } from "./components/edit-test-modal";
+import { WorkOrderTestsTable } from "./componentes/work-order-tests-table";
+import { EditTestModal } from "./componentes/edit-test-modal";
+import { ChangeEstadoLabModal } from "./componentes/ChangeEstadoLabModal";
 import {
   buscarOTPorNumero,
   type OTData,
   type VistaMaestraRow,
 } from "@/modulos/registrar/servicios/workOrderService";
 
+interface EstadoBadgeProps {
+  value: string | null;
+}
+
+function EstadoBadge({ value }: EstadoBadgeProps) {
+  if (!value) {
+    return <span className="text-sm font-medium text-muted-foreground">—</span>;
+  }
+
+  const normalized = value.toLowerCase();
+
+  const colorClass = normalized.includes("facturado") || normalized.includes("cerrado") || normalized.includes("aprobado")
+    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+    : normalized.includes("pendiente") || normalized.includes("proceso") || normalized.includes("curso")
+    ? "bg-amber-100 text-amber-800 border-amber-200"
+    : normalized.includes("anulado") || normalized.includes("cancelado")
+    ? "bg-red-100 text-red-800 border-red-200"
+    : "bg-neutral-100 text-neutral-700 border-neutral-200";
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium leading-none",
+        colorClass
+      )}
+    >
+      {value}
+    </span>
+  );
+}
+
 export function ManageWorkOrderPage() {
   const otInputRef = useRef<HTMLInputElement>(null);
   const [otBuscada, setOtBuscada] = useState<number | null>(null);
-  const [otInfo, setOtInfo] = useState<Pick<OTData, "facturarA" | "contacto"> | null>(null);
+  const [otInfo, setOtInfo] = useState<Pick<OTData, "facturarA" | "contacto" | "estadoOT" | "estadoFactura" | "numeroFactura"> | null>(null);
   const [buscandoInfo, setBuscandoInfo] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [pruebaAEditar, setPruebaAEditar] = useState<VistaMaestraRow | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedPruebas, setSelectedPruebas] = useState<VistaMaestraRow[]>([]);
+  const [estadoLabModalOpen, setEstadoLabModalOpen] = useState(false);
 
   const handleBuscar = async () => {
     const value = otInputRef.current?.value?.trim();
@@ -34,8 +66,15 @@ export function ManageWorkOrderPage() {
       setBuscandoInfo(true);
       try {
         const data = await buscarOTPorNumero(num);
-        setOtInfo({ facturarA: data.facturarA, contacto: data.contacto });
-      } catch {
+        setOtInfo({
+          facturarA: data.facturarA,
+          contacto: data.contacto,
+          estadoOT: data.estadoOT,
+          estadoFactura: data.estadoFactura,
+          numeroFactura: data.numeroFactura,
+        });
+      } catch (err) {
+        console.error("Error al buscar OT:", err);
         setOtInfo(null);
       } finally {
         setBuscandoInfo(false);
@@ -60,18 +99,15 @@ export function ManageWorkOrderPage() {
 
   return (
     <div className="space-y-2">
-      {/* Header */}
       <div className="space-y-1 ml-4">
         <h1 className="text-xl font-bold tracking-tight">
           Gestionar Órdenes de Trabajo
         </h1>
       </div>
 
-      {/* Búsqueda de OT */}
       <Card>
         <CardContent className="pt-3 pb-3">
           <div className="flex items-end gap-3 flex-wrap">
-            {/* Campo OT + botón */}
             <div className="flex items-end gap-2">
               <div className="space-y-0.5">
                 <Label htmlFor="ot-buscar" className="text-xs">
@@ -101,12 +137,10 @@ export function ManageWorkOrderPage() {
               </Button>
             </div>
 
-            {/* Separador vertical */}
             {otInfo && (
               <div className="hidden sm:block h-8 w-px bg-border self-end" />
             )}
 
-            {/* Facturar a */}
             {otInfo && (
               <div className="space-y-0.5">
                 <Label className="text-xs text-muted-foreground">
@@ -118,7 +152,6 @@ export function ManageWorkOrderPage() {
               </div>
             )}
 
-            {/* Contacto */}
             {otInfo && (
               <div className="space-y-0.5">
                 <Label className="text-xs text-muted-foreground">
@@ -129,22 +162,59 @@ export function ManageWorkOrderPage() {
                 </div>
               </div>
             )}
+
+            {otInfo && (
+              <div className="hidden sm:block h-8 w-px bg-border self-end" />
+            )}
+
+            {otInfo && (
+              <div className="space-y-0.5">
+                <Label className="text-xs text-muted-foreground">
+                  Estado OT
+                </Label>
+                <div className="h-8 flex items-center">
+                  <EstadoBadge value={otInfo.estadoOT} />
+                </div>
+              </div>
+            )}
+
+            {otInfo && (
+              <div className="space-y-0.5">
+                <Label className="text-xs text-muted-foreground">
+                  Estado Factura
+                </Label>
+                <div className="h-8 flex items-center">
+                  <EstadoBadge value={otInfo.estadoFactura} />
+                </div>
+              </div>
+            )}
+
+            {otInfo && (
+              <div className="space-y-0.5">
+                <Label className="text-xs text-muted-foreground">
+                  N° Factura
+                </Label>
+                <div className="h-8 flex items-center">
+                  <span className="text-sm font-medium tabular-nums">
+                    {otInfo.numeroFactura != null ? otInfo.numeroFactura : "—"}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabla de pruebas */}
       <WorkOrderTestsTable
         ordenTrabajo={otBuscada}
         refreshTrigger={refreshTrigger}
         onEdit={handleEdit}
+        onSelectionChange={setSelectedPruebas}
       />
 
-      {/* Panel inferior: grupos de botones de acciones */}
       <Card>
         <CardContent className="pt-3 pb-3">
           <div className="grid grid-cols-3 gap-3">
-            {/* Columna 1 */}
             <div className="flex flex-col gap-1.5">
               <Button disabled variant="outline" className="h-8 text-xs justify-start">
                 Cliente Nuevo
@@ -159,8 +229,20 @@ export function ManageWorkOrderPage() {
                 Taxonomía
               </Button>
             </div>
-            {/* Columna 2 */}
             <div className="flex flex-col gap-1.5">
+              <Button
+                variant="outline"
+                disabled={selectedPruebas.length === 0}
+                onClick={() => setEstadoLabModalOpen(true)}
+                className="h-8 text-xs justify-start"
+              >
+                Estado LAB
+                {selectedPruebas.length > 0 && (
+                  <span className="ml-auto text-[10px] bg-black text-white rounded-full px-1.5 py-0.5 leading-none">
+                    {selectedPruebas.length}
+                  </span>
+                )}
+              </Button>
               <Button disabled variant="outline" className="h-8 text-xs justify-start">
                 Fecha Ent. Inf.
               </Button>
@@ -171,7 +253,6 @@ export function ManageWorkOrderPage() {
                 Cierre OT
               </Button>
             </div>
-            {/* Columna 3 */}
             <div className="flex flex-col gap-1.5">
               <Button disabled variant="outline" className="h-8 text-xs justify-start">
                 Imprimir OT
@@ -190,11 +271,17 @@ export function ManageWorkOrderPage() {
         </CardContent>
       </Card>
 
-      {/* Modal de edición */}
       <EditTestModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         prueba={pruebaAEditar}
+        onSuccess={handleEditSuccess}
+      />
+
+      <ChangeEstadoLabModal
+        open={estadoLabModalOpen}
+        onOpenChange={setEstadoLabModalOpen}
+        selectedPruebas={selectedPruebas}
         onSuccess={handleEditSuccess}
       />
     </div>

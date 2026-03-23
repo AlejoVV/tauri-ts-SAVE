@@ -3,6 +3,7 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
+  type MRT_RowSelectionState,
 } from "material-react-table";
 import {
   Card,
@@ -21,24 +22,27 @@ import type { VistaMaestraRow } from "@/modulos/registrar/servicios/workOrderSer
 
 interface WorkOrderTestsTableProps {
   ordenTrabajo: number | null;
-  refreshTrigger?: number; // Trigger para forzar actualización
+  refreshTrigger?: number;
   onEdit?: (prueba: VistaMaestraRow) => void;
+  onSelectionChange?: (selectedRows: VistaMaestraRow[]) => void;
 }
 
 export function WorkOrderTestsTable({
   ordenTrabajo,
   refreshTrigger = 0,
   onEdit,
+  onSelectionChange,
 }: WorkOrderTestsTableProps) {
   const [data, setData] = useState<VistaMaestraRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
 
-  // Fetch data when ordenTrabajo or refreshTrigger changes
   // rerender-dependencies - Use primitive dependencies in effects
   useEffect(() => {
     if (!ordenTrabajo) {
       setData([]);
+      setRowSelection({});
       return;
     }
 
@@ -46,6 +50,7 @@ export function WorkOrderTestsTable({
       try {
         setIsLoading(true);
         setError(null);
+        setRowSelection({});
         const pruebas = await obtenerPruebasPorOrden(ordenTrabajo);
         setData(pruebas);
       } catch (err) {
@@ -58,20 +63,25 @@ export function WorkOrderTestsTable({
     };
 
     fetchData();
-  }, [ordenTrabajo, refreshTrigger]); // Agregar refreshTrigger como dependencia
+  }, [ordenTrabajo, refreshTrigger]);
 
-  // Format date helper
+  useEffect(() => {
+    if (!onSelectionChange) return;
+    const selected = data.filter((row) => rowSelection[String(row.prueba_id)]);
+    onSelectionChange(selected);
+  }, [rowSelection, data, onSelectionChange]);
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
     try {
       const date = new Date(dateString);
       return format(date, "dd/MM/yyyy", { locale: es });
-    } catch {
+    } catch (err) {
+      console.error("Error al formatear fecha:", err);
       return "-";
     }
   };
 
-  // Badge component for estado fields
   const EstadoBadge = ({
     estado,
     type,
@@ -95,7 +105,6 @@ export function WorkOrderTestsTable({
     );
   };
 
-  // Column definitions following Material React Table patterns
   const columns = useMemo<MRT_ColumnDef<VistaMaestraRow>[]>(
     () => [
       {
@@ -245,11 +254,12 @@ export function WorkOrderTestsTable({
     [],
   );
 
-  // Table configuration following best practices
   const table = useMaterialReactTable({
     columns,
     data,
-    enableRowSelection: false,
+    getRowId: (row) => String(row.prueba_id),
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     enableColumnFilters: false,
     enableColumnOrdering: false,
     enableColumnResizing: true,
@@ -323,11 +333,11 @@ export function WorkOrderTestsTable({
       onDoubleClick: () => {
         const currentSorting = column.getIsSorted();
         if (currentSorting === false) {
-          column.toggleSorting(false); // Sort ascending
+          column.toggleSorting(false);
         } else if (currentSorting === "asc") {
-          column.toggleSorting(true); // Sort descending
+          column.toggleSorting(true);
         } else {
-          column.toggleSorting(false); // Back to ascending
+          column.toggleSorting(false);
         }
       },
     }),
@@ -339,7 +349,6 @@ export function WorkOrderTestsTable({
     muiTableBodyRowProps: ({ table }) => {
       const density = table.getState().density;
 
-      // Configurar estilos según la densidad
       let height, paddingTop, paddingBottom, fontSize;
 
       switch (density) {
@@ -355,7 +364,7 @@ export function WorkOrderTestsTable({
           paddingBottom = "6px";
           fontSize = "0.78rem";
           break;
-        default: // 'standard'
+        default:
           height = "auto";
           paddingTop = "12px";
           paddingBottom = "12px";
@@ -393,10 +402,10 @@ export function WorkOrderTestsTable({
     },
     state: {
       isLoading,
+      rowSelection,
     },
   });
 
-  // Loading state
   if (isLoading) {
     return (
       <Card>
@@ -410,7 +419,6 @@ export function WorkOrderTestsTable({
     );
   }
 
-  // No OT selected state
   if (!ordenTrabajo) {
     return (
       <Card>
@@ -426,7 +434,6 @@ export function WorkOrderTestsTable({
     );
   }
 
-  // Error state
   if (error) {
     return (
       <Card>
@@ -440,7 +447,6 @@ export function WorkOrderTestsTable({
     );
   }
 
-  // Empty state
   if (data.length === 0 && !isLoading) {
     return (
       <div className="flex items-center justify-center py-4 text-muted-foreground">
@@ -449,12 +455,16 @@ export function WorkOrderTestsTable({
     );
   }
 
-  // Table view
   return (
     <Card>
       <CardHeader className="py-2 px-4">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {data.length} {data.length === 1 ? "prueba" : "pruebas"}
+          {Object.keys(rowSelection).length > 0 && (
+            <span className="ml-2 text-xs font-normal text-foreground">
+              · {Object.keys(rowSelection).length} seleccionada{Object.keys(rowSelection).length !== 1 ? "s" : ""}
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
