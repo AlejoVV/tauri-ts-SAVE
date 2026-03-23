@@ -1,4 +1,4 @@
-import { TableOrdenesMaestra } from "@/modulos/ordenes-trabajo/componentes/TableOrdenesMaestra";
+import { TableOrdenesMaestra } from "@/modulos/maestra/componentes/TableOrdenesMaestra";
 import { ObjetivosConPreciosTable } from "@/modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
 import { EficaciaMain } from "@/modulos/eficacia/componentes/EficaciaMain";
 import { Informes } from "@/modulos/informes";
