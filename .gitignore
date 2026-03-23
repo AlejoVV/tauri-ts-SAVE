@@ -34,3 +34,4 @@ dist-ssr
 .cursor/mcp.json
 .vscode
 .claude
+.gga
