@@ -55,32 +55,36 @@ export function ChangeFechaEntregaModal({
     setError(null);
     setSuccessMessage(null);
 
-    const ids = selectedPruebas
-      .map((p) => p.prueba_id)
-      .filter((id): id is number => id !== null);
+    try {
+      const ids = selectedPruebas
+        .map((p) => p.prueba_id)
+        .filter((id): id is number => id !== null);
 
-    const fechaISO = format(fechaSeleccionada, "yyyy-MM-dd");
-    const result = await actualizarFechaEntregaInformeMasivo(ids, fechaISO);
+      const fechaISO = format(fechaSeleccionada, "yyyy-MM-dd");
+      const result = await actualizarFechaEntregaInformeMasivo(ids, fechaISO);
 
-    if (!result.success) {
-      setError(result.error ?? "Error al actualizar la fecha de entrega");
+      if (!result.success) {
+        setError(result.error ?? "Error al actualizar la fecha de entrega");
+        return;
+      }
+
+      const count = ids.length;
+      setSuccessMessage(
+        `Fecha actualizada en ${count} ${count === 1 ? "prueba" : "pruebas"}`
+      );
+
+      setTimeout(() => {
+        setSuccessMessage(null);
+        setFechaSeleccionada(undefined);
+        onSuccess();
+        onOpenChange(false);
+      }, 1200);
+    } catch (err) {
+      console.error("Error al actualizar fecha de entrega:", err);
+      setError(err instanceof Error ? err.message : "Error inesperado al actualizar la fecha");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    const count = ids.length;
-    setSuccessMessage(
-      `Fecha actualizada en ${count} ${count === 1 ? "prueba" : "pruebas"}`
-    );
-
-    setTimeout(() => {
-      setSuccessMessage(null);
-      setFechaSeleccionada(undefined);
-      onSuccess();
-      onOpenChange(false);
-    }, 1200);
-
-    setIsSubmitting(false);
   };
 
   return (
