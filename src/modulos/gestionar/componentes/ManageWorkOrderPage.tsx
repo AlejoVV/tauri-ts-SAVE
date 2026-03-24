@@ -8,6 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { WorkOrderTestsTable } from "@/modulos/gestionar/componentes/WorkOrderTestsTable";
 import { EditTestModal } from "@/modulos/gestionar/componentes/EditTestModal";
 import { ChangeEstadoLabModal } from "@/modulos/gestionar/componentes/ChangeEstadoLabModal";
+import { ChangeFechaEntregaModal } from "@/modulos/gestionar/componentes/ChangeFechaEntregaModal";
+import { ChangeNumeroFacturaModal } from "@/modulos/gestionar/componentes/ChangeNumeroFacturaModal";
+import { CerrarAbrirOTModal } from "@/modulos/gestionar/componentes/CerrarAbrirOTModal";
 import { EstadoBadge } from "@/modulos/gestionar/componentes/EstadoBadge";
 import {
   buscarOTPorNumero,
@@ -26,6 +29,9 @@ export function ManageWorkOrderPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedPruebas, setSelectedPruebas] = useState<VistaMaestraRow[]>([]);
   const [estadoLabModalOpen, setEstadoLabModalOpen] = useState(false);
+  const [fechaEntregaModalOpen, setFechaEntregaModalOpen] = useState(false);
+  const [numeroFacturaModalOpen, setNumeroFacturaModalOpen] = useState(false);
+  const [cerrarAbrirOTModalOpen, setCerrarAbrirOTModalOpen] = useState(false);
 
   const handleBuscar = async () => {
     const value = otInputRef.current?.value?.trim();
@@ -140,17 +146,6 @@ export function ManageWorkOrderPage() {
             {otInfo && (
               <div className="space-y-0.5">
                 <Label className="text-xs text-muted-foreground">
-                  Estado OT
-                </Label>
-                <div className="h-8 flex items-center">
-                  <EstadoBadge value={otInfo.estadoOT} />
-                </div>
-              </div>
-            )}
-
-            {otInfo && (
-              <div className="space-y-0.5">
-                <Label className="text-xs text-muted-foreground">
                   Estado Factura
                 </Label>
                 <div className="h-8 flex items-center">
@@ -168,6 +163,17 @@ export function ManageWorkOrderPage() {
                   <span className="text-sm font-medium tabular-nums">
                     {otInfo.numeroFactura != null ? otInfo.numeroFactura : "—"}
                   </span>
+                </div>
+              </div>
+            )}
+
+            {otInfo && (
+              <div className="space-y-0.5">
+                <Label className="text-xs text-muted-foreground">
+                  Estado OT
+                </Label>
+                <div className="h-8 flex items-center">
+                  <EstadoBadge value={otInfo.estadoOT} />
                 </div>
               </div>
             )}
@@ -213,14 +219,34 @@ export function ManageWorkOrderPage() {
                   </span>
                 )}
               </Button>
-              <Button disabled variant="outline" className="h-8 text-xs justify-start">
+              <Button
+                variant="outline"
+                disabled={selectedPruebas.length === 0}
+                onClick={() => setFechaEntregaModalOpen(true)}
+                className="h-8 text-xs justify-start"
+              >
                 Fecha Ent. Inf.
+                {selectedPruebas.length > 0 && (
+                  <span className="ml-auto text-[10px] bg-black text-white rounded-full px-1.5 py-0.5 leading-none">
+                    {selectedPruebas.length}
+                  </span>
+                )}
               </Button>
-              <Button disabled variant="outline" className="h-8 text-xs justify-start">
+              <Button
+                variant="outline"
+                disabled={!otInfo || !otBuscada}
+                onClick={() => setNumeroFacturaModalOpen(true)}
+                className="h-8 text-xs justify-start"
+              >
                 Num. Factura
               </Button>
-              <Button disabled variant="outline" className="h-8 text-xs justify-start">
-                Cierre OT
+              <Button
+                variant="outline"
+                disabled={!otInfo || !otBuscada}
+                onClick={() => setCerrarAbrirOTModalOpen(true)}
+                className="h-8 text-xs justify-start"
+              >
+                {otInfo?.estadoOT === "Cerrada" ? "Abrir OT" : "Cerrar OT"}
               </Button>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -254,6 +280,37 @@ export function ManageWorkOrderPage() {
         selectedPruebas={selectedPruebas}
         onSuccess={handleEditSuccess}
       />
+
+      <ChangeFechaEntregaModal
+        open={fechaEntregaModalOpen}
+        onOpenChange={setFechaEntregaModalOpen}
+        selectedPruebas={selectedPruebas}
+        onSuccess={handleEditSuccess}
+      />
+
+      {otBuscada && (
+        <ChangeNumeroFacturaModal
+          open={numeroFacturaModalOpen}
+          onOpenChange={setNumeroFacturaModalOpen}
+          otId={otBuscada}
+          numeroFacturaActual={otInfo?.numeroFactura ?? null}
+          onSuccess={(nuevoNumero) => {
+            setOtInfo((prev) => prev ? { ...prev, numeroFactura: nuevoNumero } : prev);
+          }}
+        />
+      )}
+
+      {otBuscada && (
+        <CerrarAbrirOTModal
+          open={cerrarAbrirOTModalOpen}
+          onOpenChange={setCerrarAbrirOTModalOpen}
+          otId={otBuscada}
+          esCerrada={otInfo?.estadoOT === "Cerrada"}
+          onSuccess={(nuevoEstado) => {
+            setOtInfo((prev) => prev ? { ...prev, estadoOT: nuevoEstado } : prev);
+          }}
+        />
+      )}
     </div>
   );
 }
