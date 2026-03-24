@@ -1,10 +1,8 @@
-// Exports principales del módulo Gestionar
-export { ManageWorkOrderPage } from './manage-work-order-page';
-export { WorkOrderForm } from './work-order-form';
-export { WorkOrderTestsTable } from './components/work-order-tests-table';
+export { ManageWorkOrderPage } from '@/modulos/gestionar/componentes/ManageWorkOrderPage';
+export { WorkOrderForm } from '@/modulos/gestionar/componentes/WorkOrderForm';
+export { WorkOrderTestsTable } from '@/modulos/gestionar/componentes/WorkOrderTestsTable';
 
-// Re-export types, hooks, services, and utils
-export * from './tipos';
-export * from './hooks';
-export * from './servicios';
-export * from './utils';
+export * from '@/modulos/gestionar/tipos';
+export * from '@/modulos/gestionar/hooks';
+export * from '@/modulos/gestionar/servicios';
+export * from '@/modulos/gestionar/utils';
