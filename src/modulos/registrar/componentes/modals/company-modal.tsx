@@ -1,29 +1,28 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import type React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface CompanyModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
-export function CompanyModal({ open, onOpenChange }: CompanyModalProps) {
-  const [nombre, setNombre] = useState("")
-  const [ubicacion, setUbicacion] = useState("")
+export function CompanyModal({ open, onOpenChange, onSuccess }: CompanyModalProps) {
+  const [nombre, setNombre] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Nueva compañía:", { nombre, ubicacion })
-    onOpenChange(false)
-    setNombre("")
-    setUbicacion("")
-  }
+    e.preventDefault();
+    console.log("Nueva compañía:", { nombre, ubicacion });
+    onOpenChange(false);
+    setNombre("");
+    setUbicacion("");
+    onSuccess();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,5 +48,5 @@ export function CompanyModal({ open, onOpenChange }: CompanyModalProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

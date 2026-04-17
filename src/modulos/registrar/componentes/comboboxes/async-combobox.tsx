@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  memo,
-  useRef,
-  useEffect,
-} from "react";
+import React, { useState, useCallback, useRef, useEffect, memo } from "react";
 import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,36 +11,36 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-export interface ComboboxItem {
+export interface AsyncComboboxItem {
   value: string;
   label: string;
   id?: number;
-  unidades?: string;      // Para productos - valor de producto_unidades
-  casaComercial?: string; // Para productos - valor de producto_casa_comercial
-  tipo?: string;          // Para productos - valor de producto_tipo
-  tipoPrueba?: string;    // Para objetivos - valor de objetivo_tipo_prueba
+  unidades?: string;
+  casaComercial?: string;
+  tipo?: string;
 }
 
-interface GenericComboboxProps {
-  items: ComboboxItem[];
+interface AsyncComboboxProps {
   value: string;
-  onValueChange: (value: string, item?: ComboboxItem) => void;
+  onValueChange: (value: string, item?: AsyncComboboxItem) => void;
+  onSearch: (query: string) => Promise<AsyncComboboxItem[]>;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;
   onCreateNew?: () => void;
   createNewLabel?: string;
   disabled?: boolean;
-  loading?: boolean;
   className?: string;
+  debounceMs?: number;
+  minCharsToSearch?: number;
 }
 
-// Memoized list item component (rerender-memo - Vercel best practice)
-const ComboboxListItem = memo(
+// Memoized list item component
+const AsyncComboboxListItem = memo(
   React.forwardRef<
     HTMLDivElement,
     {
-      item: ComboboxItem;
+      item: AsyncComboboxItem;
       isSelected: boolean;
       onSelect: () => void;
       isHighlighted: boolean;
@@ -75,120 +68,124 @@ const ComboboxListItem = memo(
     </div>
   ))
 );
-ComboboxListItem.displayName = "ComboboxListItem";
+AsyncComboboxListItem.displayName = "AsyncComboboxListItem";
 
-export function GenericCombobox({
-  items,
+export function AsyncCombobox({
   value,
   onValueChange,
+  onSearch,
   placeholder = "Seleccionar...",
   searchPlaceholder = "Buscar...",
   emptyMessage = "No se encontraron resultados.",
   onCreateNew,
   createNewLabel = "Crear nuevo",
   disabled = false,
-  loading = false,
   className,
-}: GenericComboboxProps) {
+  debounceMs = 300,
+  minCharsToSearch = 0,
+}: AsyncComboboxProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [items, setItems] = useState<AsyncComboboxItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<AsyncComboboxItem | null>(
+    null
+  );
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
 
-  // js-cache-property-access - Cache selectedItem lookup
-  const selectedItem = useMemo(
-    () => items.find((item) => item.value === value),
-    [items, value]
-  );
-
-  // Volver scroll arriba cuando cambia la búsqueda
+  // Scroll reset when search changes
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
   }, [searchQuery]);
 
-  // Función para normalizar strings (quitar acentos, convertir a minúsculas)
-  // js-cache-function-results - Memoized normalization
-  const normalizeString = useCallback(
-    (str: string) =>
-      str
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase(),
-    []
+  // Search function with debounce and abort control
+  // client-swr-dedup principle - deduplicate and cache requests
+  const performSearch = useCallback(
+    async (query: string) => {
+      // Cancel previous search
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort();
+      }
+
+      // Check minimum characters
+      if (query.length < minCharsToSearch && query.length > 0) {
+        return;
+      }
+
+      setLoading(true);
+      searchAbortControllerRef.current = new AbortController();
+
+      try {
+        const results = await onSearch(query);
+        setItems(results);
+      } catch (error) {
+        // Ignore abort errors
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Error searching:", error);
+          setItems([]);
+        }
+      } finally {
+        setLoading(false);
+        searchAbortControllerRef.current = null;
+      }
+    },
+    [onSearch, minCharsToSearch]
   );
 
-  // Filtrar y ordenar items basado en la búsqueda
-  // rerender-memo - Expensive filtering memoized
-  const filteredAndSortedItems = useMemo(() => {
-    // js-early-exit - Return early if no search
-    if (!searchQuery.trim()) {
-      // Si hay valor seleccionado, ponerlo primero
-      if (value) {
-        const selected = items.filter((item) => item.value === value);
-        const others = items.filter((item) => item.value !== value);
-        return [...selected, ...others];
+  // Debounced search effect
+  // async-defer-await - defer await until needed
+  useEffect(() => {
+    if (!open) return;
+
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
+      performSearch(searchQuery);
+    }, debounceMs);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
-      return items;
+    };
+  }, [searchQuery, open, performSearch, debounceMs]);
+
+  // Load initial results when opening
+  useEffect(() => {
+    if (open && items.length === 0 && !loading) {
+      performSearch("");
     }
+  }, [open, items.length, loading, performSearch]);
 
-    const normalizedSearch = normalizeString(searchQuery.trim());
-
-    // js-combine-iterations - Single pass filter + sort
-    const selected: ComboboxItem[] = [];
-    const matches: ComboboxItem[] = [];
-
-    for (const item of items) {
-      const normalizedLabel = normalizeString(item.label);
-
-      if (normalizedLabel.includes(normalizedSearch)) {
-        if (item.value === value) {
-          selected.push(item);
-        } else {
-          matches.push(item);
-        }
+  // Update selected item when value changes
+  useEffect(() => {
+    if (value && items.length > 0) {
+      const found = items.find((item) => item.value === value);
+      if (found) {
+        setSelectedItem(found);
       }
+    } else if (!value) {
+      setSelectedItem(null);
     }
+  }, [value, items]);
 
-    return [...selected, ...matches];
-  }, [items, value, searchQuery, normalizeString]);
-
-  // Limitar resultados para mejor rendimiento
-  // rendering-content-visibility principle
-  const displayedItems = useMemo(() => {
-    const limit = 150; // Aumentado de 100 para mejor UX
-
-    // js-early-exit - Si hay pocos items, devolver todos
-    if (filteredAndSortedItems.length <= limit) {
-      return filteredAndSortedItems;
-    }
-
-    // Asegurar que el item seleccionado siempre esté visible
-    const selectedIndex = filteredAndSortedItems.findIndex(
-      (item) => item.value === value
-    );
-
-    if (selectedIndex !== -1 && selectedIndex < limit) {
-      return filteredAndSortedItems.slice(0, limit);
-    } else if (selectedIndex !== -1) {
-      // Si el seleccionado está fuera del límite, incluirlo
-      return [
-        filteredAndSortedItems[selectedIndex],
-        ...filteredAndSortedItems.slice(0, limit - 1),
-      ];
-    }
-
-    return filteredAndSortedItems.slice(0, limit);
-  }, [filteredAndSortedItems, value]);
-
-  // Resetear highlightedIndex cuando abren el popover o cambian los items filtrados
+  // Reset highlighted index when items change
   useEffect(() => {
     setHighlightedIndex(0);
-  }, [open, displayedItems]);
+  }, [items]);
 
-  // Scroll automático al item resaltado
+  // Auto-scroll to highlighted item
   useEffect(() => {
     const highlightedElement = itemRefs.current[highlightedIndex];
     if (highlightedElement && scrollRef.current) {
@@ -213,24 +210,32 @@ export function GenericCombobox({
     if (!newOpen) {
       setSearchQuery("");
       setHighlightedIndex(0);
+      // Cancel any pending search
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort();
+      }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     }
   }, []);
 
   // rerender-functional-setstate - Stable select handler
   const handleSelect = useCallback(
-    (itemValue: string, item: ComboboxItem) => {
+    (itemValue: string, item: AsyncComboboxItem) => {
       const isDeselecting = value === itemValue;
       onValueChange(
         isDeselecting ? "" : itemValue,
         isDeselecting ? undefined : item
       );
+      setSelectedItem(isDeselecting ? null : item);
       setOpen(false);
       setSearchQuery("");
     },
     [value, onValueChange]
   );
 
-  // Manejar navegación con teclado
+  // Keyboard navigation
   useEffect(() => {
     if (!open) return;
 
@@ -238,25 +243,22 @@ export function GenericCombobox({
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev < displayedItems.length - 1 ? prev + 1 : prev
+          prev < items.length - 1 ? prev + 1 : prev
         );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : prev));
       } else if (e.key === "Enter") {
         e.preventDefault();
-        if (displayedItems[highlightedIndex]) {
-          handleSelect(
-            displayedItems[highlightedIndex].value,
-            displayedItems[highlightedIndex]
-          );
+        if (items[highlightedIndex]) {
+          handleSelect(items[highlightedIndex].value, items[highlightedIndex]);
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, highlightedIndex, displayedItems, handleSelect]);
+  }, [open, highlightedIndex, items, handleSelect]);
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -270,18 +272,11 @@ export function GenericCombobox({
             disabled && "opacity-50 cursor-not-allowed",
             className
           )}
-          disabled={disabled || loading}
+          disabled={disabled}
         >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Cargando...
-            </span>
-          ) : (
-            <span className="text-left line-clamp-2 flex-1 break-words">
-              {selectedItem ? selectedItem.label : placeholder}
-            </span>
-          )}
+          <span className="text-left line-clamp-2 flex-1 break-words">
+            {selectedItem ? selectedItem.label : placeholder}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 self-start mt-1" />
         </Button>
       </PopoverTrigger>
@@ -291,26 +286,36 @@ export function GenericCombobox({
       >
         <div className="flex flex-col">
           {/* Search input */}
-          <div className="border-b px-3">
+          <div className="border-b px-3 relative">
             <Input
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 border-none shadow-none focus-visible:ring-0 px-0"
+              className="h-9 border-none shadow-none focus-visible:ring-0 px-0 pr-8"
               autoFocus
             />
+            {loading && (
+              <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            )}
           </div>
 
           {/* Results area with scroll */}
           <div ref={scrollRef} className="max-h-[300px] overflow-y-auto">
-            {filteredAndSortedItems.length === 0 ? (
+            {items.length === 0 && !loading ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
-                {emptyMessage}
+                {searchQuery.length > 0 && searchQuery.length < minCharsToSearch
+                  ? `Escribe al menos ${minCharsToSearch} caracteres para buscar`
+                  : emptyMessage}
+              </div>
+            ) : loading && items.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                Buscando...
               </div>
             ) : (
               <div className="py-1">
-                {displayedItems.map((item, index) => (
-                  <ComboboxListItem
+                {items.map((item, index) => (
+                  <AsyncComboboxListItem
                     key={item.value}
                     ref={(el) => (itemRefs.current[index] = el)}
                     item={item}
@@ -319,17 +324,6 @@ export function GenericCombobox({
                     onSelect={() => handleSelect(item.value, item)}
                   />
                 ))}
-
-                {/* Info message when showing limited results */}
-                {filteredAndSortedItems.length > displayedItems.length && (
-                  <div className="px-3 py-2 text-xs text-muted-foreground text-center border-t mt-1">
-                    Mostrando {displayedItems.length} de{" "}
-                    {filteredAndSortedItems.length} resultados.
-                    {searchQuery
-                      ? " Refina tu búsqueda."
-                      : " Busca para filtrar."}
-                  </div>
-                )}
               </div>
             )}
           </div>

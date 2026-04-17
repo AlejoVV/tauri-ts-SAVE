@@ -27,23 +27,24 @@ import {
 import { cn } from "@/lib/utils";
 
 // Comboboxes
-import { GenericCombobox } from "@/modulos/registrar/components/comboboxes/generic-combobox";
+import { GenericCombobox } from "@/modulos/nucleo/componentes/GenericCombobox";
+import { AsyncCombobox } from "@/modulos/nucleo/componentes/AsyncCombobox";
 
 // Hooks
 import { useFormularioRegistro } from "@/modulos/registrar/hooks/useFormularioRegistro";
 import { useWorkOrderRegistration } from "@/modulos/registrar/hooks/useWorkOrderRegistration";
 
 // Modales
-import { CompanyModal } from "@/modulos/registrar/components/modals/company-modal";
-import { ContactModal } from "@/modulos/registrar/components/modals/contact-modal";
-import { FarmModal } from "@/modulos/registrar/components/modals/farm-modal";
-import { SpeciesModal } from "@/modulos/registrar/components/modals/species-modal";
-import { ProductModal } from "@/modulos/registrar/components/modals/product-modal";
-import { AddToOTConfirmationDialog } from "@/modulos/registrar/components/modals/add-to-ot-confirmation-dialog";
-import { SearchOTDialog } from "@/modulos/registrar/components/modals/search-ot-dialog";
+import { CompanyModal } from "@/modulos/registrar/componentes/modals/company-modal";
+import { ContactModal } from "@/modulos/registrar/componentes/modals/contact-modal";
+import { FarmModal } from "@/modulos/registrar/componentes/modals/farm-modal";
+import { SpeciesModal } from "@/modulos/registrar/componentes/modals/species-modal";
+import { ProductModal } from "@/modulos/registrar/componentes/modals/product-modal";
+import { AddToOTConfirmationDialog } from "@/modulos/registrar/componentes/modals/add-to-ot-confirmation-dialog";
+import { SearchOTDialog } from "@/modulos/registrar/componentes/modals/search-ot-dialog";
 
 // Tabla de pruebas
-import { WorkOrderTestsTable } from "@/modulos/registrar/components/work-order-tests-table";
+import { WorkOrderTestsTable } from "@/modulos/registrar/componentes/work-order-tests-table";
 
 // Tipos y servicios de gestión de pruebas
 import type { OTData, VistaMaestraRow } from "@/modulos/registrar/servicios/workOrderService";

@@ -1,32 +1,29 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import type React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface SpeciesModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  children: React.ReactNode
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
-export function SpeciesModal({ open, onOpenChange, children }: SpeciesModalProps) {
-  const [nombre, setNombre] = useState("")
+export function SpeciesModal({ open, onOpenChange, onSuccess }: SpeciesModalProps) {
+  const [nombre, setNombre] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Nueva especie:", { nombre })
-    onOpenChange(false)
-    setNombre("")
-  }
+    e.preventDefault();
+    console.log("Nueva especie:", { nombre });
+    onOpenChange(false);
+    setNombre("");
+    onSuccess();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Crear Nueva Especie</DialogTitle>
@@ -45,5 +42,5 @@ export function SpeciesModal({ open, onOpenChange, children }: SpeciesModalProps
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

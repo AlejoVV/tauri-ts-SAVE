@@ -1,44 +1,35 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ProductModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
-export function ProductModal({ open, onOpenChange }: ProductModalProps) {
+export function ProductModal({ open, onOpenChange, onSuccess }: ProductModalProps) {
   const [formData, setFormData] = useState({
     nombre: "",
     unidades: "",
     casaComercial: "",
     tipoProducto: "",
-  })
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Nuevo producto:", formData)
-    onOpenChange(false)
-    setFormData({
-      nombre: "",
-      unidades: "",
-      casaComercial: "",
-      tipoProducto: "",
-    })
-  }
+    e.preventDefault();
+    console.log("Nuevo producto:", formData);
+    onOpenChange(false);
+    setFormData({ nombre: "", unidades: "", casaComercial: "", tipoProducto: "" });
+    onSuccess();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button>Crear Producto</Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Crear Nuevo Producto</DialogTitle>
@@ -103,5 +94,5 @@ export function ProductModal({ open, onOpenChange }: ProductModalProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

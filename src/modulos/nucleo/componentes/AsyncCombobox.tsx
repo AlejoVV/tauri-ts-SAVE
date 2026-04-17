@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useCallback, useRef, useEffect, memo } from "react";
 import { Check, ChevronsUpDown, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -97,9 +95,6 @@ export function AsyncCombobox({
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const searchAbortControllerRef = useRef<AbortController | null>(null);
-  // rerender-use-ref-transient-values: track initial load per open session to prevent
-  // re-fetching when search returns empty results (avoids infinite reset loop)
-  const hasInitiallyLoadedRef = useRef(false);
 
   // Scroll reset when search changes
   useEffect(() => {
@@ -164,15 +159,12 @@ export function AsyncCombobox({
     };
   }, [searchQuery, open, performSearch, debounceMs]);
 
-  // Load initial results when opening — once per open session via ref
-  // rerender-use-ref-transient-values: avoids re-triggering when a search returns 0 results,
-  // which previously caused the list to reset instead of showing the empty message
+  // Load initial results when opening
   useEffect(() => {
-    if (open && !hasInitiallyLoadedRef.current) {
-      hasInitiallyLoadedRef.current = true;
-      void performSearch("");
+    if (open && items.length === 0 && !loading) {
+      performSearch("");
     }
-  }, [open, performSearch]);
+  }, [open, items.length, loading, performSearch]);
 
   // Update selected item when value changes
   useEffect(() => {
@@ -216,8 +208,6 @@ export function AsyncCombobox({
     if (!newOpen) {
       setSearchQuery("");
       setHighlightedIndex(0);
-      // rerender-use-ref-transient-values: reset so next open triggers fresh initial load
-      hasInitiallyLoadedRef.current = false;
       // Cancel any pending search
       if (searchAbortControllerRef.current) {
         searchAbortControllerRef.current.abort();
@@ -280,18 +270,11 @@ export function AsyncCombobox({
             disabled && "opacity-50 cursor-not-allowed",
             className
           )}
-          disabled={disabled || (loading && !open)}
+          disabled={disabled}
         >
-          {loading && !open ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Cargando...
-            </span>
-          ) : (
-            <span className="text-left line-clamp-2 flex-1 break-words">
-              {selectedItem ? selectedItem.label : value ? value : placeholder}
-            </span>
-          )}
+          <span className="text-left line-clamp-2 flex-1 break-words">
+            {selectedItem ? selectedItem.label : placeholder}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 self-start mt-1" />
         </Button>
       </PopoverTrigger>

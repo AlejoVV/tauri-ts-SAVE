@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Pencil, Copy, Trash2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { obtenerPruebasPorOrden } from "../servicios/workOrderService";
@@ -21,18 +20,12 @@ import type { VistaMaestraRow } from "../servicios/workOrderService";
 
 interface WorkOrderTestsTableProps {
   ordenTrabajo: number | null;
-  refreshTrigger?: number;
-  onEdit?: (prueba: VistaMaestraRow) => void;
-  onDuplicate?: (prueba: VistaMaestraRow) => void;
-  onDelete?: (prueba: VistaMaestraRow) => void;
+  refreshTrigger?: number; // Trigger para forzar actualización
 }
 
 export function WorkOrderTestsTable({
   ordenTrabajo,
   refreshTrigger = 0,
-  onEdit,
-  onDuplicate,
-  onDelete,
 }: WorkOrderTestsTableProps) {
   const [data, setData] = useState<VistaMaestraRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -136,8 +129,9 @@ export function WorkOrderTestsTable({
         minSize: 30,
         Cell: ({ row }) => {
           const dosis = row.original.dosis_producto;
+          const unidad = row.original.producto_unid;
           if (!dosis) return "-";
-          return dosis;
+          return `${dosis} ${unidad || ""}`.trim();
         },
       },
       {
@@ -267,52 +261,6 @@ export function WorkOrderTestsTable({
     enableColumnActions: false,
     enableTopToolbar: false,
     enableBottomToolbar: false,
-    enableRowActions: !!(onEdit || onDuplicate || onDelete),
-    positionActionsColumn: "first",
-    displayColumnDefOptions: {
-      "mrt-row-actions": {
-        header: "",
-        size: 96,
-        minSize: 96,
-      },
-    },
-    renderRowActions: ({ row }) => (
-      <div className="flex items-center gap-0.5">
-        {onEdit && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
-            onClick={() => onEdit(row.original)}
-            title="Editar prueba"
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-        )}
-        {onDuplicate && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
-            onClick={() => onDuplicate(row.original)}
-            title="Duplicar prueba"
-          >
-            <Copy className="h-3 w-3" />
-          </Button>
-        )}
-        {onDelete && (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => onDelete(row.original)}
-            title="Eliminar prueba"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        )}
-      </div>
-    ),
     muiTablePaperProps: {
       elevation: 0,
       sx: {

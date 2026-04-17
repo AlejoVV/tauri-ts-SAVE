@@ -27,7 +27,7 @@ import {
   type ObjetivoConPrecios,
 } from "../servicios/objetivosService";
 
-export default function ObjetivosConPreciosTable() {
+export function ObjetivosConPreciosTable() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string | undefined>
   >({});

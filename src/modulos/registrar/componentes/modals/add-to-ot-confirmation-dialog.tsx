@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/modulos/registrar/components/ui/alert-dialog";
+} from "@/modulos/registrar/componentes/ui/alert-dialog";
 
 interface AddToOTConfirmationDialogProps {
   open: boolean;

@@ -9,14 +9,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/modulos/registrar/components/ui/dialog";
-import { Button } from "@/modulos/registrar/components/ui/button";
-import { Input } from "@/modulos/registrar/components/ui/input";
-import { Label } from "@/modulos/registrar/components/ui/label";
+} from "@/modulos/registrar/componentes/ui/dialog";
+import { Button } from "@/modulos/registrar/componentes/ui/button";
+import { Input } from "@/modulos/registrar/componentes/ui/input";
+import { Label } from "@/modulos/registrar/componentes/ui/label";
 import {
   Alert,
   AlertDescription,
-} from "@/modulos/registrar/components/ui/alert";
+} from "@/modulos/registrar/componentes/ui/alert";
 import {
   buscarOTPorNumero,
   type OTData,
