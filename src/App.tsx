@@ -1,13 +1,16 @@
 // import ViewTable from "./components/ViewTable";
 // import TableMaterial from "./components/TableMaterial";
 //import ObjetivosConPreciosTable from "./components/TableObjetivosConPrecio";
-import TableOrdenesMaestra from "./components/TableOrdenesMaestra";
-import ObjetivosConPreciosTable from "./components/TableObjetivosPreciosSupabase";
-import Sidebar from "./components/Sidebar";
+import TableOrdenesMaestra from "./modulos/ordenes-trabajo/componentes/TableOrdenesMaestra";
+import ObjetivosConPreciosTable from "./modulos/objetivos/componentes/TableObjetivosPreciosSupabase";
+import { EficaciaMain } from "./modulos/eficacia/componentes/eficacia-main";
+import { Informes } from "./modulos/informes";
+import { RegisterWorkOrderPage } from "./modulos/registrar/register-work-order-page";
+import Sidebar from "./modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
 function App() {
-  const [activeView, setActiveView] = useState<string>("objetivos");
+  const [activeView, setActiveView] = useState<string>("eficacia");
 
   const renderContent = () => {
     switch (activeView) {
@@ -15,6 +18,12 @@ function App() {
         return <ObjetivosConPreciosTable />;
       case "maestra":
         return <TableOrdenesMaestra />;
+      case "eficacia":
+        return <EficaciaMain />;
+      case "registrar":
+        return <RegisterWorkOrderPage />;
+      case "informes":
+        return <Informes />;
       default:
         return <ObjetivosConPreciosTable />;
     }
