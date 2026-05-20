@@ -42,19 +42,19 @@ export async function contarPruebasPorOrden(
   return count || 0;
 }
 
-export interface OTData {
+export interface DatosOT {
   numeroOT: number;
-  facturarA: string; // Nombre de la compañía (para mostrar y usar como value)
-  contacto: string; // Nombre del contacto (para mostrar y usar como value)
-  finca: string; // Nombre de la finca (para mostrar y usar como value)
+  // Strings planos, no FKs — se usan como values en los selects del formulario
+  facturarA: string;
+  contacto: string;
+  finca: string;
   descuento: string;
   estadoOT: string | null;
   estadoFactura: string | null;
   numeroFactura: number | null;
 }
 
-export async function buscarOTPorNumero(numeroOT: number): Promise<OTData> {
-  // async-parallel - Fetch order and first test data in parallel
+export async function buscarOTPorNumero(numeroOT: number): Promise<DatosOT> {
   const [ordenResult, pruebaResult] = await Promise.all([
     supabase
       .from("ordenes_trabajo")
@@ -81,12 +81,14 @@ export async function buscarOTPorNumero(numeroOT: number): Promise<OTData> {
   ]);
 
   if (ordenResult.error || !ordenResult.data) {
+    console.error("Error al buscar OT:", ordenResult.error);
     throw new Error(
       `No se encontró la OT #${numeroOT}. Verifique el número e intente nuevamente.`
     );
   }
 
   if (pruebaResult.error || !pruebaResult.data) {
+    console.error("Error al obtener pruebas de OT:", pruebaResult.error);
     throw new Error(
       `La OT #${numeroOT} no tiene pruebas registradas. No se pueden obtener datos de facturación.`
     );
@@ -95,7 +97,6 @@ export async function buscarOTPorNumero(numeroOT: number): Promise<OTData> {
   const prueba = pruebaResult.data;
   const orden = ordenResult.data;
 
-  // Los comboboxes usan NOMBRES como values, no IDs
   return {
     numeroOT: orden.orden_id,
     facturarA: prueba.prueba_compania || "",
@@ -130,18 +131,18 @@ export async function obtenerPruebaPorId(
 }
 
 export interface DatosActualizarPrueba {
-  objetivo_nombre?: string | null;
-  finca_nombre?: string | null;
-  especie_nombre?: string | null;
-  producto_nombre?: string | null;
-  dosis_producto?: string | null;
-  producto_unid?: string | null;
+  objetivoNombre?: string | null;
+  fincaNombre?: string | null;
+  especieNombre?: string | null;
+  productoNombre?: string | null;
+  dosisProducto?: string | null;
+  productoUnid?: string | null;
   cantidad?: string | null;
   observaciones?: string | null;
-  notas_varias?: string | null;
-  analisis_solicitado?: string | null;
-  numero_muestra?: string | null;
-  fecha_recibido?: string | null;
+  notasVarias?: string | null;
+  analisisSolicitado?: string | null;
+  numeroMuestra?: string | null;
+  fechaRecibido?: string | null;
 }
 
 export async function actualizarPrueba(
@@ -150,17 +151,17 @@ export async function actualizarPrueba(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const [objetivoId, fincaId, especieId, productoId] = await Promise.all([
-      datos.objetivo_nombre
-        ? obtenerObjetivoIdPorNombre(datos.objetivo_nombre)
+      datos.objetivoNombre
+        ? obtenerObjetivoIdPorNombre(datos.objetivoNombre)
         : Promise.resolve(undefined),
-      datos.finca_nombre
-        ? obtenerFincaIdPorNombre(datos.finca_nombre)
+      datos.fincaNombre
+        ? obtenerFincaIdPorNombre(datos.fincaNombre)
         : Promise.resolve(undefined),
-      datos.especie_nombre
-        ? obtenerEspecieIdPorNombre(datos.especie_nombre)
+      datos.especieNombre
+        ? obtenerEspecieIdPorNombre(datos.especieNombre)
         : Promise.resolve(undefined),
-      datos.producto_nombre
-        ? obtenerProductoIdPorNombre(datos.producto_nombre)
+      datos.productoNombre
+        ? obtenerProductoIdPorNombre(datos.productoNombre)
         : Promise.resolve(undefined),
     ]);
 
@@ -170,21 +171,21 @@ export async function actualizarPrueba(
     if (fincaId !== undefined) updateData.prueba_finca_id = fincaId;
     if (especieId !== undefined) updateData.prueba_especie_id = especieId;
     if (productoId !== undefined) updateData.prueba_producto_id = productoId;
-    if (datos.dosis_producto !== undefined)
-      updateData.prueba_dosis_producto = datos.dosis_producto ?? "0";
-    if (datos.producto_unid !== undefined)
-      updateData.prueba_producto_unid = datos.producto_unid;
+    if (datos.dosisProducto !== undefined)
+      updateData.prueba_dosis_producto = datos.dosisProducto ?? "0";
+    if (datos.productoUnid !== undefined)
+      updateData.prueba_producto_unid = datos.productoUnid;
     if (datos.cantidad !== undefined) updateData.prueba_cantidad = datos.cantidad;
     if (datos.observaciones !== undefined)
       updateData.prueba_obs = datos.observaciones;
-    if (datos.notas_varias !== undefined)
-      updateData.prueba_notas_varias = datos.notas_varias;
-    if (datos.analisis_solicitado !== undefined)
-      updateData.prueba_inst = datos.analisis_solicitado;
-    if (datos.numero_muestra !== undefined)
-      updateData.prueba_numero_muestra = datos.numero_muestra;
-    if (datos.fecha_recibido !== undefined)
-      updateData.prueba_fecha_recibido = datos.fecha_recibido;
+    if (datos.notasVarias !== undefined)
+      updateData.prueba_notas_varias = datos.notasVarias;
+    if (datos.analisisSolicitado !== undefined)
+      updateData.prueba_inst = datos.analisisSolicitado;
+    if (datos.numeroMuestra !== undefined)
+      updateData.prueba_numero_muestra = datos.numeroMuestra;
+    if (datos.fechaRecibido !== undefined)
+      updateData.prueba_fecha_recibido = datos.fechaRecibido;
 
     const { error } = await supabase
       .from("pruebas_ordenes_trabajo")
@@ -319,17 +320,21 @@ export async function actualizarEstadoLabMasivo(
   }
 }
 
-/**
- * Elimina una prueba de la orden de trabajo por su ID
- */
-export async function eliminarPrueba(pruebaId: number): Promise<void> {
-  const { error } = await supabase
-    .from("pruebas_ordenes_trabajo")
-    .delete()
-    .eq("prueba_id", pruebaId);
+export async function eliminarPrueba(pruebaId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("pruebas_ordenes_trabajo")
+      .delete()
+      .eq("prueba_id", pruebaId);
 
-  if (error) {
+    if (error) {
+      console.error("Error al eliminar prueba:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
     console.error("Error al eliminar prueba:", error);
-    throw new Error(error.message || "Error al eliminar la prueba");
+    return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
   }
 }

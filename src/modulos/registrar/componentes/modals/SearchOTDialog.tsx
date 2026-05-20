@@ -19,13 +19,13 @@ import {
 } from "@/modulos/registrar/componentes/ui/alert";
 import {
   buscarOTPorNumero,
-  type OTData,
+  type DatosOT,
 } from "@/modulos/registrar/servicios/workOrderService";
 
 interface SearchOTDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onOTSelected: (otData: OTData) => void;
+  onOTSelected: (otData: DatosOT) => void;
   numeroOTMaximo: number;
 }
 
