@@ -26,10 +26,12 @@ import {
   updateMontajeSetup,
   getMontajeById,
   getCatalogoEficaciaPorObjetivo,
+  getTiposEvaluacionPorObjetivos,
+  getDuracionesPorObjetivos,
+  getTiposInsumoPorObjetivos,
+  getNombresCientificosPorObjetivos,
 } from "../servicios/index";
 
-// Constantes para objetivos especiales
-const OBJETIVOS_ESPECIALES = ["ácaros", "thrips"];
 const OPCIONES_TIEMPO = ["24h", "48h", "72h", "5 dias", "7 dias", "10 dias"];
 const OPCIONES_TIPO_EVALUACION = [
   "por contacto e ingestión",
@@ -205,27 +207,30 @@ export function MontageSetupForm({
         const pruebasFormateadas: EfficacyTestData[] = pruebas.map(
           (relacion) => ({
             id: relacion.prueba_id || 0,
-            ot: relacion.pruebas_ordenes_trabajo?.prueba_orden_id || 0,
+            ot: (relacion as any).pruebas_ordenes_trabajo?.prueba_orden_id || 0,
             prueba: relacion.prueba_id || 0,
             finca:
-              relacion.pruebas_ordenes_trabajo?.fincas?.finca_nombre ||
+              (relacion as any).pruebas_ordenes_trabajo?.fincas?.finca_nombre ||
               "Sin finca",
             objetivo:
-              relacion.pruebas_ordenes_trabajo?.objetivos?.objetivo_nombre ||
-              "Sin objetivo",
+              (relacion as any).pruebas_ordenes_trabajo?.objetivos
+                ?.objetivo_nombre || "Sin objetivo",
             producto:
-              relacion.pruebas_ordenes_trabajo?.productos?.producto_nombre ||
-              "Sin producto",
+              (relacion as any).pruebas_ordenes_trabajo?.productos
+                ?.producto_nombre || "Sin producto",
             especieVegetal:
-              relacion.pruebas_ordenes_trabajo?.especie_vegetal
+              (relacion as any).pruebas_ordenes_trabajo?.especie_vegetal
                 ?.especie_nombre || "Sin especie",
             fechaIngreso: "", // No disponible en esta consulta
             estado: "Montaje",
             dosis:
-              relacion.pruebas_ordenes_trabajo?.prueba_dosis_producto?.toString() ||
+              (
+                relacion as any
+              ).pruebas_ordenes_trabajo?.prueba_dosis_producto?.toString() ||
               "0",
             unidades:
-              relacion.pruebas_ordenes_trabajo?.prueba_producto_unid || "",
+              (relacion as any).pruebas_ordenes_trabajo?.prueba_producto_unid ||
+              "",
             contacto: "", // No disponible en esta consulta
           })
         );
@@ -235,11 +240,11 @@ export function MontageSetupForm({
         // Resetear formData con los datos del nuevo montaje
         const baseFormData = {
           nombreMontaje: montajeExistente.nombreMontaje,
-          numeroLecturas: montajeExistente.numeroLecturas || 1,
+          numeroLecturas: montajeExistente.nombresLecturas?.length || 0,
           nombresLecturas:
             montajeExistente.nombresLecturas.length > 0
               ? montajeExistente.nombresLecturas
-              : ["Lectura 1"],
+              : [],
           numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
           condicionesIniciales: {
             testigo: [] as (number | null)[],
@@ -279,7 +284,39 @@ export function MontageSetupForm({
           variedad: "", // Include required variedad property
           tipoEvaluacion:
             montajeExistente.tipoEvaluacion || "por contacto e ingestión", // Cargar tipo de evaluación existente
+          duracionPrueba: montajeExistente.duracionPrueba || "", // Cargar duración existente
+          tipoInsumo: montajeExistente.tipoInsumo || "", // Cargar tipo de insumo existente
         });
+
+        // Cargar tipos de evaluación dinámicos basados en los objetivos de las pruebas
+        const objetivosUnicos = [
+          ...new Set(pruebasFormateadas.map((prueba) => prueba.objetivo)),
+        ];
+        if (objetivosUnicos.length > 0) {
+          const tiposEvaluacion = await getTiposEvaluacionPorObjetivos(
+            objetivosUnicos
+          );
+          if (tiposEvaluacion.length > 0) {
+            setOpcionesTipoEvaluacion(tiposEvaluacion);
+          } else {
+            // Si no se encuentran tipos específicos, usar las opciones por defecto
+            setOpcionesTipoEvaluacion(OPCIONES_TIPO_EVALUACION);
+          }
+
+          // Cargar opciones de duración
+          const duraciones = await getDuracionesPorObjetivos(objetivosUnicos);
+          setOpcionesDuracion(duraciones);
+
+          // Cargar opciones de tipo de insumo
+          const tiposInsumo = await getTiposInsumoPorObjetivos(objetivosUnicos);
+          setOpcionesTipoInsumo(tiposInsumo);
+
+          // Cargar opciones de nombres científicos
+          const nombresCientificos = await getNombresCientificosPorObjetivos(
+            objetivosUnicos
+          );
+          setOpcionesNombreCientifico(nombresCientificos);
+        }
       } catch (error) {
         console.error("Error al cargar pruebas del montaje:", error);
         alert("Error al cargar las pruebas del montaje");
@@ -322,7 +359,7 @@ export function MontageSetupForm({
     nombresLecturas:
       montajeExistente.nombresLecturas.length > 0
         ? montajeExistente.nombresLecturas
-        : ["Lectura 1"],
+        : [],
     numeroRepeticiones: montajeExistente.numeroRepeticiones || 3,
     condicionesIniciales: {
       testigo: [],
@@ -330,6 +367,8 @@ export function MontageSetupForm({
     },
     tipoEvaluacion:
       montajeExistente.tipoEvaluacion || "por contacto e ingestión",
+    duracionPrueba: montajeExistente.duracionPrueba || "",
+    tipoInsumo: montajeExistente.tipoInsumo || "",
   }));
 
   const [sobrescribirTodos, setSobrescribirTodos] = useState(false);
@@ -337,53 +376,40 @@ export function MontageSetupForm({
   const [valorEncontradoDB, setValorEncontradoDB] = useState<number | null>(
     null
   );
-  const [esPlaga, setEsPlaga] = useState<boolean>(false);
+  const [opcionesTipoEvaluacion, setOpcionesTipoEvaluacion] = useState<
+    string[]
+  >(OPCIONES_TIPO_EVALUACION);
+  const [opcionesDuracion, setOpcionesDuracion] = useState<string[]>([]);
+  const [opcionesTipoInsumo, setOpcionesTipoInsumo] = useState<string[]>([]);
+  const [opcionesNombreCientifico, setOpcionesNombreCientifico] = useState<
+    string[]
+  >([]);
 
-  // Función helper para verificar si es objetivo especial
-  const isObjetivoEspecial = (objetivo: string) => {
-    return OBJETIVOS_ESPECIALES.some((obj) =>
-      objetivo.toLowerCase().includes(obj.toLowerCase())
-    );
-  };
-
-  // Función helper para verificar y cargar información de plaga
-  const checkAndLoadPlagaInfo = async (objetivo: string) => {
+  // Función helper para cargar información del catálogo
+  const loadCatalogoInfo = async (objetivo: string) => {
     try {
       const catalogoData = await getCatalogoEficaciaPorObjetivo(objetivo);
-      if (catalogoData && catalogoData.plaga_enfermedad) {
-        const plagaEnfermedad = catalogoData.plaga_enfermedad.toLowerCase();
-        const isPlaga = plagaEnfermedad.includes("plaga");
-        setEsPlaga(isPlaga);
 
-        // Si es plaga y hay tipo de evaluación guardado, usarlo
-        if (isPlaga && catalogoData.tipo_de_evaluacion) {
-          const tipoEval = catalogoData.tipo_de_evaluacion;
-          setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
-        } else if (isPlaga) {
-          // Si es plaga pero no hay tipo guardado, mantener el valor por defecto
-          const tipoEval = "por contacto e ingestión";
-          setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
-        } else {
-          // Si no es plaga, mantener el valor por defecto pero no mostrar la sección
-          setFormData((prev) => ({
-            ...prev,
-            tipoEvaluacion: "por contacto e ingestión",
-          }));
-        }
+      // Si hay tipo de evaluación guardado en el catálogo, usarlo
+      if (catalogoData && catalogoData.tipo_de_evaluacion) {
+        const tipoEval = catalogoData.tipo_de_evaluacion;
+        setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
       } else {
-        setEsPlaga(false);
-        setFormData((prev) => ({
-          ...prev,
-          tipoEvaluacion: "por contacto e ingestión",
-        }));
+        // Si no hay tipo guardado, usar el primer item de las opciones disponibles
+        const tipoEval =
+          opcionesTipoEvaluacion.length > 0
+            ? opcionesTipoEvaluacion[0]
+            : "por contacto e ingestión";
+        setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
       }
     } catch (error) {
-      console.error("Error al verificar información de plaga:", error);
-      setEsPlaga(false);
-      setFormData((prev) => ({
-        ...prev,
-        tipoEvaluacion: "por contacto e ingestión",
-      }));
+      console.error("Error al cargar información del catálogo:", error);
+      // En caso de error, usar el primer item disponible
+      const tipoEval =
+        opcionesTipoEvaluacion.length > 0
+          ? opcionesTipoEvaluacion[0]
+          : "por contacto e ingestión";
+      setFormData((prev) => ({ ...prev, tipoEvaluacion: tipoEval }));
     }
   };
 
@@ -441,31 +467,17 @@ export function MontageSetupForm({
         const objetivo = pruebasMontaje[0].objetivo;
         const repeticiones = await getNumeroRepeticionesPorObjetivo(objetivo);
 
-        // Si es objetivo especial, forzar una sola lectura
-        const esObjetivoEspecial = isObjetivoEspecial(objetivo);
-
-        setFormData((prev) => {
-          // Para objetivos especiales, usar valores por defecto
-          // Para objetivos normales, mantener los valores actuales
-          const numeroLecturas = esObjetivoEspecial ? 1 : prev.numeroLecturas;
-          const nombresLecturas = esObjetivoEspecial
-            ? ["24h"] // valor por defecto
-            : prev.nombresLecturas;
-
-          return {
-            ...prev,
-            numeroLecturas,
-            nombresLecturas,
-            numeroRepeticiones: repeticiones,
-            condicionesIniciales: adjustCondicionesIniciales(
-              prev.condicionesIniciales,
-              repeticiones
-            ),
-          };
-        });
+        setFormData((prev) => ({
+          ...prev,
+          numeroRepeticiones: repeticiones,
+          condicionesIniciales: adjustCondicionesIniciales(
+            prev.condicionesIniciales,
+            repeticiones
+          ),
+        }));
 
         // Verificar si es plaga y cargar información relacionada
-        await checkAndLoadPlagaInfo(objetivo);
+        await loadCatalogoInfo(objetivo);
       }
     };
     setRepeticionesPorObjetivo();
@@ -600,6 +612,8 @@ export function MontageSetupForm({
     montajeExistente.id,
     formData.numeroRepeticiones,
     sobrescribirTodos,
+    valorEncontradoDB,
+    montajeExistente.condicionesIniciales,
   ]);
 
   // Si el usuario activa el checkbox, rellenar todos los inputs con el valor indicado
@@ -700,42 +714,12 @@ export function MontageSetupForm({
         }, 0);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sobrescribirTodos, valorSobrescribir, formData.numeroRepeticiones]);
-
-  const handleNumeroLecturasChange = (value: number) => {
-    // Prevenir cambios para objetivos especiales
-    if (
-      pruebasMontaje.length > 0 &&
-      isObjetivoEspecial(pruebasMontaje[0].objetivo)
-    ) {
-      return;
-    }
-
-    setFormData((prev) => {
-      const newNombresLecturas = Array.from(
-        { length: value },
-        (_, i) => prev.nombresLecturas[i] || `Lectura ${i + 1}`
-      );
-
-      return {
-        ...prev,
-        numeroLecturas: value,
-        nombresLecturas: newNombresLecturas,
-      };
-    });
-  };
-
-  const handleNombreLecturaChange = (index: number, value: string) => {
-    setFormData((prev) => {
-      const newNombresLecturas = [...prev.nombresLecturas];
-      newNombresLecturas[index] = value;
-      return {
-        ...prev,
-        nombresLecturas: newNombresLecturas,
-      };
-    });
-  };
+  }, [
+    sobrescribirTodos,
+    valorSobrescribir,
+    formData.numeroRepeticiones,
+    pruebasMontaje,
+  ]);
 
   // Nueva función para manejar cambios en el multi-select de tiempo
   const handleTiempoLecturaChange = (selectedValues: string[]) => {
@@ -752,6 +736,30 @@ export function MontageSetupForm({
     setFormData((prev) => ({
       ...prev,
       tipoEvaluacion: value,
+    }));
+  };
+
+  // Función para manejar cambios en la duración de la prueba
+  const handleDuracionPruebaChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      duracionPrueba: value,
+    }));
+  };
+
+  // Función para manejar cambios en el tipo de insumo
+  const handleTipoInsumoChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tipoInsumo: value,
+    }));
+  };
+
+  // Función para manejar cambios en el nombre científico
+  const handleNombreCientificoChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      nombreCientifico: value,
     }));
   };
 
@@ -807,8 +815,94 @@ export function MontageSetupForm({
     return Number(average.toFixed(2)).toString();
   };
 
+  // Función para validar todos los campos requeridos
+  const validateForm = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // Validar al menos una lectura
+    if (!formData.nombresLecturas || formData.nombresLecturas.length === 0) {
+      errors.push("Debe seleccionar al menos un tiempo de lectura");
+    }
+
+    // Validar tipo de aplicación
+    if (!formData.tipoEvaluacion || formData.tipoEvaluacion.trim() === "") {
+      errors.push("Debe seleccionar un tipo de aplicación");
+    }
+
+    // Validar duración de prueba O tipo de insumo (al menos uno debe estar seleccionado)
+    const tieneDuracion =
+      formData.duracionPrueba && formData.duracionPrueba.trim() !== "";
+    const tieneInsumo =
+      formData.tipoInsumo && formData.tipoInsumo.trim() !== "";
+
+    if (opcionesDuracion.length > 0 && !tieneDuracion) {
+      errors.push("Debe seleccionar la duración de la prueba");
+    }
+
+    if (
+      opcionesTipoInsumo.length > 0 &&
+      !tieneInsumo &&
+      opcionesDuracion.length === 0
+    ) {
+      errors.push("Debe seleccionar el tipo de insumo");
+    }
+
+    // Validar nombre científico si está disponible
+    if (
+      opcionesNombreCientifico.length > 0 &&
+      (!formData.nombreCientifico || formData.nombreCientifico.trim() === "")
+    ) {
+      errors.push("Debe seleccionar el nombre científico");
+    }
+
+    // Validar número de repeticiones
+    if (!formData.numeroRepeticiones || formData.numeroRepeticiones <= 0) {
+      errors.push("El número de repeticiones debe ser mayor a 0");
+    }
+
+    // Validar que al menos algunas condiciones iniciales estén completas
+    const tieneCondicionesValidas = () => {
+      // Verificar si hay al menos algunos valores en el testigo
+      const testigoValido = formData.condicionesIniciales.testigo.some(
+        (val) => val !== null && val !== undefined && val >= 0
+      );
+
+      // Verificar si hay al menos algunos valores en las pruebas
+      const pruebasValidas = Object.values(
+        formData.condicionesIniciales.pruebas
+      ).some((prueba) =>
+        prueba.numeroIndividuos.some(
+          (val) => val !== null && val !== undefined && val >= 0
+        )
+      );
+
+      return testigoValido || pruebasValidas;
+    };
+
+    if (!tieneCondicionesValidas()) {
+      errors.push("Debe completar al menos algunas condiciones iniciales");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar el formulario antes de enviar
+    const validation = validateForm();
+    if (!validation.isValid) {
+      const errorMessage =
+        "Por favor complete los siguientes campos:\n\n" +
+        validation.errors
+          .map((error, index) => `${index + 1}. ${error}`)
+          .join("\n");
+      alert(errorMessage);
+      return;
+    }
 
     try {
       const result = await updateMontajeSetup(
@@ -960,27 +1054,13 @@ export function MontageSetupForm({
                   <Input
                     id="numero-lecturas"
                     type="number"
-                    min="1"
+                    min="0"
                     max="10"
                     value={formData.numeroLecturas}
-                    onChange={(e) =>
-                      handleNumeroLecturasChange(
-                        Number.parseInt(e.target.value)
-                      )
-                    }
+                    readOnly
                     onWheel={(e) => e.currentTarget.blur()}
-                    readOnly={
-                      pruebasMontaje.length > 0 &&
-                      isObjetivoEspecial(pruebasMontaje[0].objetivo)
-                    }
-                    className={`h-8 text-sm flex-1 ${
-                      pruebasMontaje.length > 0 &&
-                      isObjetivoEspecial(pruebasMontaje[0].objetivo)
-                        ? "bg-gray-100 cursor-not-allowed"
-                        : ""
-                    }`}
-                    required
-                    tabIndex={2}
+                    className="h-8 text-sm flex-1 bg-gray-100 cursor-not-allowed"
+                    tabIndex={-1}
                   />
                 </div>
 
@@ -989,7 +1069,7 @@ export function MontageSetupForm({
                     htmlFor="numero-repeticiones"
                     className="text-sm font-medium"
                   >
-                    N° Repeticiones:
+                    N° Repeticiones: <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="numero-repeticiones"
@@ -1012,42 +1092,46 @@ export function MontageSetupForm({
               </div>
 
               {/* Cuarta fila - Selects en grid */}
-              {/* Tiempo de lectura para objetivos especiales - Multi-select */}
-              {pruebasMontaje.length > 0 &&
-                isObjetivoEspecial(pruebasMontaje[0].objetivo) && (
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor="tiempo-lectura"
-                      className="text-sm font-medium"
-                    >
-                      Tiempo Lectura
-                    </Label>
-                    <MultiSelectTiempo
-                      selectedValues={formData.nombresLecturas || []}
-                      onSelectionChange={handleTiempoLecturaChange}
-                      options={OPCIONES_TIEMPO}
-                    />
-                  </div>
-                )}
+              {/* Tiempo de lectura y Tipo de evaluación - Alineados horizontalmente */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Tiempo de lectura - Multi-select */}
+                <div className="space-y-1">
+                  <Label
+                    htmlFor="tiempo-lectura"
+                    className="text-sm font-medium"
+                  >
+                    Tiempo Lectura <span className="text-red-500">*</span>
+                  </Label>
+                  <MultiSelectTiempo
+                    selectedValues={formData.nombresLecturas || []}
+                    onSelectionChange={handleTiempoLecturaChange}
+                    options={OPCIONES_TIEMPO}
+                  />
+                </div>
 
-              {/* Tipo de evaluación para plagas */}
-              {esPlaga && (
+                {/* Tipo de evaluación */}
                 <div className="space-y-1">
                   <Label
                     htmlFor="tipo-evaluacion"
                     className="text-sm font-medium"
                   >
-                    Tipo Aplicación
+                    Tipo Aplicación <span className="text-red-500">*</span>
                   </Label>
                   <Select
                     value={formData.tipoEvaluacion}
                     onValueChange={handleTipoEvaluacionChange}
                   >
                     <SelectTrigger className="h-9 text-sm w-full">
-                      <SelectValue placeholder="Seleccione el tipo" />
+                      <SelectValue
+                        placeholder={
+                          opcionesTipoEvaluacion.length > 0
+                            ? opcionesTipoEvaluacion[0]
+                            : "Seleccione el tipo"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent className="w-full">
-                      {OPCIONES_TIPO_EVALUACION.map((opcion) => (
+                      {opcionesTipoEvaluacion.map((opcion) => (
                         <SelectItem
                           key={opcion}
                           value={opcion}
@@ -1059,37 +1143,141 @@ export function MontageSetupForm({
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+              </div>
 
-              {/* Nombres de lecturas - Solo para objetivos no especiales */}
-              {!(
-                pruebasMontaje.length > 0 &&
-                isObjetivoEspecial(pruebasMontaje[0].objetivo)
-              ) && (
+              {/* Quinta fila - Campos condicionales con layout fijo */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Columna izquierda - Duración Prueba o Tipo Insumo */}
                 <div className="space-y-1">
-                  <Label className="text-sm font-medium">
-                    Nombres de las Lecturas
-                  </Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    {formData.nombresLecturas.map((nombre, index) => (
-                      <div key={index} className="space-y-1">
-                        <Label htmlFor={`lectura-${index}`} className="text-xs">
-                          Lectura {index + 1}
-                        </Label>
-                        <Input
-                          id={`lectura-${index}`}
-                          value={nombre}
-                          onChange={(e) =>
-                            handleNombreLecturaChange(index, e.target.value)
-                          }
-                          placeholder={`Lectura ${index + 1}`}
-                          className="h-8 text-xs"
-                          required
-                          tabIndex={4 + index}
-                        />
-                      </div>
-                    ))}
+                  {opcionesDuracion.length > 0 ? (
+                    <>
+                      <Label
+                        htmlFor="duracion-prueba"
+                        className="text-sm font-medium"
+                      >
+                        Duración Prueba <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.duracionPrueba}
+                        onValueChange={handleDuracionPruebaChange}
+                      >
+                        <SelectTrigger className="h-9 text-sm w-full">
+                          <SelectValue placeholder="Seleccione la duración" />
+                        </SelectTrigger>
+                        <SelectContent className="w-full">
+                          {opcionesDuracion.map((opcion) => (
+                            <SelectItem
+                              key={opcion}
+                              value={opcion}
+                              className="text-sm"
+                            >
+                              {opcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  ) : opcionesTipoInsumo.length > 0 ? (
+                    <>
+                      <Label
+                        htmlFor="tipo-insumo"
+                        className="text-sm font-medium"
+                      >
+                        Tipo Insumo <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.tipoInsumo}
+                        onValueChange={handleTipoInsumoChange}
+                      >
+                        <SelectTrigger className="h-9 text-sm w-full">
+                          <SelectValue placeholder="Seleccione el tipo de insumo" />
+                        </SelectTrigger>
+                        <SelectContent className="w-full">
+                          {opcionesTipoInsumo.map((opcion) => (
+                            <SelectItem
+                              key={opcion}
+                              value={opcion}
+                              className="text-sm"
+                            >
+                              {opcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  ) : (
+                    <div></div> // Espacio vacío para mantener el layout
+                  )}
+                </div>
+
+                {/* Columna derecha - Nombre Científico (siempre fijo aquí) */}
+                <div className="space-y-1">
+                  {opcionesNombreCientifico.length > 0 ? (
+                    <>
+                      <Label
+                        htmlFor="nombre-cientifico"
+                        className="text-sm font-medium"
+                      >
+                        Nombre Científico{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.nombreCientifico}
+                        onValueChange={handleNombreCientificoChange}
+                      >
+                        <SelectTrigger className="h-9 text-sm w-full">
+                          <SelectValue placeholder="Seleccione el nombre científico" />
+                        </SelectTrigger>
+                        <SelectContent className="w-full">
+                          {opcionesNombreCientifico.map((opcion) => (
+                            <SelectItem
+                              key={opcion}
+                              value={opcion}
+                              className="text-sm"
+                            >
+                              {opcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  ) : (
+                    <div></div> // Espacio vacío para mantener el layout
+                  )}
+                </div>
+              </div>
+
+              {/* Sexta fila - Tipo Insumo (solo si hay Duración Prueba) */}
+              {opcionesDuracion.length > 0 && opcionesTipoInsumo.length > 0 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="tipo-insumo"
+                      className="text-sm font-medium"
+                    >
+                      Tipo Insumo <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.tipoInsumo}
+                      onValueChange={handleTipoInsumoChange}
+                    >
+                      <SelectTrigger className="h-9 text-sm w-full">
+                        <SelectValue placeholder="Seleccione el tipo de insumo" />
+                      </SelectTrigger>
+                      <SelectContent className="w-full">
+                        {opcionesTipoInsumo.map((opcion) => (
+                          <SelectItem
+                            key={opcion}
+                            value={opcion}
+                            className="text-sm"
+                          >
+                            {opcion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                  <div></div> {/* Espacio vacío para mantener el layout */}
                 </div>
               )}
             </form>
@@ -1347,7 +1535,12 @@ export function MontageSetupForm({
                                       ? "0.0"
                                       : ""
                                   }
-                                  tabIndex={20 + pruebasMontaje.indexOf(test) * formData.numeroRepeticiones + index}
+                                  tabIndex={
+                                    20 +
+                                    pruebasMontaje.indexOf(test) *
+                                      formData.numeroRepeticiones +
+                                    index
+                                  }
                                 />
                               </div>
                             </td>

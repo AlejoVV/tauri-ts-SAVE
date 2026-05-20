@@ -48,6 +48,9 @@ export interface MontageData {
   numeroRepeticiones: number;
   condicionesIniciales: CondicionesIniciales;
   tipoEvaluacion?: string; // Tipo de evaluación para plagas (opcional)
+  duracionPrueba?: string; // Duración de la prueba (opcional)
+  tipoInsumo?: string; // Tipo de insumo (opcional)
+  nombreCientifico?: string; // Nombre científico (opcional)
 }
 
 // Tipo para montajes en progreso  
@@ -74,6 +77,9 @@ export interface MontageInProgress {
   configurado: boolean; // Nuevo campo para indicar si el montaje está configurado
   asignadoA: string | null; // Campo para asignar el montaje a una persona
   tipoEvaluacion?: string | null; // Tipo de evaluación para plagas (opcional)
+  duracionPrueba?: string | null; // Duración de la prueba (opcional)
+  tipoInsumo?: string | null; // Tipo de insumo (opcional)
+  nombreCientifico?: string | null; // Nombre científico (opcional)
 }
 
 // Tipo para pruebas completadas individuales

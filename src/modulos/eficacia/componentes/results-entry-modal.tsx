@@ -109,7 +109,8 @@ export function ResultsEntryModal({
     if (!newResults[key]) {
       newResults[key] = Array(montage.numeroRepeticiones).fill(0);
     }
-    newResults[key][repeticionIndex] = value;
+    // Asegurar que valores vacíos o NaN se conviertan a 0.0
+    newResults[key][repeticionIndex] = isNaN(value) ? 0.0 : value;
     setResults(newResults);
   };
 
@@ -119,7 +120,8 @@ export function ResultsEntryModal({
     if (!newTestigoResults[key]) {
       newTestigoResults[key] = Array(montage.numeroRepeticiones).fill(0);
     }
-    newTestigoResults[key][repeticionIndex] = value;
+    // Asegurar que valores vacíos o NaN se conviertan a 0.0
+    newTestigoResults[key][repeticionIndex] = isNaN(value) ? 0.0 : value;
     setTestigoResults(newTestigoResults);
   };
 
@@ -128,15 +130,29 @@ export function ResultsEntryModal({
     pruebaId: string,
     file: File | null
   ) => {
-    if (file) {
-      setPhotos((prev) => ({
-        ...prev,
-        [lectura]: {
-          ...prev[lectura],
-          [pruebaId]: file,
-        },
-      }));
-    }
+    setPhotos((prev) => {
+      const newPhotos = { ...prev };
+      
+      if (file) {
+        // Agregar o actualizar foto
+        if (!newPhotos[lectura]) {
+          newPhotos[lectura] = {};
+        }
+        newPhotos[lectura][pruebaId] = file;
+      } else {
+        // Eliminar foto
+        if (newPhotos[lectura] && newPhotos[lectura][pruebaId]) {
+          delete newPhotos[lectura][pruebaId];
+          
+          // Si no quedan fotos en esta lectura, eliminar la lectura completa
+          if (Object.keys(newPhotos[lectura]).length === 0) {
+            delete newPhotos[lectura];
+          }
+        }
+      }
+      
+      return newPhotos;
+    });
   };
 
   const getPhotoForPrueba = (
@@ -483,7 +499,7 @@ export function ResultsEntryModal({
                                     onChange={(e) =>
                                       handleTestigoChange(
                                         index,
-                                        Number.parseFloat(e.target.value) || 0
+                                        e.target.value === "" ? 0.0 : Number.parseFloat(e.target.value) || 0.0
                                       )
                                     }
                                     onWheel={(e) => e.currentTarget.blur()}
@@ -522,8 +538,7 @@ export function ResultsEntryModal({
                                           handleResultChange(
                                             prueba,
                                             index,
-                                            Number.parseFloat(e.target.value) ||
-                                              0
+                                            e.target.value === "" ? 0.0 : Number.parseFloat(e.target.value) || 0.0
                                           )
                                         }
                                         onWheel={(e) => e.currentTarget.blur()}

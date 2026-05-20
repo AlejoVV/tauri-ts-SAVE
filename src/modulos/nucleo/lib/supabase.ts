@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -16,45 +16,96 @@ export type Database = {
     Tables: {
       catalogo_eficacia: {
         Row: {
-          metodo_calculo_de_eficacia: string | null
+          aplicacion_de_tratamiento: string | null
           condicion_de_inoculacion: string | null
           condiciones_ambientales: string | null
-          aplicacion_de_tratamiento: string | null
-          registro_de_datos: string | null
+          metodo_calculo_de_eficacia: string | null
           nombre_cientifico: string | null
           numero_de_aplicaciones: string | null
           numero_de_repeticiones: string | null
           objetivo_eficacia: string
           plaga_enfermedad: string | null
+          registro_de_datos: string | null
           tipo_de_evaluacion: string | null
           unidades_por_repeticion: string | null
         }
         Insert: {
-          metodo_calculo_de_eficacia?: string | null
+          aplicacion_de_tratamiento?: string | null
           condicion_de_inoculacion?: string | null
           condiciones_ambientales?: string | null
-          aplicacion_de_tratamiento?: string | null
-          registro_de_datos?: string | null
+          metodo_calculo_de_eficacia?: string | null
           nombre_cientifico?: string | null
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia: string
           plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
           tipo_de_evaluacion?: string | null
           unidades_por_repeticion?: string | null
         }
         Update: {
-          metodo_calculo_de_eficacia?: string | null
+          aplicacion_de_tratamiento?: string | null
           condicion_de_inoculacion?: string | null
           condiciones_ambientales?: string | null
-          aplicacion_de_tratamiento?: string | null
-          registro_de_datos?: string | null
+          metodo_calculo_de_eficacia?: string | null
           nombre_cientifico?: string | null
           numero_de_aplicaciones?: string | null
           numero_de_repeticiones?: string | null
           objetivo_eficacia?: string
           plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
           tipo_de_evaluacion?: string | null
+          unidades_por_repeticion?: string | null
+        }
+        Relationships: []
+      }
+      catalogo_eficacia_v2: {
+        Row: {
+          aplicacion_de_tratamiento: string | null
+          condicion_de_inoculacion: string | null
+          condiciones_ambientales: string | null
+          duracion: string
+          metodo_calculo_de_eficacia: string | null
+          nombre_cientifico: string | null
+          numero_de_aplicaciones: string | null
+          numero_de_repeticiones: string | null
+          objetivo_eficacia: string
+          plaga_enfermedad: string | null
+          registro_de_datos: string | null
+          tipo_de_evaluacion: string
+          tipo_insumo: string
+          unidades_por_repeticion: string | null
+        }
+        Insert: {
+          aplicacion_de_tratamiento?: string | null
+          condicion_de_inoculacion?: string | null
+          condiciones_ambientales?: string | null
+          duracion: string
+          metodo_calculo_de_eficacia?: string | null
+          nombre_cientifico?: string | null
+          numero_de_aplicaciones?: string | null
+          numero_de_repeticiones?: string | null
+          objetivo_eficacia: string
+          plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
+          tipo_de_evaluacion: string
+          tipo_insumo: string
+          unidades_por_repeticion?: string | null
+        }
+        Update: {
+          aplicacion_de_tratamiento?: string | null
+          condicion_de_inoculacion?: string | null
+          condiciones_ambientales?: string | null
+          duracion?: string
+          metodo_calculo_de_eficacia?: string | null
+          nombre_cientifico?: string | null
+          numero_de_aplicaciones?: string | null
+          numero_de_repeticiones?: string | null
+          objetivo_eficacia?: string
+          plaga_enfermedad?: string | null
+          registro_de_datos?: string | null
+          tipo_de_evaluacion?: string
+          tipo_insumo?: string
           unidades_por_repeticion?: string | null
         }
         Relationships: []
@@ -235,10 +286,14 @@ export type Database = {
           cantidad_lecturas: number | null
           cantidad_repeticiones: number | null
           condiciones_iniciales: Json | null
+          duracion_prueba: string | null
           fecha_creacion: string | null
           id: number
           nombre: string | null
+          nombre_cientifico: string | null
           nombres_lecturas: Json | null
+          tipo_evaluacion: string | null
+          tipo_insumo: string | null
           variedad: string | null
         }
         Insert: {
@@ -246,10 +301,14 @@ export type Database = {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
+          duracion_prueba?: string | null
           fecha_creacion?: string | null
           id?: number
           nombre?: string | null
+          nombre_cientifico?: string | null
           nombres_lecturas?: Json | null
+          tipo_evaluacion?: string | null
+          tipo_insumo?: string | null
           variedad?: string | null
         }
         Update: {
@@ -257,10 +316,14 @@ export type Database = {
           cantidad_lecturas?: number | null
           cantidad_repeticiones?: number | null
           condiciones_iniciales?: Json | null
+          duracion_prueba?: string | null
           fecha_creacion?: string | null
           id?: number
           nombre?: string | null
+          nombre_cientifico?: string | null
           nombres_lecturas?: Json | null
+          tipo_evaluacion?: string | null
+          tipo_insumo?: string | null
           variedad?: string | null
         }
         Relationships: []
@@ -325,20 +388,20 @@ export type Database = {
       precios_objetivo_tipo: {
         Row: {
           precio: number
-          precio_id: number
           precio_objetivo_id: number | null
+          precio_id: number
           precio_tipo_producto: string | null
         }
         Insert: {
           precio: number
-          precio_id?: number
           precio_objetivo_id?: number | null
+          precio_id?: number
           precio_tipo_producto?: string | null
         }
         Update: {
           precio?: number
-          precio_id?: number
           precio_objetivo_id?: number | null
+          precio_id?: number
           precio_tipo_producto?: string | null
         }
         Relationships: [
@@ -510,143 +573,112 @@ export type Database = {
       pruebas_ordenes_trabajo: {
         Row: {
           prueba_cantidad: string | null
-          prueba_compania: string | null
-          prueba_contacto: string | null
-          prueba_dosis_producto: string
+          prueba_compania_id: number | null
+          prueba_contacto_id: number | null
+          prueba_costo: number | null
+          prueba_dosis: string | null
           prueba_especie_id: number | null
-          prueba_estado_facturacion: string | null
-          prueba_estado_foto: string | null
-          prueba_estado_lab: string | null
-          prueba_estado_proceso: string | null
-          prueba_fecha_creacion: string
-          prueba_fecha_entrega_calculada: string | null
+          prueba_estado: string | null
           prueba_fecha_entrega_informe: string | null
-          prueba_fecha_entrega_remision: string | null
-          prueba_fecha_recibido: string | null
+          prueba_fecha_ingreso: string | null
           prueba_finca_id: number | null
           prueba_id: number
-          prueba_inst: string | null
-          prueba_notas_varias: string | null
-          prueba_numero_muestra: string | null
           prueba_objetivo_id: number | null
-          prueba_obs: string | null
-          prueba_orden_id: number
-          prueba_precio: number | null
+          prueba_observaciones: string | null
+          prueba_orden_id: number | null
           prueba_producto_id: number | null
-          prueba_producto_unid: string | null
-          prueba_semana_entrega: number | null
-          prueba_usuario_foto: string | null
+          prueba_tipo_producto: string | null
+          prueba_unidades: string | null
         }
         Insert: {
           prueba_cantidad?: string | null
-          prueba_compania?: string | null
-          prueba_contacto?: string | null
-          prueba_dosis_producto: string
+          prueba_compania_id?: number | null
+          prueba_contacto_id?: number | null
+          prueba_costo?: number | null
+          prueba_dosis?: string | null
           prueba_especie_id?: number | null
-          prueba_estado_facturacion?: string | null
-          prueba_estado_foto?: string | null
-          prueba_estado_lab?: string | null
-          prueba_estado_proceso?: string | null
-          prueba_fecha_creacion?: string
-          prueba_fecha_entrega_calculada?: string | null
+          prueba_estado?: string | null
           prueba_fecha_entrega_informe?: string | null
-          prueba_fecha_entrega_remision?: string | null
-          prueba_fecha_recibido?: string | null
+          prueba_fecha_ingreso?: string | null
           prueba_finca_id?: number | null
-          prueba_id: number
-          prueba_inst?: string | null
-          prueba_notas_varias?: string | null
-          prueba_numero_muestra?: string | null
+          prueba_id?: number
           prueba_objetivo_id?: number | null
-          prueba_obs?: string | null
-          prueba_orden_id: number
-          prueba_precio?: number | null
+          prueba_observaciones?: string | null
+          prueba_orden_id?: number | null
           prueba_producto_id?: number | null
-          prueba_producto_unid?: string | null
-          prueba_semana_entrega?: number | null
-          prueba_usuario_foto?: string | null
+          prueba_tipo_producto?: string | null
+          prueba_unidades?: string | null
         }
         Update: {
           prueba_cantidad?: string | null
-          prueba_compania?: string | null
-          prueba_contacto?: string | null
-          prueba_dosis_producto?: string
+          prueba_compania_id?: number | null
+          prueba_contacto_id?: number | null
+          prueba_costo?: number | null
+          prueba_dosis?: string | null
           prueba_especie_id?: number | null
-          prueba_estado_facturacion?: string | null
-          prueba_estado_foto?: string | null
-          prueba_estado_lab?: string | null
-          prueba_estado_proceso?: string | null
-          prueba_fecha_creacion?: string
-          prueba_fecha_entrega_calculada?: string | null
+          prueba_estado?: string | null
           prueba_fecha_entrega_informe?: string | null
-          prueba_fecha_entrega_remision?: string | null
-          prueba_fecha_recibido?: string | null
+          prueba_fecha_ingreso?: string | null
           prueba_finca_id?: number | null
           prueba_id?: number
-          prueba_inst?: string | null
-          prueba_notas_varias?: string | null
-          prueba_numero_muestra?: string | null
           prueba_objetivo_id?: number | null
-          prueba_obs?: string | null
-          prueba_orden_id?: number
-          prueba_precio?: number | null
+          prueba_observaciones?: string | null
+          prueba_orden_id?: number | null
           prueba_producto_id?: number | null
-          prueba_producto_unid?: string | null
-          prueba_semana_entrega?: number | null
-          prueba_usuario_foto?: string | null
+          prueba_tipo_producto?: string | null
+          prueba_unidades?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_1"
-            columns: ["prueba_orden_id"]
+            foreignKeyName: "fk_prueba_compania"
+            columns: ["prueba_compania_id"]
             isOneToOne: false
-            referencedRelation: "ordenes_trabajo"
-            referencedColumns: ["orden_id"]
+            referencedRelation: "companias"
+            referencedColumns: ["compania_id"]
           },
           {
-            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_2"
-            columns: ["prueba_objetivo_id"]
+            foreignKeyName: "fk_prueba_contacto"
+            columns: ["prueba_contacto_id"]
             isOneToOne: false
-            referencedRelation: "objetivos"
-            referencedColumns: ["objetivo_id"]
+            referencedRelation: "contactos"
+            referencedColumns: ["contacto_id"]
           },
           {
-            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_3"
-            columns: ["prueba_producto_id"]
-            isOneToOne: false
-            referencedRelation: "productos"
-            referencedColumns: ["producto_id"]
-          },
-          {
-            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_4"
+            foreignKeyName: "fk_prueba_especie"
             columns: ["prueba_especie_id"]
             isOneToOne: false
             referencedRelation: "especie_vegetal"
             referencedColumns: ["especie_id"]
           },
           {
-            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_5"
+            foreignKeyName: "fk_prueba_finca"
             columns: ["prueba_finca_id"]
             isOneToOne: false
             referencedRelation: "fincas"
             referencedColumns: ["finca_id"]
           },
+          {
+            foreignKeyName: "fk_prueba_objetivo"
+            columns: ["prueba_objetivo_id"]
+            isOneToOne: false
+            referencedRelation: "objetivos"
+            referencedColumns: ["objetivo_id"]
+          },
+          {
+            foreignKeyName: "fk_prueba_orden"
+            columns: ["prueba_orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_trabajo"
+            referencedColumns: ["orden_id"]
+          },
+          {
+            foreignKeyName: "fk_prueba_producto"
+            columns: ["prueba_producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["producto_id"]
+          },
         ]
-      }
-      resultados_eficacia: {
-        Row: {
-          eficacia: number | null
-          prueba_id: number
-        }
-        Insert: {
-          eficacia?: number | null
-          prueba_id: number
-        }
-        Update: {
-          eficacia?: number | null
-          prueba_id?: number
-        }
-        Relationships: []
       }
       resultados_lecturas: {
         Row: {
@@ -654,36 +686,36 @@ export type Database = {
           fecha_lectura: string | null
           fecha_registro: string | null
           id: number
-          montaje_id: number
-          nombre_lectura: string
+          montaje_id: number | null
+          nombre_lectura: string | null
           observaciones: string | null
           prueba_id: number | null
-          replica_numero: number
-          valor_resultado: number
+          replica_numero: number | null
+          valor_resultado: number | null
         }
         Insert: {
           es_testigo?: boolean | null
           fecha_lectura?: string | null
           fecha_registro?: string | null
-          id?: number
-          montaje_id: number
-          nombre_lectura: string
+          id?: never
+          montaje_id?: number | null
+          nombre_lectura?: string | null
           observaciones?: string | null
           prueba_id?: number | null
-          replica_numero: number
-          valor_resultado: number
+          replica_numero?: number | null
+          valor_resultado?: number | null
         }
         Update: {
           es_testigo?: boolean | null
           fecha_lectura?: string | null
           fecha_registro?: string | null
-          id?: number
-          montaje_id?: number
-          nombre_lectura?: string
+          id?: never
+          montaje_id?: number | null
+          nombre_lectura?: string | null
           observaciones?: string | null
           prueba_id?: number | null
-          replica_numero?: number
-          valor_resultado?: number
+          replica_numero?: number | null
+          valor_resultado?: number | null
         }
         Relationships: [
           {
@@ -716,148 +748,49 @@ export type Database = {
           },
         ]
       }
-      usuarios: {
-        Row: {
-          username: string | null
-          usuario_email: string | null
-          usuario_id: number
-          usuario_pass: string | null
-          usuario_permisos: number | null
-        }
-        Insert: {
-          username?: string | null
-          usuario_email?: string | null
-          usuario_id?: number
-          usuario_pass?: string | null
-          usuario_permisos?: number | null
-        }
-        Update: {
-          username?: string | null
-          usuario_email?: string | null
-          usuario_id?: number
-          usuario_pass?: string | null
-          usuario_permisos?: number | null
-        }
-        Relationships: []
-      }
     }
     Views: {
-      vistacontactoscompanias: {
-        Row: {
-          compania: string | null
-          contacto_apellidos: string | null
-          contacto_cargo: string | null
-          contacto_celular_opcional: string | null
-          contacto_celular_principal: string | null
-          contacto_email: string | null
-          contacto_nombres: string | null
-          encabezado: string | null
-          nombre_completo: string | null
-          profesion_nombre: string | null
-        }
-        Relationships: []
-      }
       vistamaestra: {
         Row: {
-          contacto: string | null
-          descuento: string | null
-          dosis_producto: string | null
+          compania_nombre: string | null
+          contacto_nombre_completo: string | null
           especie_nombre: string | null
-          estado_fact: string | null
-          estado_ot: string | null
-          facturara: string | null
-          fecha_entrega_info: string | null
-          fecha_entrega_remision: string | null
-          fecha_recibo_muestra: string | null
           finca_nombre: string | null
-          instrucciones: string | null
-          notas_varias: string | null
           objetivo_nombre: string | null
-          observaciones: string | null
-          orden_compra: string | null
-          producto_casa_comercial: string | null
+          orden_id: number | null
           producto_nombre: string | null
-          producto_tipo: string | null
-          producto_unid: string | null
           prueba_cantidad: string | null
-          prueba_estado_foto: string | null
-          prueba_estado_lab: string | null
-          prueba_estado_proceso: string | null
-          prueba_fecha_creacion: string | null
+          prueba_costo: number | null
+          prueba_dosis: string | null
+          prueba_estado: string | null
+          prueba_fecha_entrega_informe: string | null
+          prueba_fecha_ingreso: string | null
           prueba_id: number | null
-          prueba_numero_muestra: string | null
-          prueba_orden_id: number | null
-          prueba_precio: number | null
-          prueba_usuario_foto: string | null
-          tipo_prueba: string | null
+          prueba_observaciones: string | null
+          prueba_tipo_producto: string | null
+          prueba_unidades: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_1"
-            columns: ["prueba_orden_id"]
-            isOneToOne: false
-            referencedRelation: "ordenes_trabajo"
-            referencedColumns: ["orden_id"]
-          },
-        ]
+        Relationships: []
       }
       vistamaestratotal: {
         Row: {
-          contacto: string | null
-          contacto_cargo: string | null
-          contacto_celular_opcional: string | null
-          contacto_celular_principal: string | null
-          contacto_email: string | null
-          descuento: string | null
-          dosis_producto: string | null
+          compania_nombre: string | null
+          contacto_nombre_completo: string | null
           especie_nombre: string | null
-          estado_fact: string | null
-          estado_ot: string | null
-          facturara: string | null
-          fecha_entrega_info: string | null
-          fecha_recibo_muestra: string | null
           finca_nombre: string | null
-          notas_varias: string | null
           objetivo_nombre: string | null
-          observaciones: string | null
-          orden_compra: string | null
-          orden_numero_factura: number | null
-          producto_casa_comercial: string | null
+          orden_id: number | null
           producto_nombre: string | null
-          producto_tipo: string | null
-          producto_unid: string | null
-          profesion_nombre: string | null
           prueba_cantidad: string | null
-          prueba_estado_foto: string | null
-          prueba_estado_lab: string | null
-          prueba_estado_proceso: string | null
-          prueba_fecha_creacion: string | null
-          prueba_fecha_entrega_calculada: string | null
+          prueba_costo: number | null
+          prueba_dosis: string | null
+          prueba_estado: string | null
+          prueba_fecha_entrega_informe: string | null
+          prueba_fecha_ingreso: string | null
           prueba_id: number | null
-          prueba_numero_muestra: string | null
-          prueba_orden_id: number | null
-          prueba_precio: number | null
-          prueba_semana_entrega: number | null
-          prueba_usuario_foto: string | null
-          tipo_prueba: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_1"
-            columns: ["prueba_orden_id"]
-            isOneToOne: false
-            referencedRelation: "ordenes_trabajo"
-            referencedColumns: ["orden_id"]
-          },
-        ]
-      }
-      vistaobjetivosprecios: {
-        Row: {
-          objetivo_general: string | null
-          objetivo_nombre: string | null
-          objetivo_tipo_prueba: string | null
-          precio: number | null
-          tipo_producto: string | null
+          prueba_observaciones: string | null
+          prueba_tipo_producto: string | null
+          prueba_unidades: string | null
         }
         Relationships: []
       }
@@ -874,33 +807,27 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -908,24 +835,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -933,24 +856,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -958,41 +877,29 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const

@@ -7,7 +7,7 @@ import { saveAs } from "file-saver";
 
 /**
  * Obtiene las pruebas disponibles para montajes de eficacia
- * Filtra por estado_proceso = "Montaje" y tipo_prueba = "Eficacia"
+ * Filtra por estado_proceso = "Montaje" o "Repetición" y tipo_prueba = "Eficacia"
  * Excluye pruebas que ya están asignadas a montajes existentes
  */
 export const getEfficacyTestsForMontage = async (): Promise<EfficacyTestData[]> => {
@@ -25,11 +25,11 @@ export const getEfficacyTestsForMontage = async (): Promise<EfficacyTestData[]> 
     // Extraer los IDs de las pruebas que ya están en montajes
     const pruebasAsignadas = pruebasEnMontajes?.map(item => item.prueba_id).filter(id => id !== null) || [];
     
-    // 2. Obtener todas las pruebas de eficacia en montaje
+    // 2. Obtener todas las pruebas de eficacia en montaje o repetición
     const { data, error } = await supabase
       .from("vistamaestratotal")
       .select("*")
-      .eq("prueba_estado_proceso", "Montaje")
+      .in("prueba_estado_proceso", ["Montaje", "Repetición"])
       .eq("tipo_prueba", "Eficacia")
       .order("prueba_id", { ascending: false });
 
@@ -215,7 +215,11 @@ export const updateMontajeSetup = async (
         cantidad_lecturas: montageData.numeroLecturas,
         cantidad_repeticiones: montageData.numeroRepeticiones,
         condiciones_iniciales: montageData.condicionesIniciales as any,
-        nombres_lecturas: montageData.nombresLecturas as any
+        nombres_lecturas: montageData.nombresLecturas as any,
+        tipo_evaluacion: montageData.tipoEvaluacion,
+        duracion_prueba: montageData.duracionPrueba,
+        tipo_insumo: montageData.tipoInsumo,
+        nombre_cientifico: montageData.nombreCientifico
       })
       .eq("id", montajeId);
 
@@ -228,7 +232,11 @@ export const updateMontajeSetup = async (
       montajeId,
       nombre: montageData.nombreMontaje,
       condicionesIniciales: montageData.condicionesIniciales,
-      nombresLecturas: montageData.nombresLecturas
+      nombresLecturas: montageData.nombresLecturas,
+      tipoEvaluacion: montageData.tipoEvaluacion,
+      duracionPrueba: montageData.duracionPrueba,
+      tipoInsumo: montageData.tipoInsumo,
+      nombreCientifico: montageData.nombreCientifico
     });
 
     return { success: true };
@@ -259,6 +267,10 @@ export const createMontaje = async (
         cantidad_repeticiones: montageData.numeroRepeticiones,
         condiciones_iniciales: montageData.condicionesIniciales as any,
         nombres_lecturas: montageData.nombresLecturas as any,
+        tipo_evaluacion: montageData.tipoEvaluacion,
+        duracion_prueba: montageData.duracionPrueba,
+        tipo_insumo: montageData.tipoInsumo,
+        nombre_cientifico: montageData.nombreCientifico,
         fecha_creacion: new Date().toISOString()
       })
       .select()
@@ -301,7 +313,10 @@ export const createMontaje = async (
       nombre: montageData.nombreMontaje,
       pruebasAsociadas: selectedTests.length,
       condicionesIniciales: montageData.condicionesIniciales,
-      nombresLecturas: montageData.nombresLecturas
+      nombresLecturas: montageData.nombresLecturas,
+      tipoEvaluacion: montageData.tipoEvaluacion,
+      duracionPrueba: montageData.duracionPrueba,
+      tipoInsumo: montageData.tipoInsumo
     });
 
     return { success: true, montajeId };
@@ -446,6 +461,7 @@ export const getMontajes = async () => {
           finca,
           especie,
           variedad: (montajeConTiposCompletos as any).variedad || null, // Incluir campo variedad
+          nombreCientifico: (montaje as any).nombre_cientifico || null, // Incluir campo nombre científico
           fechaCreacion: montaje.fecha_creacion ? new Date(montaje.fecha_creacion).toLocaleDateString() : "Sin fecha",
           numeroLecturas: montaje.cantidad_lecturas || 0,
           nombresLecturas: montajeConTiposCompletos.nombres_lecturas || [],
@@ -628,11 +644,11 @@ export const getEfficacyTestsStats = async (): Promise<{
   pruebasEnMontajes: number;
 }> => {
   try {
-    // Obtener total de pruebas de eficacia en montaje
+    // Obtener total de pruebas de eficacia en montaje o repetición
     const { data: todasPruebas, error: totalError } = await supabase
       .from("vistamaestratotal")
       .select("prueba_id", { count: "exact" })
-      .eq("prueba_estado_proceso", "Montaje")
+      .in("prueba_estado_proceso", ["Montaje", "Repetición"])
       .eq("tipo_prueba", "Eficacia");
 
     if (totalError) {
@@ -837,13 +853,13 @@ export const getLecturaResultados = async (
 }; 
 
 /**
- * Obtiene el número de repeticiones recomendado para un objetivo desde catalogo_eficacia
+ * Obtiene el número de repeticiones recomendado para un objetivo desde catalogo_eficacia_v2
  * Si no encuentra, retorna 4 por defecto
  */
 export const getNumeroRepeticionesPorObjetivo = async (objetivo: string): Promise<number> => {
   try {
     const { data, error } = await supabase
-      .from("catalogo_eficacia")
+      .from("catalogo_eficacia_v2")
       .select("numero_de_repeticiones")
       .eq("objetivo_eficacia", objetivo)
       .limit(1)
@@ -865,13 +881,13 @@ export const getNumeroRepeticionesPorObjetivo = async (objetivo: string): Promis
 }; 
 
 /**
- * Obtiene el método de cálculo de eficacia recomendado para un objetivo desde catalogo_eficacia
+ * Obtiene el método de cálculo de eficacia recomendado para un objetivo desde catalogo_eficacia_v2
  * Si no encuentra, retorna 'Fórmula de Abbott' por defecto
  */
 export const getMetodoCalculoPorObjetivo = async (objetivo: string): Promise<string> => {
   try {
     const { data, error } = await supabase
-      .from("catalogo_eficacia")
+      .from("catalogo_eficacia_v2")
       .select("metodo_calculo_de_eficacia")
       .eq("objetivo_eficacia", objetivo)
       .limit(1)
@@ -901,7 +917,7 @@ export const getCatalogoEficaciaPorObjetivo = async (objetivo: string): Promise<
 } | null> => {
   try {
     const { data, error } = await supabase
-      .from("catalogo_eficacia")
+      .from("catalogo_eficacia_v2")
       .select(`
         metodo_calculo_de_eficacia,
         registro_de_datos,
@@ -914,15 +930,15 @@ export const getCatalogoEficaciaPorObjetivo = async (objetivo: string): Promise<
         nombre_cientifico
       `)
       .eq("objetivo_eficacia", objetivo)
-      .limit(1)
-      .single();
+      .limit(1);
     
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
       console.error("Error al obtener catálogo de eficacia:", error);
       return null;
     }
     
-    return data;
+    // Retornar el primer registro encontrado
+    return data[0];
   } catch (e) {
     console.error("Error inesperado al obtener catálogo de eficacia:", e);
     return null;
@@ -930,7 +946,7 @@ export const getCatalogoEficaciaPorObjetivo = async (objetivo: string): Promise<
 }; 
 
 /**
- * Obtiene las unidades por repetición para una lista de objetivos desde catalogo_eficacia
+ * Obtiene las unidades por repetición para una lista de objetivos desde catalogo_eficacia_v2
  * Devuelve un objeto { objetivo: unidades_por_repeticion }
  */
 export const getUnidadesPorRepeticionPorObjetivo = async (objetivos: string[]): Promise<Record<string, string | null>> => {
@@ -938,7 +954,7 @@ export const getUnidadesPorRepeticionPorObjetivo = async (objetivos: string[]): 
   const result: Record<string, string | null> = {};
   try {
     const { data, error } = await supabase
-      .from("catalogo_eficacia")
+      .from("catalogo_eficacia_v2")
       .select("objetivo_eficacia, unidades_por_repeticion")
       .in("objetivo_eficacia", objetivos);
     if (error) {
@@ -954,6 +970,165 @@ export const getUnidadesPorRepeticionPorObjetivo = async (objetivos: string[]): 
   } catch (e) {
     objetivos.forEach(obj => result[obj] = null);
     return result;
+  }
+}; 
+
+/**
+ * Obtiene los tipos de evaluación únicos para una lista de objetivos desde catalogo_eficacia_v2
+ * Devuelve un array de strings únicos con los tipos de evaluación disponibles
+ */
+export const getTiposEvaluacionPorObjetivos = async (objetivos: string[]): Promise<string[]> => {
+  if (!objetivos.length) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia_v2")
+      .select("tipo_de_evaluacion")
+      .in("objetivo_eficacia", objetivos)
+      .not("tipo_de_evaluacion", "is", null);
+
+    if (error) {
+      console.error("Error al obtener tipos de evaluación:", error);
+      return [];
+    }
+
+    if (data) {
+      // Extraer valores únicos y filtrar nulls/undefined
+      const tiposUnicos = [...new Set(
+        data
+          .map(item => item.tipo_de_evaluacion)
+          .filter(tipo => tipo && tipo.trim() !== "")
+      )];
+      
+      return tiposUnicos.sort(); // Ordenar alfabéticamente
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error al obtener tipos de evaluación:", error);
+    return [];
+  }
+}; 
+
+/**
+ * Obtiene los valores de duración únicos para una lista de objetivos desde catalogo_eficacia_v2
+ * Devuelve un array de strings únicos con las duraciones disponibles (excluyendo "N/A")
+ */
+export const getDuracionesPorObjetivos = async (objetivos: string[]): Promise<string[]> => {
+  if (!objetivos.length) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia_v2")
+      .select("duracion")
+      .in("objetivo_eficacia", objetivos)
+      .not("duracion", "is", null)
+      .neq("duracion", "N/A");
+
+    if (error) {
+      console.error("Error al obtener duraciones:", error);
+      return [];
+    }
+
+    if (data) {
+      // Extraer valores únicos y filtrar nulls/undefined/N/A
+      const duracionesUnicas = [...new Set(
+        data
+          .map(item => item.duracion)
+          .filter(duracion => duracion && duracion.trim() !== "" && duracion.trim() !== "N/A")
+      )];
+      
+      return duracionesUnicas.sort(); // Ordenar alfabéticamente
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error al obtener duraciones:", error);
+    return [];
+  }
+}; 
+
+/**
+ * Obtiene los valores de tipo_insumo únicos para una lista de objetivos desde catalogo_eficacia_v2
+ * Devuelve un array de strings únicos con los tipos de insumo disponibles (excluyendo "N/A")
+ */
+export const getTiposInsumoPorObjetivos = async (objetivos: string[]): Promise<string[]> => {
+  if (!objetivos.length) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia_v2")
+      .select("tipo_insumo")
+      .in("objetivo_eficacia", objetivos)
+      .not("tipo_insumo", "is", null)
+      .neq("tipo_insumo", "N/A");
+
+    if (error) {
+      console.error("Error al obtener tipos de insumo:", error);
+      return [];
+    }
+
+    if (data) {
+      // Extraer valores únicos y filtrar nulls/undefined/N/A
+      const tiposInsumoUnicos = [...new Set(
+        data
+          .map(item => item.tipo_insumo)
+          .filter(tipo => tipo && tipo.trim() !== "" && tipo.trim() !== "N/A")
+      )];
+      
+      return tiposInsumoUnicos.sort(); // Ordenar alfabéticamente
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error al obtener tipos de insumo:", error);
+    return [];
+  }
+};
+
+/**
+ * Obtiene los nombres científicos únicos para una lista de objetivos desde catalogo_eficacia_v2
+ * Divide los nombres separados por '/' y devuelve un array de strings únicos
+ */
+export const getNombresCientificosPorObjetivos = async (objetivos: string[]): Promise<string[]> => {
+  if (!objetivos.length) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from("catalogo_eficacia_v2")
+      .select("nombre_cientifico")
+      .in("objetivo_eficacia", objetivos)
+      .not("nombre_cientifico", "is", null);
+
+    if (error) {
+      console.error("Error al obtener nombres científicos:", error);
+      return [];
+    }
+
+    if (data) {
+      // Extraer y dividir nombres científicos separados por '/'
+      const nombresUnicos = new Set<string>();
+      
+      data.forEach(item => {
+        if (item.nombre_cientifico && item.nombre_cientifico.trim() !== "") {
+          // Dividir por '/' y agregar cada nombre al Set
+          const nombres = item.nombre_cientifico.split('/');
+          nombres.forEach(nombre => {
+            const nombreLimpio = nombre.trim();
+            if (nombreLimpio !== "" && nombreLimpio !== "N/A") {
+              nombresUnicos.add(nombreLimpio);
+            }
+          });
+        }
+      });
+      
+      return Array.from(nombresUnicos).sort(); // Convertir a array y ordenar alfabéticamente
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error al obtener nombres científicos:", error);
+    return [];
   }
 }; 
 
@@ -1001,7 +1176,8 @@ export const contarMontajesPorOT = async (numeroOT: number): Promise<number> => 
  */
 export const saveEfficacyResults = async (
   montajeId: number,
-  efficacyResults: { [pruebaId: string]: number }
+  efficacyResults: { [pruebaId: string]: number },
+  pruebasParaRepetir: string[] = []
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     // Primero eliminar los resultados existentes para este montaje
@@ -1055,17 +1231,27 @@ export const saveEfficacyResults = async (
         .filter(id => id !== null);
 
       if (pruebaIds.length > 0) {
-        const { error: updateError } = await supabase
-          .from("pruebas_ordenes_trabajo")
-          .update({ prueba_estado_proceso: "Completado" })
-          .in("prueba_id", pruebaIds);
+        // Separar las pruebas que van para repetición de las que van a completado
+        const pruebasCompletadas = pruebaIds.filter(id => !pruebasParaRepetir.includes(id.toString()));
+        const pruebasRepeticion = pruebaIds.filter(id => pruebasParaRepetir.includes(id.toString()));
 
-        if (updateError) {
-          console.error("Error al actualizar estado de las pruebas:", updateError);
-          // No fallar completamente, solo registrar el error
-          console.warn("No se pudo actualizar el estado de las pruebas, pero los resultados de eficacia se guardaron correctamente");
-        } else {
-          console.log(`Estado actualizado a 'Completado' para ${pruebaIds.length} pruebas del montaje ${montajeId}`);
+        // Actualizar pruebas completadas
+        if (pruebasCompletadas.length > 0) {
+          const { error: updateCompletadoError } = await supabase
+            .from("pruebas_ordenes_trabajo")
+            .update({ prueba_estado_proceso: "Completado" })
+            .in("prueba_id", pruebasCompletadas);
+
+          if (updateCompletadoError) {
+            console.error("Error al actualizar estado de las pruebas completadas:", updateCompletadoError);
+          } else {
+            console.log(`Estado actualizado a 'Completado' para ${pruebasCompletadas.length} pruebas del montaje ${montajeId}`);
+          }
+        }
+
+        // Las pruebas para repetición ya fueron actualizadas previamente por marcarPruebasParaRepeticion
+        if (pruebasRepeticion.length > 0) {
+          console.log(`${pruebasRepeticion.length} pruebas mantienen estado 'Repetición' del montaje ${montajeId}`);
         }
       }
     }
@@ -2202,5 +2388,427 @@ export const generateMontajesCompletadosReport = async (montajesCompletados: any
   } catch (error) {
     console.error("Error al generar informe DOCX:", error);
     return { success: false, error: "Error al generar el informe" };
+  }
+};
+
+/**
+ * Busca protocolos específicos en catalogo_eficacia_v2 basándose en los campos del montaje
+ * Utiliza duracion, tipo_de_evaluacion, tipo_insumo para encontrar protocolos exactos
+ */
+export const buscarProtocolosPorMontaje = async (
+  montajeId: number
+): Promise<{
+  success: boolean;
+  protocolos?: any[];
+  montajeInfo?: any;
+  error?: string;
+}> => {
+  try {
+    // 1. Obtener información del montaje incluyendo los nuevos campos
+    const { data: montajeData, error: montajeError } = await supabase
+      .from("montajes_de_laboratorio")
+      .select(`
+        id,
+        nombre,
+        tipo_evaluacion,
+        duracion_prueba,
+        tipo_insumo,
+        fecha_creacion,
+        cantidad_lecturas,
+        cantidad_repeticiones
+      `)
+      .eq("id", montajeId)
+      .single();
+
+    if (montajeError || !montajeData) {
+      console.error("Error al obtener datos del montaje:", montajeError);
+      return { success: false, error: "No se pudo obtener la información del montaje" };
+    }
+
+    // 2. Verificar que el montaje tenga los campos necesarios
+    if (!montajeData.tipo_evaluacion || !montajeData.duracion_prueba || !montajeData.tipo_insumo) {
+      return { 
+        success: false, 
+        error: "El montaje no tiene configurados los campos necesarios (tipo_evaluacion, duracion_prueba, tipo_insumo)" 
+      };
+    }
+
+    // 3. Buscar protocolos en catalogo_eficacia_v2 que coincidan con los criterios
+    const { data: protocolos, error: protocolosError } = await supabase
+      .from("catalogo_eficacia_v2")
+      .select("*")
+      .eq("tipo_de_evaluacion", montajeData.tipo_evaluacion)
+      .eq("duracion", montajeData.duracion_prueba)
+      .eq("tipo_insumo", montajeData.tipo_insumo);
+
+    if (protocolosError) {
+      console.error("Error al buscar protocolos:", protocolosError);
+      return { success: false, error: "Error al buscar protocolos en el catálogo" };
+    }
+
+    console.log("Protocolos encontrados:", {
+      montajeId,
+      criterios: {
+        tipo_evaluacion: montajeData.tipo_evaluacion,
+        duracion: montajeData.duracion_prueba,
+        tipo_insumo: montajeData.tipo_insumo
+      },
+      protocolosEncontrados: protocolos?.length || 0
+    });
+
+    return {
+      success: true,
+      protocolos: protocolos || [],
+      montajeInfo: montajeData
+    };
+
+  } catch (error) {
+    console.error("Error inesperado al buscar protocolos:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error desconocido" 
+    };
+  }
+};
+
+/**
+ * Genera un informe de protocolos encontrados para un montaje específico
+ */
+export const generateProtocolosReport = async (montajeId: number) => {
+  try {
+    // Buscar protocolos para el montaje
+    const resultado = await buscarProtocolosPorMontaje(montajeId);
+    
+    if (!resultado.success) {
+      return { success: false, error: resultado.error };
+    }
+
+    const { protocolos, montajeInfo } = resultado;
+
+    if (!protocolos || protocolos.length === 0) {
+      return { 
+        success: false, 
+        error: "No se encontraron protocolos que coincidan con los criterios del montaje" 
+      };
+    }
+
+    // Crear el documento
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            // Título principal
+            new Paragraph({
+              text: "INFORME DE PROTOCOLOS ENCONTRADOS",
+              heading: HeadingLevel.TITLE,
+              alignment: "center",
+              spacing: {
+                after: 400,
+              },
+            }),
+
+            // Información del montaje
+            new Paragraph({
+              text: "INFORMACIÓN DEL MONTAJE",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 300,
+                after: 200,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Nombre del montaje: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: montajeInfo.nombre || "Sin nombre",
+                }),
+              ],
+              spacing: { after: 100 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "ID del montaje: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: montajeInfo.id.toString(),
+                }),
+              ],
+              spacing: { after: 100 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Fecha de creación: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: new Date(montajeInfo.fecha_creacion).toLocaleDateString("es-ES"),
+                }),
+              ],
+              spacing: { after: 100 },
+            }),
+
+            // Criterios de búsqueda
+            new Paragraph({
+              text: "CRITERIOS DE BÚSQUEDA",
+              heading: HeadingLevel.HEADING_2,
+              spacing: {
+                before: 300,
+                after: 200,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Tipo de evaluación: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: montajeInfo.tipo_evaluacion,
+                  color: "0066CC",
+                }),
+              ],
+              spacing: { after: 100 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Duración de prueba: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: montajeInfo.duracion_prueba,
+                  color: "0066CC",
+                }),
+              ],
+              spacing: { after: 100 },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Tipo de insumo: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: montajeInfo.tipo_insumo,
+                  color: "0066CC",
+                }),
+              ],
+              spacing: { after: 200 },
+            }),
+
+            // Resultados
+            new Paragraph({
+              text: "PROTOCOLOS ENCONTRADOS",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 400,
+                after: 200,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Total de protocolos encontrados: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: protocolos.length.toString(),
+                  color: protocolos.length > 0 ? "00B050" : "FF0000",
+                  bold: true,
+                }),
+              ],
+              spacing: { after: 300 },
+            }),
+
+            // Tabla de protocolos
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                // Encabezado
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Objetivo Eficacia", bold: true })] })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Método Cálculo", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Registro Datos", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Aplicación Tratamiento", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Condiciones Ambientales", bold: true })] })],
+                      width: { size: 15, type: WidthType.PERCENTAGE },
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({ children: [new TextRun({ text: "Plaga/Enfermedad", bold: true })] })],
+                      width: { size: 20, type: WidthType.PERCENTAGE },
+                    }),
+                  ],
+                }),
+                // Filas de datos
+                ...protocolos.map(
+                  (protocolo) =>
+                    new TableRow({
+                      children: [
+                        new TableCell({
+                          children: [new Paragraph({ text: protocolo.objetivo_eficacia || "N/A" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: protocolo.metodo_calculo_de_eficacia || "N/A" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: protocolo.registro_de_datos || "N/A" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: protocolo.aplicacion_de_tratamiento || "N/A" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: protocolo.condiciones_ambientales || "N/A" })],
+                        }),
+                        new TableCell({
+                          children: [new Paragraph({ text: protocolo.plaga_enfermedad || "N/A" })],
+                        }),
+                      ],
+                    })
+                ),
+              ],
+            }),
+
+            // Detalles adicionales de cada protocolo
+            new Paragraph({
+              text: "DETALLES DE PROTOCOLOS",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 600,
+                after: 300,
+              },
+            }),
+
+            ...protocolos.flatMap((protocolo, index) => [
+              new Paragraph({
+                text: `${index + 1}. ${protocolo.objetivo_eficacia || "Protocolo sin objetivo"}`,
+                heading: HeadingLevel.HEADING_2,
+                spacing: {
+                  before: 400,
+                  after: 200,
+                },
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Número de repeticiones: ", bold: true }),
+                  new TextRun({ text: protocolo.numero_de_repeticiones || "No especificado" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Número de aplicaciones: ", bold: true }),
+                  new TextRun({ text: protocolo.numero_de_aplicaciones || "No especificado" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Condición de inoculación: ", bold: true }),
+                  new TextRun({ text: protocolo.condicion_de_inoculacion || "No especificado" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Nombre científico: ", bold: true }),
+                  new TextRun({ text: protocolo.nombre_cientifico || "No especificado" }),
+                ],
+              }),
+
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Unidades por repetición: ", bold: true }),
+                  new TextRun({ text: protocolo.unidades_por_repeticion || "No especificado" }),
+                ],
+              }),
+
+              new Paragraph({ text: "" }), // Línea en blanco
+            ]),
+
+            // Pie de página
+            new Paragraph({
+              text: "INFORMACIÓN ADICIONAL",
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 600,
+                after: 300,
+              },
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Fecha de generación del informe: ",
+                  bold: true,
+                }),
+                new TextRun({
+                  text: new Date().toLocaleDateString("es-ES", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                }),
+              ],
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Este informe muestra los protocolos del catálogo de eficacia que coinciden exactamente con los criterios configurados en el montaje.",
+                  italics: true,
+                }),
+              ],
+              spacing: { before: 200 },
+            }),
+          ],
+        },
+      ],
+    });
+
+    // Generar el blob y descargar el archivo
+    const blob = await Packer.toBlob(doc);
+    const fecha = new Date().toISOString().split("T")[0];
+    const nombreArchivo = `Protocolos_Montaje_${montajeInfo.id}_${fecha}.docx`;
+    
+    saveAs(blob, nombreArchivo);
+    
+    return { success: true, fileName: nombreArchivo, protocolosEncontrados: protocolos.length };
+  } catch (error) {
+    console.error("Error al generar informe de protocolos:", error);
+    return { success: false, error: "Error al generar el informe de protocolos" };
   }
 };
