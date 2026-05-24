@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { FileText, Building2, User, Download, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,8 +15,8 @@ import {
 
 export function Informes() {
   const {
-    ot_buscada,
-    resultado_busqueda,
+    otBuscada,
+    resultadoBusqueda,
     loading,
     error,
     buscarOT,
@@ -26,19 +28,19 @@ export function Informes() {
   const [errorReporte, setErrorReporte] = useState<string | null>(null);
   const [pruebasSeleccionadas, setPruebasSeleccionadas] = useState<PruebaEnCurso[]>([]);
 
-  const handleBuscar = () => buscarOT(ot_buscada);
+  const handleBuscar = useCallback(() => buscarOT(otBuscada), [buscarOT, otBuscada]);
 
-  const handleLimpiar = () => {
+  const handleLimpiar = useCallback(() => {
     limpiarBusqueda();
     setPruebasSeleccionadas([]);
-  };
+  }, [limpiarBusqueda]);
 
-  const handleSelectionChange = (selectedTests: PruebaEnCurso[]) => {
+  const handleSelectionChange = useCallback((selectedTests: PruebaEnCurso[]) => {
     setPruebasSeleccionadas(selectedTests);
-  };
+  }, []);
 
   const generarReporte = async () => {
-    if (!resultado_busqueda?.ot_valida || !resultado_busqueda.contacto || !resultado_busqueda.empresa) {
+    if (!resultadoBusqueda?.otValida || !resultadoBusqueda.contacto || !resultadoBusqueda.empresa) {
       setErrorReporte("No hay datos suficientes para generar el reporte");
       return;
     }
@@ -52,29 +54,28 @@ export function Informes() {
     setErrorReporte(null);
 
     try {
-      const fechaHoy = new Date().toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
-      const fincasTexto = [...new Set(pruebasSeleccionadas.map((p) => p.finca_de_la_cepa))].join(", ");
+      const fechaHoy = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es });
+      const fincasTexto = [...new Set(pruebasSeleccionadas.map(p => p.fincaDeLaCepa))].join(", ");
 
       const { contactoNombres, encabezado, contactoCargo } = await obtenerInfoContacto(
-        resultado_busqueda.contacto.nombre,
-        resultado_busqueda.empresa.nombre
+        resultadoBusqueda.contacto.nombre,
+        resultadoBusqueda.empresa.nombre,
       );
 
-      const filename = `reporte_eficacia_OT_${ot_buscada}_${new Date().toISOString().split("T")[0]}`;
-
+      const filename = `reporte_eficacia_OT_${otBuscada}_${new Date().toISOString().split("T")[0]}`;
       const pruebas = await Promise.all(
-        pruebasSeleccionadas.map((prueba) => obtenerDatosPrueba(prueba, ot_buscada))
+        pruebasSeleccionadas.map(prueba => obtenerDatosPrueba(prueba, otBuscada))
       );
 
       const payload = {
         data: {
-          autoriza: resultado_busqueda.contacto.nombre,
-          email: resultado_busqueda.contacto.email,
+          autoriza: resultadoBusqueda.contacto.nombre,
+          email: resultadoBusqueda.contacto.email,
           nombre: contactoNombres,
           encabezado,
           cargo: contactoCargo,
-          facturar_a: resultado_busqueda.empresa.nombre,
-          ot: ot_buscada,
+          facturar_a: resultadoBusqueda.empresa.nombre,
+          ot: otBuscada,
           finca_de_la_cepa: fincasTexto,
           fecha_hoy: fechaHoy,
           archivo: filename,
@@ -83,14 +84,6 @@ export function Informes() {
         },
         filename,
       };
-
-      const continuar = window.confirm(
-        `Esta es la petición que se enviará a fill-docx-template:\n\n${JSON.stringify(payload, null, 2)}\n\n¿Deseas enviarla ahora?`
-      );
-      if (!continuar) {
-        setGenerandoReporte(false);
-        return;
-      }
 
       const blob = await llamarEdgeFunctionDocx(payload);
       const url = window.URL.createObjectURL(blob);
@@ -101,9 +94,9 @@ export function Informes() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (error) {
-      console.error("Error al generar reporte:", error);
-      setErrorReporte(error instanceof Error ? error.message : "Error desconocido al generar el reporte");
+    } catch (catchError) {
+      console.error("Error al generar reporte:", catchError);
+      setErrorReporte(catchError instanceof Error ? catchError.message : "Error desconocido al generar el reporte");
     } finally {
       setGenerandoReporte(false);
     }
@@ -117,7 +110,7 @@ export function Informes() {
             <div className={cn("flex items-center gap-6 flex-wrap")}>
               <div className={cn("flex-shrink-0")}>
                 <BusquedaOT
-                  valor={ot_buscada}
+                  valor={otBuscada}
                   onCambio={actualizarOTBuscada}
                   onBuscar={handleBuscar}
                   onLimpiar={handleLimpiar}
@@ -126,26 +119,26 @@ export function Informes() {
                 />
               </div>
 
-              {resultado_busqueda?.ot_valida && resultado_busqueda.empresa && (
+              {resultadoBusqueda?.otValida && resultadoBusqueda.empresa && (
                 <div className={cn("flex items-center gap-2")}>
                   <Building2 className={cn("text-blue-600")} size={16} />
                   <span className={cn("text-lg font-medium text-gray-700")}>empresa:</span>
-                  <span className={cn("text-lg font-semibold text-gray-900")}>{resultado_busqueda.empresa.nombre}</span>
+                  <span className={cn("text-lg font-semibold text-gray-900")}>{resultadoBusqueda.empresa.nombre}</span>
                 </div>
               )}
 
-              {resultado_busqueda?.ot_valida && resultado_busqueda.contacto && (
+              {resultadoBusqueda?.otValida && resultadoBusqueda.contacto && (
                 <div className={cn("flex items-center gap-2")}>
                   <User className={cn("text-green-600")} size={16} />
                   <span className={cn("text-lg font-medium text-gray-700")}>contacto:</span>
                   <div className={cn("flex items-center gap-2")}>
-                    <span className={cn("text-lg font-semibold text-gray-900")}>{resultado_busqueda.contacto.nombre}</span>
-                    <span className={cn("text-sm text-gray-500")}>({resultado_busqueda.contacto.email})</span>
+                    <span className={cn("text-lg font-semibold text-gray-900")}>{resultadoBusqueda.contacto.nombre}</span>
+                    <span className={cn("text-sm text-gray-500")}>({resultadoBusqueda.contacto.email})</span>
                   </div>
                 </div>
               )}
 
-              {resultado_busqueda?.ot_valida && resultado_busqueda.pruebas_en_curso.length > 0 && (
+              {resultadoBusqueda?.otValida && resultadoBusqueda.pruebasEnCurso.length > 0 && (
                 <div className={cn("flex items-center gap-2 ml-auto")}>
                   <span className={cn("text-sm text-gray-600")}>{pruebasSeleccionadas.length} prueba(s) seleccionada(s)</span>
                   <Button
@@ -168,16 +161,16 @@ export function Informes() {
           </div>
         </div>
 
-        {resultado_busqueda?.ot_valida && (
+        {resultadoBusqueda?.otValida && (
           <div className={cn("flex-1 min-h-0")}>
             <TablaPruebas
-              pruebas={resultado_busqueda.pruebas_en_curso}
+              pruebas={resultadoBusqueda.pruebasEnCurso}
               onSelectionChange={handleSelectionChange}
             />
           </div>
         )}
 
-        {!resultado_busqueda && !loading && (
+        {!resultadoBusqueda && !loading && (
           <div className={cn("flex-1 flex items-center justify-center")}>
             <div className={cn("bg-white border border-gray-200 rounded-lg p-12 text-center")}>
               <FileText className={cn("mx-auto text-gray-300 mb-4")} size={64} />

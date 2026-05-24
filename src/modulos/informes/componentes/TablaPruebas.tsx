@@ -37,7 +37,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
   useEffect(() => {
     if (onSelectionChange) {
       const selectedTests = Object.keys(rowSelection)
-        .map((rowId) => pruebas.find((prueba) => prueba.no_prueba === rowId))
+        .map(rowId => pruebas.find(prueba => prueba.noPrueba === rowId))
         .filter(Boolean) as PruebaEnCurso[];
       onSelectionChange(selectedTests);
     }
@@ -57,7 +57,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
         ),
       },
       {
-        accessorKey: "prueba_id",
+        accessorKey: "pruebaId",
         header: "Prueba ID",
         minSize: 60, maxSize: 120, size: 80,
         enableColumnFilter: true, filterFn: "contains",
@@ -66,7 +66,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
         ),
       },
       {
-        accessorKey: "no_muestra",
+        accessorKey: "noMuestra",
         header: "No. Muestra",
         minSize: 80, maxSize: 120, size: 100,
         enableColumnFilter: true, filterFn: "contains",
@@ -75,7 +75,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
         ),
       },
       {
-        accessorKey: "estado_en_lab",
+        accessorKey: "estadoEnLab",
         header: "Estado Lab",
         minSize: 90, maxSize: 120, size: 100,
         enableColumnFilter: true, filterFn: "contains",
@@ -109,7 +109,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
         minSize: 50, maxSize: 70, size: 60,
         enableColumnFilter: true, filterFn: "contains",
         Cell: ({ cell }) => (
-          <div className={cn("text-sm")}>{cell.getValue<string>()}</div>
+          <div className={cn("text-sm")}>{cell.getValue<number>()}</div>
         ),
       },
       {
@@ -124,7 +124,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
         ),
       },
       {
-        accessorKey: "especie_vegetal",
+        accessorKey: "especieVegetal",
         header: "Especie Vegetal",
         minSize: 100, maxSize: 180, size: 120,
         enableColumnFilter: true, filterFn: "contains",
@@ -135,7 +135,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
         ),
       },
       {
-        accessorKey: "fecha_ingreso_ot",
+        accessorKey: "fechaIngresoOt",
         header: "Fecha Creación",
         minSize: 100, maxSize: 120, size: 110,
         enableColumnFilter: true, filterFn: "contains",
@@ -144,43 +144,39 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
         ),
       },
       {
-        accessorKey: "fecha_montaje",
+        accessorKey: "fechaMontaje",
         header: "Fecha Montaje",
         minSize: 100, maxSize: 120, size: 110,
         enableColumnFilter: true, filterFn: "contains",
         Cell: ({ cell }) => {
           const fecha = cell.getValue<string>();
-          return (
-            <div className={cn("text-sm")}>{fecha && fecha !== "-" ? fecha : "-"}</div>
-          );
+          return <div className={cn("text-sm")}>{fecha && fecha !== "-" ? fecha : "-"}</div>;
         },
       },
       {
-        accessorKey: "estado_proceso",
+        accessorKey: "estadoProceso",
         header: "Estado Proceso",
         minSize: 90, maxSize: 150, size: 120,
         enableColumnFilter: true, filterFn: "contains",
         Cell: ({ cell }) => <EstadoPrueba estado={cell.getValue<string>()} />,
       },
       {
-        accessorKey: "dias_montaje",
+        accessorKey: "diasMontaje",
         header: "Días Montaje",
         minSize: 80, maxSize: 100, size: 90,
         enableColumnFilter: true, filterFn: "contains",
         Cell: ({ cell }) => {
           const dias = cell.getValue<number>();
-          return (
-            <div className={cn("text-sm")}>{dias !== undefined ? `${dias} días` : "-"}</div>
-          );
+          return <div className={cn("text-sm")}>{dias !== undefined ? `${dias} días` : "-"}</div>;
         },
       },
       {
-        accessorKey: "semana_entrega",
+        accessorKey: "semanaEntrega",
         header: "Semana Entrega",
         minSize: 100, maxSize: 120, size: 110,
         enableColumnFilter: true, filterFn: "contains",
         Cell: ({ cell }) => (
-          <div className={cn("text-sm")}>{cell.getValue<string>() || "-"}</div>
+          <div className={cn("text-sm")}>{cell.getValue<number | null>() ?? "-"}</div>
         ),
       },
     ],
@@ -205,7 +201,7 @@ export function TablaPruebas({ pruebas, onSelectionChange }: TablaPruebasProps) 
     enableColumnResizing: true,
     columnResizeMode: "onChange",
     layoutMode: "semantic",
-    getRowId: (row) => row.no_prueba,
+    getRowId: row => row.noPrueba,
     onRowSelectionChange: setRowSelection,
     state: { rowSelection, density: "compact" },
     renderTopToolbarCustomActions: () => (
