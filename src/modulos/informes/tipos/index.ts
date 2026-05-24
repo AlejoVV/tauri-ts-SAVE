@@ -1,5 +1,3 @@
-// Tipos para el módulo de Informes
-
 export interface OrdenTrabajo {
   no_prueba: string;
   no_muestra: string;
@@ -30,25 +28,14 @@ export interface Empresa {
   telefono?: string;
 }
 
-export interface PruebaEnCurso {
-  no_prueba: string;
-  no_muestra: string;
-  estado_en_lab: string;
-  objetivo: string;
-  producto: string;
-  dosis: number;
-  especie_vegetal: string;
-  observaciones: string;
-  finca_de_la_cepa: string;
-  fecha_ingreso_ot: string;
-  estado_proceso: string;
-  procedimiento: string;
-  // Nuevos campos requeridos
+export interface PruebaEnCurso extends OrdenTrabajo {
   finca: string;
   prueba_id: string;
   fecha_montaje: string;
   dias_montaje: number;
   semana_entrega: number | null;
+  ingrediente_activo: string;
+  eficacia_vs_testigo: string;
 }
 
 export interface BusquedaOTResult {

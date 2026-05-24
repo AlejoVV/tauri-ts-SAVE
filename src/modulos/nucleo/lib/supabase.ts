@@ -573,20 +573,30 @@ export type Database = {
       pruebas_ordenes_trabajo: {
         Row: {
           prueba_cantidad: string | null
+          prueba_compania: string | null
           prueba_compania_id: number | null
+          prueba_contacto: string | null
           prueba_contacto_id: number | null
           prueba_costo: number | null
           prueba_dosis: string | null
+          prueba_dosis_producto: string | null
           prueba_especie_id: number | null
           prueba_estado: string | null
+          prueba_estado_lab: string | null
+          prueba_estado_proceso: string | null
+          prueba_fecha_creacion: string | null
           prueba_fecha_entrega_informe: string | null
+          prueba_fecha_entrega_remision: string | null
           prueba_fecha_ingreso: string | null
           prueba_finca_id: number | null
           prueba_id: number
+          prueba_numero_muestra: string | null
           prueba_objetivo_id: number | null
+          prueba_obs: string | null
           prueba_observaciones: string | null
           prueba_orden_id: number | null
           prueba_producto_id: number | null
+          prueba_semana_entrega: number | null
           prueba_tipo_producto: string | null
           prueba_unidades: string | null
         }
@@ -775,12 +785,14 @@ export type Database = {
       vistamaestratotal: {
         Row: {
           compania_nombre: string | null
+          contacto_email: string | null
           contacto_nombre_completo: string | null
           especie_nombre: string | null
           finca_nombre: string | null
           objetivo_nombre: string | null
           orden_id: number | null
           producto_nombre: string | null
+          producto_unid: string | null
           prueba_cantidad: string | null
           prueba_costo: number | null
           prueba_dosis: string | null
@@ -789,6 +801,7 @@ export type Database = {
           prueba_fecha_ingreso: string | null
           prueba_id: number | null
           prueba_observaciones: string | null
+          prueba_orden_id: number | null
           prueba_tipo_producto: string | null
           prueba_unidades: string | null
         }
@@ -903,3 +916,9 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
