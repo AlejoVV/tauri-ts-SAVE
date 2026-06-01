@@ -784,28 +784,54 @@ export type Database = {
       }
       vistamaestratotal: {
         Row: {
-          compania_nombre: string | null
+          contacto: string | null
+          contacto_cargo: string | null
+          contacto_celular_opcional: string | null
+          contacto_celular_principal: string | null
           contacto_email: string | null
-          contacto_nombre_completo: string | null
+          descuento: string | null
+          dosis_producto: string | null
           especie_nombre: string | null
+          estado_fact: string | null
+          estado_ot: string | null
+          facturara: string | null
+          fecha_entrega_info: string | null
+          fecha_recibo_muestra: string | null
           finca_nombre: string | null
+          notas_varias: string | null
+          objetivo_general: string | null
           objetivo_nombre: string | null
-          orden_id: number | null
+          observaciones: string | null
+          orden_compra: string | null
+          orden_numero_factura: number | null
+          producto_casa_comercial: string | null
           producto_nombre: string | null
+          producto_tipo: string | null
           producto_unid: string | null
+          profesion_nombre: string | null
           prueba_cantidad: string | null
-          prueba_costo: number | null
-          prueba_dosis: string | null
-          prueba_estado: string | null
-          prueba_fecha_entrega_informe: string | null
-          prueba_fecha_ingreso: string | null
+          prueba_estado_foto: string | null
+          prueba_estado_lab: string | null
+          prueba_estado_proceso: string | null
+          prueba_fecha_creacion: string | null
+          prueba_fecha_entrega_calculada: string | null
           prueba_id: number | null
-          prueba_observaciones: string | null
+          prueba_numero_muestra: string | null
           prueba_orden_id: number | null
-          prueba_tipo_producto: string | null
-          prueba_unidades: string | null
+          prueba_precio: number | null
+          prueba_semana_entrega: number | null
+          prueba_usuario_foto: string | null
+          tipo_prueba: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pruebas_ordenes_trabajo_ibfk_1"
+            columns: ["prueba_orden_id"]
+            isOneToOne: false
+            referencedRelation: "ordenes_trabajo"
+            referencedColumns: ["orden_id"]
+          },
+        ]
       }
     }
     Functions: {
