@@ -338,3 +338,4 @@ export async function eliminarPrueba(pruebaId: number): Promise<{ success: boole
     return { success: false, error: error instanceof Error ? error.message : "Error desconocido" };
   }
 }
+
