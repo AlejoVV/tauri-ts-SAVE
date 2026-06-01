@@ -4,6 +4,7 @@ import { EficaciaMain } from "@/modulos/eficacia/componentes/EficaciaMain";
 import { Informes } from "@/modulos/informes";
 import { RegisterWorkOrderPage } from "@/modulos/registrar/componentes/RegisterWorkOrderPage";
 import { ManageWorkOrderPage } from "@/modulos/gestionar/componentes/ManageWorkOrderPage";
+import { EficaciaHistorica } from "@/modulos/eficacia-historica";
 import { BarraLateral } from "@/modulos/nucleo/componentes/layout/BarraLateral";
 import { useState } from "react";
 
@@ -24,6 +25,8 @@ function App() {
         return <ManageWorkOrderPage />;
       case "informes":
         return <Informes />;
+      case "eficacia-historica":
+        return <EficaciaHistorica />;
       default:
         return <ObjetivosConPreciosTable />;
     }

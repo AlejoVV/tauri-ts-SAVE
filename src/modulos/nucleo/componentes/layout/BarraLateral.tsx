@@ -6,6 +6,7 @@ import ScienceIcon from "@mui/icons-material/Science";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import SettingsIcon from "@mui/icons-material/Settings";
 import DescriptionIcon from "@mui/icons-material/Description";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import Tooltip from "@mui/material/Tooltip";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,11 @@ const itemsMenu = [
     id: "informes",
     label: "Informes",
     icon: <DescriptionIcon fontSize="large" color="inherit" />,
+  },
+  {
+    id: "eficacia-historica",
+    label: "Eficacia Histórica",
+    icon: <TrendingUpIcon fontSize="large" color="inherit" />,
   },
 ];
 

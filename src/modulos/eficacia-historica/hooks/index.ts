@@ -1,0 +1,2 @@
+export { useEficaciaHistorica } from './useEficaciaHistorica';
+
